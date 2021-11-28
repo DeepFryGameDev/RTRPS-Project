@@ -9,17 +9,26 @@ public class NavMovement : MonoBehaviour
     [SerializeField] [Range(1f, 150f)] float panBorderSize;
     [SerializeField] [Range(1f, 50f)] float panFactor;
     [SerializeField] [Range(1f, 100f)] float panSpeedOnKeyPress;
+    [SerializeField] [Range(1f, 100f)] float scrollSpeed;
 
+    [SerializeField] Terrain terrainMap;
+    [SerializeField] Camera mainCamera;
+
+    private void Start()
+    {
+        Cursor.lockState = CursorLockMode.Confined;
+    }
 
     // Update is called once per frame
     void Update()
     {
         MoveCamera();
+        ZoomCamera();
     }
 
     void MoveCamera()
     {
-        Vector3 pos = Camera.main.transform.position;
+        Vector3 pos = mainCamera.transform.position;
 
         //up
         if (Input.GetAxis("Vertical") > 0)
@@ -62,7 +71,7 @@ public class NavMovement : MonoBehaviour
         //left
         if (Input.GetAxis("Horizontal") < 0)
         {
-            pos.x += panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime;
+            pos.x -= panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime;
         }
         else if (Input.mousePosition.x <= panBorderSize && (Input.mousePosition.x - panBorderSize) >= -panBorderSize)
         {
@@ -72,6 +81,19 @@ public class NavMovement : MonoBehaviour
             pos.x -= panSpeed * Time.deltaTime;
         }
 
-        Camera.main.transform.position = pos;
+        pos.x = Mathf.Clamp(pos.x, -(terrainMap.terrainData.size.x/2), (terrainMap.terrainData.size.x/2));
+        pos.z = Mathf.Clamp(pos.z, -(terrainMap.terrainData.size.z/2), (terrainMap.terrainData.size.z/2));
+
+        mainCamera.transform.position = pos;
+    }
+
+    void ZoomCamera()
+    {
+        Vector3 pos = mainCamera.transform.position;
+
+        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        pos.y -= scroll * (scrollSpeed * 10) * Time.deltaTime;
+
+        mainCamera.transform.position = pos;
     }
 }
