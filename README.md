@@ -20,4 +20,4 @@ Real Time Role Playing Strategy Project - In development
 	- When hovering mouse over land, show tooltip with name and type of hovered land
 	4. Add basic unit
 	- Script - Show basic unit name in tooltip above land type they are standing on
-  - Script - When unit is clicked, hold tooltip in UI showing above data until cancel button is pressed (or change data if another unit is clicked)
+  	- Script - When unit is clicked, hold tooltip in UI showing above data until cancel button is pressed (or change data if another unit is clicked)
