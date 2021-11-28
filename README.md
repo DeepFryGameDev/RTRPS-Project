@@ -2,9 +2,9 @@
 Real Time Role Playing Strategy Project - In development
 
 	SANDBOX LEVEL (Stage 1)
-	1. Create plane with enough room for two players and some objectives between them
-	- Script with adjustable camera angle to be set as static
-		○ Moving mouse cursor to borders of the screen will allow camera to pan around
+	1. Create plane with enough room for two players and some objectives between them (complete)
+	- Script with adjustable camera angle to be set as static (complete)
+		○ Moving mouse cursor to borders of the screen will allow camera to pan around (complete)
 	2. Add some hills and plains
 	- Add some mesh objects for scenery and interaction
 		○ Trees (scattered and forest)
