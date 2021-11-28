@@ -187,6 +187,8 @@ MonoBehaviour:
   panFactor: 35
   panSpeedOnKeyPress: 20
   scrollSpeed: 30
+  minScroll: 5
+  maxScroll: 20
   terrainMap: {fileID: 1472858884}
   mainCamera: {fileID: 963194227}
 --- !u!1 &705507993

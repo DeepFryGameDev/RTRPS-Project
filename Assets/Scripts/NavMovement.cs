@@ -10,6 +10,8 @@ public class NavMovement : MonoBehaviour
     [SerializeField] [Range(1f, 50f)] float panFactor;
     [SerializeField] [Range(1f, 100f)] float panSpeedOnKeyPress;
     [SerializeField] [Range(1f, 100f)] float scrollSpeed;
+    [SerializeField] [Range(1f, 10f)] float minScroll;
+    [SerializeField] [Range(10f, 25f)] float maxScroll;
 
     [SerializeField] Terrain terrainMap;
     [SerializeField] Camera mainCamera;
@@ -93,6 +95,8 @@ public class NavMovement : MonoBehaviour
 
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         pos.y -= scroll * (scrollSpeed * 10) * Time.deltaTime;
+
+        pos.y = Mathf.Clamp(pos.y, minScroll, maxScroll);
 
         mainCamera.transform.position = pos;
     }
