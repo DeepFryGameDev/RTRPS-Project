@@ -11,6 +11,7 @@ public class NavMovement : MonoBehaviour
     [SerializeField] [Range(1f, 50f)] float panFactor;
     [SerializeField] [Range(1f, 100f)] float panSpeedOnKeyPress;
     [SerializeField] [Range(1f, 100f)] float scrollSpeed;
+    [SerializeField] [Range(1f, 100f)] float scrollFactor;
     [SerializeField] [Range(1f, 50f)] float dragSpeed;
     [SerializeField] [Range(1f, 10f)] float minScroll;
     [SerializeField] [Range(10f, 25f)] float maxScroll;    
@@ -22,8 +23,8 @@ public class NavMovement : MonoBehaviour
     bool rightClickDrag;
     Vector3 dragOrigin, newDragPos, panOrigin;
 
-    // for zoom
-    float scrollDist;
+    // for keeping camera above terrain
+    float scrollDist, minScrollClamp, maxScrollClamp;
 
     // for cursor management
     enum cursorModes
@@ -45,7 +46,7 @@ public class NavMovement : MonoBehaviour
         cursorMode = cursorModes.IDLE;
         SetCursor();
 
-        scrollDist = camTransform.position.y - GetComponent<NavInterface>().terrainHeight;
+        scrollDist = camTransform.position.y;
     }
 
     // Update is called once per frame
@@ -60,7 +61,18 @@ public class NavMovement : MonoBehaviour
 
         DragCamera();
 
+        KeepCameraAtTerrainHeight();
+
         SetCursor();
+    }
+
+    private void KeepCameraAtTerrainHeight()
+    {
+        float setHeight = (Terrain.activeTerrain.SampleHeight(camTransform.position) + scrollDist) - GetComponent<NavInterface>().terrainHeight;
+
+        camTransform.position = new Vector3(camTransform.position.x, setHeight, camTransform.position.z);
+        minScrollClamp = Terrain.activeTerrain.SampleHeight(camTransform.position) + minScroll;
+        maxScrollClamp = Terrain.activeTerrain.SampleHeight(camTransform.position) + maxScroll;
     }
 
     void PanCamera()
@@ -144,8 +156,6 @@ public class NavMovement : MonoBehaviour
         pos.x = Mathf.Clamp(pos.x, -(terrainMap.terrainData.size.x/2), (terrainMap.terrainData.size.x/2));
         pos.z = Mathf.Clamp(pos.z, -(terrainMap.terrainData.size.z/2), (terrainMap.terrainData.size.z/2));
 
-        pos.y = (Terrain.activeTerrain.SampleHeight(camTransform.position) + scrollDist);
-
         camTransform.position = pos;
     }
 
@@ -155,15 +165,14 @@ public class NavMovement : MonoBehaviour
         {
             Vector3 pos = camTransform.position;
 
+            float temp = pos.y;
+
             float scroll = Input.GetAxis("Mouse ScrollWheel");
-            pos.y -= scroll * (scrollSpeed * 10) * Time.deltaTime;
+            pos.y -= scroll * (scrollSpeed * scrollFactor) * Time.deltaTime;
 
-            pos.y = Mathf.Clamp(pos.y, (GetComponent<NavInterface>().terrainHeight + minScroll), (GetComponent<NavInterface>().terrainHeight + maxScroll));
+            pos.y = Mathf.Clamp(pos.y, minScrollClamp, maxScrollClamp);
 
-            scrollDist = pos.y - GetComponent<NavInterface>().terrainHeight;
-
-            Debug.Log("Should be clamping between: " + (Terrain.activeTerrain.SampleHeight(camTransform.position) + minScroll) + " and " + (Terrain.activeTerrain.SampleHeight(camTransform.position) + maxScroll));
-            Debug.Log("Actual pos.y: " + pos.y);
+            scrollDist += (pos.y - temp);
 
             camTransform.position = pos;
         }        
@@ -183,7 +192,7 @@ public class NavMovement : MonoBehaviour
             Vector3 pos = Camera.main.ScreenToViewportPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, camTransform.gameObject.GetComponent<Camera>().nearClipPlane)) - panOrigin;
             camTransform.position = new Vector3(
                 dragOrigin.x + -pos.x * dragSpeed, 
-                Terrain.activeTerrain.SampleHeight(camTransform.position) + scrollDist, 
+                GetComponent<NavInterface>().cameraDistance, 
                 dragOrigin.z + -pos.y * dragSpeed);
             newDragPos = camTransform.position;
 
