@@ -187,10 +187,11 @@ MonoBehaviour:
   panFactor: 35
   panSpeedOnKeyPress: 20
   scrollSpeed: 30
+  dragSpeed: 20
   minScroll: 5
   maxScroll: 20
   terrainMap: {fileID: 1472858884}
-  mainCamera: {fileID: 963194227}
+  camTransform: {fileID: 963194228}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0

@@ -7,7 +7,7 @@ public class NavInterface : MonoBehaviour
     [SerializeField] bool debugging;
 
     [SerializeField] [Range(0, 90)] float cameraAngle;
-    [SerializeField] [Range(1, 25)] float cameraDistance;
+    [SerializeField] [Range(1, 25)] public float cameraDistance; // also used by NavMovement for drag movement
 
     void OnValidate()
     {
