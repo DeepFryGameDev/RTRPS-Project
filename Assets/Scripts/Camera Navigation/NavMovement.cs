@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,12 +15,15 @@ public class NavMovement : MonoBehaviour
     [SerializeField] [Range(1f, 10f)] float minScroll;
     [SerializeField] [Range(10f, 25f)] float maxScroll;    
 
-    [SerializeField] Terrain terrainMap;
+    public Terrain terrainMap;
     [SerializeField] Transform camTransform;
 
     // for drag movement
     bool rightClickDrag;
     Vector3 dragOrigin, newDragPos, panOrigin;
+
+    // for zoom
+    float scrollDist;
 
     // for cursor management
     enum cursorModes
@@ -40,17 +44,19 @@ public class NavMovement : MonoBehaviour
 
         cursorMode = cursorModes.IDLE;
         SetCursor();
+
+        scrollDist = camTransform.position.y - GetComponent<NavInterface>().terrainHeight;
     }
 
     // Update is called once per frame
     void Update()
     {
+        ZoomCamera();
+
         if (!rightClickDrag)
         {
             PanCamera();
-        }
-        
-        ZoomCamera();
+        }    
 
         DragCamera();
 
@@ -70,7 +76,6 @@ public class NavMovement : MonoBehaviour
         //up
         if (Input.GetAxis("Vertical") > 0)
         {
-            movingZ = true;
             pos.z += panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime;
         } else if (Input.mousePosition.y >= Screen.height - panBorderSize && Input.mousePosition.y <= Screen.height)
         {
@@ -86,7 +91,6 @@ public class NavMovement : MonoBehaviour
         //down
         if (Input.GetAxis("Vertical") < 0)
         {
-            movingZ = true;
             pos.z -= panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime;
         }
         else if (Input.mousePosition.y <= panBorderSize && (Input.mousePosition.y - panBorderSize) >= -panBorderSize)
@@ -103,7 +107,6 @@ public class NavMovement : MonoBehaviour
         //right
         if (Input.GetAxis("Horizontal") > 0)
         {
-            movingX = true;
             pos.x += panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime;
         }
         else if (Input.mousePosition.x >= Screen.width - panBorderSize && Input.mousePosition.x <= Screen.width)
@@ -120,7 +123,6 @@ public class NavMovement : MonoBehaviour
         //left
         if (Input.GetAxis("Horizontal") < 0)
         {
-            movingX = true;
             pos.x -= panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime;
         }
         else if (Input.mousePosition.x <= panBorderSize && (Input.mousePosition.x - panBorderSize) >= -panBorderSize)
@@ -142,6 +144,8 @@ public class NavMovement : MonoBehaviour
         pos.x = Mathf.Clamp(pos.x, -(terrainMap.terrainData.size.x/2), (terrainMap.terrainData.size.x/2));
         pos.z = Mathf.Clamp(pos.z, -(terrainMap.terrainData.size.z/2), (terrainMap.terrainData.size.z/2));
 
+        pos.y = (Terrain.activeTerrain.SampleHeight(camTransform.position) + scrollDist);
+
         camTransform.position = pos;
     }
 
@@ -154,7 +158,12 @@ public class NavMovement : MonoBehaviour
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             pos.y -= scroll * (scrollSpeed * 10) * Time.deltaTime;
 
-            pos.y = Mathf.Clamp(pos.y, minScroll, maxScroll);
+            pos.y = Mathf.Clamp(pos.y, (GetComponent<NavInterface>().terrainHeight + minScroll), (GetComponent<NavInterface>().terrainHeight + maxScroll));
+
+            scrollDist = pos.y - GetComponent<NavInterface>().terrainHeight;
+
+            Debug.Log("Should be clamping between: " + (Terrain.activeTerrain.SampleHeight(camTransform.position) + minScroll) + " and " + (Terrain.activeTerrain.SampleHeight(camTransform.position) + maxScroll));
+            Debug.Log("Actual pos.y: " + pos.y);
 
             camTransform.position = pos;
         }        
@@ -172,8 +181,10 @@ public class NavMovement : MonoBehaviour
         if (Input.GetMouseButton(1))
         {
             Vector3 pos = Camera.main.ScreenToViewportPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, camTransform.gameObject.GetComponent<Camera>().nearClipPlane)) - panOrigin;
-            camTransform.position = new Vector3(dragOrigin.x + -pos.x * dragSpeed, camTransform.position.y, dragOrigin.z + -pos.y * dragSpeed);
-
+            camTransform.position = new Vector3(
+                dragOrigin.x + -pos.x * dragSpeed, 
+                Terrain.activeTerrain.SampleHeight(camTransform.position) + scrollDist, 
+                dragOrigin.z + -pos.y * dragSpeed);
             newDragPos = camTransform.position;
 
             if (dragOrigin != newDragPos)
