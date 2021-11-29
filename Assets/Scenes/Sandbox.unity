@@ -134,6 +134,7 @@ GameObject:
   - component: {fileID: 544527490}
   - component: {fileID: 544527489}
   - component: {fileID: 544527491}
+  - component: {fileID: 544527492}
   m_Layer: 0
   m_Name: CameraNavigation
   m_TagString: Untagged
@@ -192,6 +193,25 @@ MonoBehaviour:
   maxScroll: 20
   terrainMap: {fileID: 1472858884}
   camTransform: {fileID: 963194228}
+--- !u!114 &544527492
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 544527488}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31ec6cdede9665e43b4bd3e2cb23ab7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  idle: {fileID: 2800000, guid: 5cdda87eef199134e990fade8da0edbb, type: 3}
+  panUp: {fileID: 2800000, guid: f8be1a1b1dae6a44b894db3c77af4372, type: 3}
+  panDown: {fileID: 2800000, guid: f8be1a1b1dae6a44b894db3c77af4372, type: 3}
+  panLeft: {fileID: 2800000, guid: bd0b7720900751b40b13e2cd0c9e1c24, type: 3}
+  panRight: {fileID: 2800000, guid: bd0b7720900751b40b13e2cd0c9e1c24, type: 3}
+  panDiagonal: {fileID: 2800000, guid: 3cf98b312b614f3479b7e117fd1c66a5, type: 3}
+  panDrag: {fileID: 2800000, guid: b44ff0965d15c7142b460b22da5feebd, type: 3}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
