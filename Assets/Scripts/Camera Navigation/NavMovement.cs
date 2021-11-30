@@ -68,11 +68,18 @@ public class NavMovement : MonoBehaviour
 
     private void KeepCameraAtTerrainHeight()
     {
-        float setHeight = (Terrain.activeTerrain.SampleHeight(camTransform.position) + scrollDist) - GetComponent<NavInterface>().terrainHeight;
+        float setHeight = Terrain.activeTerrain.SampleHeight(camTransform.position);
 
-        camTransform.position = new Vector3(camTransform.position.x, setHeight, camTransform.position.z);
-        minScrollClamp = Terrain.activeTerrain.SampleHeight(camTransform.position) + minScroll;
-        maxScrollClamp = Terrain.activeTerrain.SampleHeight(camTransform.position) + maxScroll;
+        if (GetComponent<NavInterface>().terrainHeight > setHeight)
+        {
+            setHeight = GetComponent<NavInterface>().terrainHeight;
+        }
+
+        float newHeight = (setHeight + scrollDist) - GetComponent<NavInterface>().terrainHeight;
+
+        camTransform.position = new Vector3(camTransform.position.x, newHeight, camTransform.position.z);
+        minScrollClamp = setHeight + minScroll;
+        maxScrollClamp = setHeight + maxScroll;
     }
 
     void PanCamera()
