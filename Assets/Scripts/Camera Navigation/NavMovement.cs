@@ -10,18 +10,24 @@ public class NavMovement : MonoBehaviour
     [SerializeField] [Range(1f, 150f)] float panBorderSize;
     [SerializeField] [Range(1f, 50f)] float panFactor;
     [SerializeField] [Range(1f, 100f)] float panSpeedOnKeyPress;
+    [SerializeField] [Range(1f, 100f)] float panSpeedOnSprintPress;
     [SerializeField] [Range(1f, 100f)] float scrollSpeed;
     [SerializeField] [Range(1f, 100f)] float scrollFactor;
+    [SerializeField] [Range(0.1f, 1.0f)] float dragFactor;
     [SerializeField] [Range(1f, 50f)] float dragSpeed;
     [SerializeField] [Range(1f, 10f)] float minScroll;
-    [SerializeField] [Range(10f, 25f)] float maxScroll;    
+    [SerializeField] [Range(10f, 25f)] float maxScroll;
+    [SerializeField] [Range(1f, 20f)] float rotateSpeed;
 
     public Terrain terrainMap;
     [SerializeField] Transform camTransform;
 
     // for drag movement
     bool rightClickDrag;
-    Vector3 dragOrigin, newDragPos, panOrigin;
+    float lastMouseX, lastMouseY;
+
+    // for rotation
+    bool isRotating;
 
     // for keeping camera above terrain
     float scrollDist, minScrollClamp, maxScrollClamp;
@@ -38,11 +44,12 @@ public class NavMovement : MonoBehaviour
         PANDIAGUR,
         PANDIAGDL,
         PANDIAGDR,
-        DRAG
+        DRAG,
+        ROTATE
     }
     cursorModes cursorMode;
 
-    private void Start()
+    void Start()
     {
         Cursor.lockState = CursorLockMode.Confined;
 
@@ -64,12 +71,59 @@ public class NavMovement : MonoBehaviour
 
         DragCamera();
 
+        RotateCamera();
+
         KeepCameraAtTerrainHeight();
+
+        KeepCameraInBounds();
 
         SetCursor();
     }
 
-    private void KeepCameraAtTerrainHeight()
+    void KeepCameraInBounds()
+    {
+        if (camTransform.position.x < -(terrainMap.terrainData.size.x / 2))
+        {
+            camTransform.position = new Vector3(-(terrainMap.terrainData.size.x / 2), camTransform.position.y, camTransform.position.z);
+        }
+
+        if (camTransform.position.x > (terrainMap.terrainData.size.x / 2))
+        {
+            camTransform.position = new Vector3((terrainMap.terrainData.size.x / 2), camTransform.position.y, camTransform.position.z);
+        }
+
+        if (camTransform.position.z < -(terrainMap.terrainData.size.z / 2))
+        {
+            camTransform.position = new Vector3(camTransform.position.x, camTransform.position.y, -(terrainMap.terrainData.size.z / 2));
+        }
+
+        if (camTransform.position.z > (terrainMap.terrainData.size.z / 2))
+        {
+            camTransform.position = new Vector3(camTransform.position.x, camTransform.position.y, (terrainMap.terrainData.size.z / 2));
+        }
+    }
+
+    void RotateCamera()
+    {
+        if (Input.GetKeyDown(KeyCode.Mouse2))
+        {
+            isRotating = true;
+        }
+
+        if (Input.GetKey(KeyCode.Mouse2))
+        {
+            Vector3 rotatePoint = new Vector3(camTransform.position.x, Terrain.activeTerrain.SampleHeight(camTransform.position), camTransform.position.z);
+
+            camTransform.RotateAround(rotatePoint, transform.up, -Input.GetAxis("Mouse X") * rotateSpeed);
+        }
+
+        if (Input.GetKeyUp(KeyCode.Mouse2))
+        {
+            isRotating = false;
+        }
+    }
+
+    void KeepCameraAtTerrainHeight()
     {
         float setHeight = Terrain.activeTerrain.SampleHeight(camTransform.position);
 
@@ -95,10 +149,21 @@ public class NavMovement : MonoBehaviour
             cursorMode = cursorModes.IDLE;
         }
 
+        float keyPanSpeed;
+
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            keyPanSpeed = panSpeedOnSprintPress;
+        } else
+        {
+            keyPanSpeed = panSpeedOnKeyPress;
+        }
+
         //up
         if (Input.GetAxis("Vertical") > 0)
         {
-            pos.z += panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime;
+            camTransform.Translate(Vector3.forward * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
+
         } else if (Input.mousePosition.y >= Screen.height - panBorderSize && Input.mousePosition.y <= Screen.height)
         {
             movingZU = true;
@@ -107,13 +172,13 @@ public class NavMovement : MonoBehaviour
             float position = (Input.mousePosition.y - (Screen.height - panBorderSize));
             float panSpeed = panFactor * (position / panBorderSize);
 
-            pos.z += panSpeed * Time.deltaTime;
+            camTransform.Translate(Vector3.forward * (panSpeed * Time.deltaTime));
         }
 
         //down
         if (Input.GetAxis("Vertical") < 0)
         {
-            pos.z -= panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime;
+            camTransform.Translate(Vector3.back * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
         }
         else if (Input.mousePosition.y <= panBorderSize && (Input.mousePosition.y - panBorderSize) >= -panBorderSize)
         {
@@ -123,13 +188,13 @@ public class NavMovement : MonoBehaviour
             float position = (Input.mousePosition.y - panBorderSize);
             float panSpeed = panFactor * Mathf.Abs(-position / -panBorderSize);
 
-            pos.z -= panSpeed * Time.deltaTime;
+            camTransform.Translate(Vector3.back * (panSpeed * Time.deltaTime));
         }
 
         //right
         if (Input.GetAxis("Horizontal") > 0)
         {
-            pos.x += panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime;
+            camTransform.Translate(Vector3.right * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
         }
         else if (Input.mousePosition.x >= Screen.width - panBorderSize && Input.mousePosition.x <= Screen.width)
         {
@@ -139,13 +204,13 @@ public class NavMovement : MonoBehaviour
             float position = (Input.mousePosition.x - (Screen.width - panBorderSize));
             float panSpeed = panFactor * (position / panBorderSize);
 
-            pos.x += panSpeed * Time.deltaTime;
+            camTransform.Translate(Vector3.right * (panSpeed * Time.deltaTime));
         }
 
         //left
         if (Input.GetAxis("Horizontal") < 0)
         {
-            pos.x -= panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime;
+            camTransform.Translate(Vector3.left * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
         }
         else if (Input.mousePosition.x <= panBorderSize && (Input.mousePosition.x - panBorderSize) >= -panBorderSize)
         {
@@ -155,7 +220,7 @@ public class NavMovement : MonoBehaviour
             float position = (Input.mousePosition.x - panBorderSize);
             float panSpeed = panFactor * Mathf.Abs(-position / -panBorderSize);
 
-            pos.x -= panSpeed * Time.deltaTime;
+            camTransform.Translate(Vector3.left * (panSpeed * Time.deltaTime));
         }
 
         if (movingZU && movingXR)
@@ -171,11 +236,6 @@ public class NavMovement : MonoBehaviour
         {
             cursorMode = cursorModes.PANDIAGDL;
         }
-
-        pos.x = Mathf.Clamp(pos.x, -(terrainMap.terrainData.size.x/2), (terrainMap.terrainData.size.x/2));
-        pos.z = Mathf.Clamp(pos.z, -(terrainMap.terrainData.size.z/2), (terrainMap.terrainData.size.z/2));
-
-        camTransform.position = pos;
     }
 
     void ZoomCamera()
@@ -201,24 +261,41 @@ public class NavMovement : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(1))
         {
-            rightClickDrag = true;
-            dragOrigin = camTransform.position;
-            panOrigin = Camera.main.ScreenToViewportPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, camTransform.gameObject.GetComponent<Camera>().nearClipPlane));
+            lastMouseY = Input.mousePosition.y;
+            lastMouseX = Input.mousePosition.x;
         }
 
         if (Input.GetMouseButton(1))
         {
-            Vector3 pos = Camera.main.ScreenToViewportPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, camTransform.gameObject.GetComponent<Camera>().nearClipPlane)) - panOrigin;
-            camTransform.position = new Vector3(
-                dragOrigin.x + -pos.x * dragSpeed, 
-                GetComponent<NavInterface>().cameraDistance, 
-                dragOrigin.z + -pos.y * dragSpeed);
-            newDragPos = camTransform.position;
-
-            if (dragOrigin != newDragPos)
+            if (lastMouseX != Input.mousePosition.x && lastMouseY != Input.mousePosition.y && cursorMode != cursorModes.DRAG)
             {
+                rightClickDrag = true;
                 cursorMode = cursorModes.DRAG;
             }
+
+            float xDiff = (Mathf.Abs(lastMouseX - Input.mousePosition.x) * dragFactor);
+            float yDiff = (Mathf.Abs(lastMouseY - Input.mousePosition.y) * dragFactor);
+
+            if (lastMouseY < Input.mousePosition.y)
+            { 
+                camTransform.Translate(Vector3.back * dragSpeed * yDiff * Time.deltaTime);
+            }
+            if (lastMouseY > Input.mousePosition.y)
+            {
+                camTransform.Translate(Vector3.forward * dragSpeed * yDiff * Time.deltaTime);
+            }
+
+            if (lastMouseX < Input.mousePosition.x)
+            {
+                camTransform.Translate(Vector3.left * dragSpeed * xDiff * Time.deltaTime);
+            }
+            if (lastMouseX > Input.mousePosition.x)
+            {
+                camTransform.Translate(Vector3.right * dragSpeed * xDiff * Time.deltaTime);
+            }
+
+            lastMouseY = Input.mousePosition.y;
+            lastMouseX = Input.mousePosition.x;
         }
 
         if (Input.GetMouseButtonUp(1))
@@ -230,6 +307,14 @@ public class NavMovement : MonoBehaviour
     void SetCursor()
     {
         Texture2D cursorIcon = null;
+
+        if (isRotating)
+        {
+            cursorMode = cursorModes.ROTATE;
+        } else if (rightClickDrag)
+        {
+            cursorMode = cursorModes.DRAG;
+        }
 
         switch (cursorMode)
         {
@@ -262,6 +347,9 @@ public class NavMovement : MonoBehaviour
                 break;
             case cursorModes.DRAG:
                 cursorIcon = GetComponent<NavCursorIcons>().panDrag;
+                break;
+            case cursorModes.ROTATE:
+                cursorIcon = GetComponent<NavCursorIcons>().rotate;
                 break;
         }
 

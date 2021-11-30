@@ -14,4 +14,5 @@ public class NavCursorIcons : MonoBehaviour
     public Texture2D panDiagDL;
     public Texture2D panDiagDR;
     public Texture2D panDrag;
+    public Texture2D rotate;
 }
