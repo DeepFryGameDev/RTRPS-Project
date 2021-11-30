@@ -4300,7 +4300,10 @@ MonoBehaviour:
   panDown: {fileID: 2800000, guid: f8be1a1b1dae6a44b894db3c77af4372, type: 3}
   panLeft: {fileID: 2800000, guid: bd0b7720900751b40b13e2cd0c9e1c24, type: 3}
   panRight: {fileID: 2800000, guid: bd0b7720900751b40b13e2cd0c9e1c24, type: 3}
-  panDiagonal: {fileID: 2800000, guid: 3cf98b312b614f3479b7e117fd1c66a5, type: 3}
+  panDiagUR: {fileID: 2800000, guid: b66af60c94a3ca64bafe5e10555dfc7e, type: 3}
+  panDiagUL: {fileID: 2800000, guid: 4d15cb121e714f54dbb6a880edea5a0d, type: 3}
+  panDiagDL: {fileID: 2800000, guid: b66af60c94a3ca64bafe5e10555dfc7e, type: 3}
+  panDiagDR: {fileID: 2800000, guid: 4d15cb121e714f54dbb6a880edea5a0d, type: 3}
   panDrag: {fileID: 2800000, guid: b44ff0965d15c7142b460b22da5feebd, type: 3}
 --- !u!4 &544964219 stripped
 Transform:

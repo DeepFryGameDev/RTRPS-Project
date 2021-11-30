@@ -34,7 +34,10 @@ public class NavMovement : MonoBehaviour
         PANDOWN,
         PANLEFT,
         PANRIGHT,
-        PANDIAG,
+        PANDIAGUL,
+        PANDIAGUR,
+        PANDIAGDL,
+        PANDIAGDR,
         DRAG
     }
     cursorModes cursorMode;
@@ -85,7 +88,7 @@ public class NavMovement : MonoBehaviour
     void PanCamera()
     {
         Vector3 pos = camTransform.position;
-        bool movingZ = false, movingX = false;
+        bool movingZU = false, movingZD = false, movingXL = false, movingXR = false;
 
         if (cursorMode != cursorModes.IDLE)
         {
@@ -98,7 +101,7 @@ public class NavMovement : MonoBehaviour
             pos.z += panSpeedOnKeyPress * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime;
         } else if (Input.mousePosition.y >= Screen.height - panBorderSize && Input.mousePosition.y <= Screen.height)
         {
-            movingZ = true;
+            movingZU = true;
             cursorMode = cursorModes.PANUP;
 
             float position = (Input.mousePosition.y - (Screen.height - panBorderSize));
@@ -114,7 +117,7 @@ public class NavMovement : MonoBehaviour
         }
         else if (Input.mousePosition.y <= panBorderSize && (Input.mousePosition.y - panBorderSize) >= -panBorderSize)
         {
-            movingZ = true;
+            movingZD = true;
             cursorMode = cursorModes.PANDOWN;
 
             float position = (Input.mousePosition.y - panBorderSize);
@@ -130,7 +133,7 @@ public class NavMovement : MonoBehaviour
         }
         else if (Input.mousePosition.x >= Screen.width - panBorderSize && Input.mousePosition.x <= Screen.width)
         {
-            movingX = true;
+            movingXR = true;
             cursorMode = cursorModes.PANRIGHT;
 
             float position = (Input.mousePosition.x - (Screen.width - panBorderSize));
@@ -146,7 +149,7 @@ public class NavMovement : MonoBehaviour
         }
         else if (Input.mousePosition.x <= panBorderSize && (Input.mousePosition.x - panBorderSize) >= -panBorderSize)
         {
-            movingX = true;
+            movingXL = true;
             cursorMode = cursorModes.PANLEFT;
 
             float position = (Input.mousePosition.x - panBorderSize);
@@ -155,9 +158,18 @@ public class NavMovement : MonoBehaviour
             pos.x -= panSpeed * Time.deltaTime;
         }
 
-        if (movingZ && movingX)
+        if (movingZU && movingXR)
         {
-            cursorMode = cursorModes.PANDIAG;
+            cursorMode = cursorModes.PANDIAGUR;
+        } else if (movingZU && movingXL)
+        {
+            cursorMode = cursorModes.PANDIAGUL;
+        } else if (movingZD && movingXR)
+        {
+            cursorMode = cursorModes.PANDIAGDR;
+        } else if (movingZD && movingXL)
+        {
+            cursorMode = cursorModes.PANDIAGDL;
         }
 
         pos.x = Mathf.Clamp(pos.x, -(terrainMap.terrainData.size.x/2), (terrainMap.terrainData.size.x/2));
@@ -236,8 +248,17 @@ public class NavMovement : MonoBehaviour
             case cursorModes.PANRIGHT:
                 cursorIcon = GetComponent<NavCursorIcons>().panRight;
                 break;
-            case cursorModes.PANDIAG:
-                cursorIcon = GetComponent<NavCursorIcons>().panDiagonal;
+            case cursorModes.PANDIAGUL:
+                cursorIcon = GetComponent<NavCursorIcons>().panDiagUL;
+                break;
+            case cursorModes.PANDIAGUR:
+                cursorIcon = GetComponent<NavCursorIcons>().panDiagUR;
+                break;
+            case cursorModes.PANDIAGDL:
+                cursorIcon = GetComponent<NavCursorIcons>().panDiagDL;
+                break;
+            case cursorModes.PANDIAGDR:
+                cursorIcon = GetComponent<NavCursorIcons>().panDiagDR;
                 break;
             case cursorModes.DRAG:
                 cursorIcon = GetComponent<NavCursorIcons>().panDrag;
