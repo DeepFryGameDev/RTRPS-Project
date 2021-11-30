@@ -5,15 +5,15 @@ Real Time Role Playing Strategy Project - In development
 	1. Create plane with enough room for two players and some objectives between them (complete)
 	- Script with adjustable camera angle to be set as static (complete)
 		○ Moving mouse cursor to borders of the screen will allow camera to pan around (complete)
-	2. Add some hills and plains
-	- Add some mesh objects for scenery and interaction
+	2. Add some hills and plains (complete)
+	- Add some mesh objects for scenery and interaction (complete)
 		○ Trees (scattered and forest)
 		○ Mountain Ranges
 		○ Desert and Tundra (at bottom and top of map, respectively)
 		○ Pond
 		○ River
 		○ Beaches
-	- Surround map with water
+	- Surround map with water (complete)
 	3. Scripts
 	- Set/store environmental land (plains, forest, desert, tundra, beach, pond/lake/river/ocean)
 	- Add tooltip for hovering over land and/or unit
