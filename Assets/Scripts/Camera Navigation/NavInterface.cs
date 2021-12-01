@@ -16,4 +16,17 @@ public class NavInterface : MonoBehaviour
         Camera.main.transform.eulerAngles = new Vector3(cameraAngle, 0f, 0f);
         Camera.main.transform.position = new Vector3(Camera.main.transform.position.x, terrainHeight + cameraDistance, Camera.main.transform.position.z);
     }
+
+    void Update()
+    {
+        if (Input.GetKey(KeyCode.Semicolon) && Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            Vector3 mousePos = Input.mousePosition;
+            mousePos.z = 20;
+
+            Vector3 outPos = Camera.main.ScreenToWorldPoint(mousePos);
+
+            Debug.Log("World Position: " + Mathf.RoundToInt(outPos.x) + ", " + Mathf.RoundToInt(outPos.z));
+        }
+    }
 }
