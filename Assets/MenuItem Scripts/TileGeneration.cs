@@ -60,8 +60,10 @@ public class TileGeneration : MonoBehaviour
             {
                 float terrainHeight = Terrain.activeTerrain.SampleHeight(new Vector3(x, 0, z));
                 Debug.Log("Placing tile at " + x + ", " + terrainHeight + ", " + z);
-                Object tile = Instantiate(tilePrefab, new Vector3(x, terrainHeight, z), Quaternion.identity, parentForTiles);
-                tile.name = "Tile (" + x + ", " + z + ")";
+                Transform tile = Instantiate(tilePrefab, new Vector3(x, terrainHeight, z), Quaternion.identity, parentForTiles) as Transform;
+                tile.gameObject.name = "Tile (" + x + ", " + z + ")";
+                tile.gameObject.GetComponent<BiomeTile>().defaultX = x;
+                tile.gameObject.GetComponent<BiomeTile>().defaultZ = z;
             }
         }
 
@@ -160,6 +162,64 @@ public class TileGeneration : MonoBehaviour
         }
 
         DebugMessage("UpdateTileHeight Completed successfully!");
+    }
+
+    [MenuItem("DeepFry/Tiles/Update/Realign Tiles")]
+    public static void RealignTiles()
+    {
+        DebugMessage("Realigning all tiles");
+        DebugMessage("Loading parent 'BiomeTiles' for tiles");
+        Transform parentForTiles = GameObject.Find("BiomeTiles").transform;
+        if (parentForTiles == null)
+        {
+            throw new FileNotFoundException("Parent object not found - please check configuration");
+        }
+        else
+        {
+            DebugMessage("Parent found! Realigning tiles.");
+        }
+
+        foreach (Transform child in parentForTiles)
+        {
+            /*float terrainHeight = Terrain.activeTerrain.SampleHeight(new Vector3(child.GetComponent<BiomeTile>().defaultX, 0, child.GetComponent<BiomeTile>().defaultZ));
+
+            child.GetComponent<BiomeTile>().transform.position = new Vector3(
+                child.GetComponent<BiomeTile>().defaultX,
+                terrainHeight,
+                child.GetComponent<BiomeTile>().defaultZ);*/
+            Debug.Log(child.GetComponent<BiomeTile>().defaultX + ", " + child.GetComponent<BiomeTile>().defaultZ);            
+        }
+
+        DebugMessage("RealignTiles Completed successfully!");
+    }
+
+    [MenuItem("DeepFry/Tiles/Select/SelectAllOceanTiles")]
+    public static void SelectAllOceanTiles()
+    {
+        DebugMessage("Selecting all ocean tiles");
+        DebugMessage("Loading parent 'BiomeTiles' for tiles");
+        Transform parentForTiles = GameObject.Find("BiomeTiles").transform;
+        if (parentForTiles == null)
+        {
+            throw new FileNotFoundException("Parent object not found - please check configuration");
+        }
+        else
+        {
+            DebugMessage("Parent found! Selecting ocean tiles.");
+        }
+
+        List<GameObject> tiles = new List<GameObject>();
+
+        foreach (Transform child in parentForTiles)
+        {
+            if (child.GetComponent<BiomeTile>().biomeType == BiomeTypes.OCEAN)
+            {
+                tiles.Add(child.gameObject);
+            }
+        }
+
+        GameObject[] tilesArray = tiles.ToArray();
+        Selection.objects = tilesArray;
     }
 
     static void DebugMessage(string msg)

@@ -6,6 +6,7 @@ using UnityEngine;
 public class TooltipProcessing : MonoBehaviour
 {
     [SerializeField] GameObject BiomeTooltip;
+    [SerializeField] TMP_Text biomeNameText;
     [SerializeField] TMP_Text primaryTypeText;
     [SerializeField] TMP_Text secondaryTypeText;
 
@@ -25,13 +26,13 @@ public class TooltipProcessing : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, 1000) && hit.transform.gameObject.CompareTag("BiomeTile"))
         {
+            biomeNameText.text = hit.transform.gameObject.GetComponent<BiomeTile>().biomeName;
             primaryTypeText.text = getPrimaryBiomeType(hit.transform.gameObject.GetComponent<BiomeTile>().biomeType);
             secondaryTypeText.text = getSecondaryBiomeType(hit.transform.gameObject.GetComponent<BiomeTile>().biomeType);
             ShowTooltip(true);
             //Debug.Log("hitting " + hit.transform.name);
         } else
         {
-            primaryTypeText.text = string.Empty;
             ShowTooltip(false);
 
             /*Debug.Log("hitting " + ray.origin);

@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Terrain
   - BiomeTile
+  - Unit
   layers:
   - Default
   - TransparentFX

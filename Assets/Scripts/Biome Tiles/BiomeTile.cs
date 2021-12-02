@@ -6,7 +6,10 @@ public class BiomeTile : MonoBehaviour
 {
     public bool hideGizmos = true;
 
+    public string biomeName;
     public BiomeTypes biomeType;
+
+    [HideInInspector] public float defaultX, defaultZ;
 
     // BIOME COLORS
     Color plainsColor = Color.green;
