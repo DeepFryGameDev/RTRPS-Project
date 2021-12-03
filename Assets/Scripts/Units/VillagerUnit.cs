@@ -23,6 +23,6 @@ public class VillagerUnit : Unit
     // Update is called once per frame
     void Update()
     {
-        TooltipProcessing();
+        
     }    
 }
