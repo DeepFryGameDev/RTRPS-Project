@@ -2,8 +2,8 @@
 Real Time Role Playing Strategy Project - In development
 
 	SANDBOX LEVEL (Stage 2)
-	1. Create minimap at bottom right of screen
-	2. Make terrain details tooltip appear consistently, above the minimap, and focus on tile aimed from camera instead of mouse
+	1. Create minimap at bottom right of screen - Complete
+	2. Make terrain details tooltip appear consistently, above the minimap, and focus on tile aimed from camera instead of mouse - Complete
 	3. Unit details in tooltip on bottom left of screen.
 	- Graphic to show on right side of tooltip
 	- If graphic above is hovered over, show tooltip popup with unit's stats (Stamina, Strength, etc)
@@ -19,4 +19,4 @@ Real Time Role Playing Strategy Project - In development
 	7. Create scripts for various resources to be gathered:
 	- Wood from trees
 	- Ore from mines
-Food from lake/farm
+	- Food from lake/farm
