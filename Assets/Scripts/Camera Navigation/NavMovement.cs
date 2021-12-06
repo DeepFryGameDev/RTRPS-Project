@@ -8,6 +8,7 @@ public class NavMovement : MonoBehaviour
     [SerializeField] bool debugging;
 
     [SerializeField] [Range(1f, 150f)] float panBorderSize;
+    [SerializeField] [Range(1f, 10f)] float panSpeed;
     [SerializeField] [Range(1f, 50f)] float panFactor;
     [SerializeField] [Range(1f, 100f)] float panSpeedOnKeyPress;
     [SerializeField] [Range(1f, 100f)] float panSpeedOnSprintPress;
@@ -16,7 +17,7 @@ public class NavMovement : MonoBehaviour
     [SerializeField] [Range(0.1f, 1.0f)] float dragFactor;
     [SerializeField] [Range(1f, 50f)] float dragSpeed;
     [SerializeField] [Range(1f, 10f)] float minScroll;
-    [SerializeField] [Range(10f, 25f)] float maxScroll;
+    [SerializeField] [Range(10f, 50f)] float maxScroll;
     [SerializeField] [Range(1f, 20f)] float rotateSpeed;
 
     public Terrain terrainMap;
@@ -62,22 +63,25 @@ public class NavMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        ZoomCamera();
-
-        if (!rightClickDrag)
+        if (IsMouseOverGameWindow)
         {
-            PanCamera();
-        }    
+            ZoomCamera();
 
-        DragCamera();
+            if (!rightClickDrag)
+            {
+                PanCamera();
+            }
 
-        RotateCamera();
+            DragCamera();
 
-        KeepCameraAtTerrainHeight();
+            RotateCamera();
 
-        KeepCameraInBounds();
+            KeepCameraAtTerrainHeight();
 
-        SetCursor();
+            KeepCameraInBounds();
+
+            SetCursor();
+        }        
     }
 
     void KeepCameraInBounds()
@@ -154,7 +158,8 @@ public class NavMovement : MonoBehaviour
         if (Input.GetKey(KeyCode.LeftShift))
         {
             keyPanSpeed = panSpeedOnSprintPress;
-        } else
+        }
+        else
         {
             keyPanSpeed = panSpeedOnKeyPress;
         }
@@ -164,15 +169,16 @@ public class NavMovement : MonoBehaviour
         {
             camTransform.Translate(Vector3.forward * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
 
-        } else if (Input.mousePosition.y >= Screen.height - panBorderSize && Input.mousePosition.y <= Screen.height)
+        }
+        else if (Input.mousePosition.y >= Screen.height - panBorderSize && Input.mousePosition.y <= Screen.height)
         {
             movingZU = true;
             cursorMode = cursorModes.PANUP;
 
             float position = (Input.mousePosition.y - (Screen.height - panBorderSize));
-            float panSpeed = panFactor * (position / panBorderSize);
+            float speed = panFactor * panSpeed * (position / panBorderSize);
 
-            camTransform.Translate(Vector3.forward * (panSpeed * Time.deltaTime));
+            camTransform.Translate(Vector3.forward * (speed * Time.deltaTime));
         }
 
         //down
@@ -186,9 +192,9 @@ public class NavMovement : MonoBehaviour
             cursorMode = cursorModes.PANDOWN;
 
             float position = (Input.mousePosition.y - panBorderSize);
-            float panSpeed = panFactor * Mathf.Abs(-position / -panBorderSize);
+            float speed = panFactor * panSpeed * Mathf.Abs(-position / -panBorderSize);
 
-            camTransform.Translate(Vector3.back * (panSpeed * Time.deltaTime));
+            camTransform.Translate(Vector3.back * (speed * Time.deltaTime));
         }
 
         //right
@@ -202,9 +208,9 @@ public class NavMovement : MonoBehaviour
             cursorMode = cursorModes.PANRIGHT;
 
             float position = (Input.mousePosition.x - (Screen.width - panBorderSize));
-            float panSpeed = panFactor * (position / panBorderSize);
+            float speed = panFactor * panSpeed * (position / panBorderSize);
 
-            camTransform.Translate(Vector3.right * (panSpeed * Time.deltaTime));
+            camTransform.Translate(Vector3.right * (speed * Time.deltaTime));
         }
 
         //left
@@ -218,21 +224,24 @@ public class NavMovement : MonoBehaviour
             cursorMode = cursorModes.PANLEFT;
 
             float position = (Input.mousePosition.x - panBorderSize);
-            float panSpeed = panFactor * Mathf.Abs(-position / -panBorderSize);
+            float speed = panFactor * panSpeed * Mathf.Abs(-position / -panBorderSize);
 
-            camTransform.Translate(Vector3.left * (panSpeed * Time.deltaTime));
+            camTransform.Translate(Vector3.left * (speed * Time.deltaTime));
         }
 
         if (movingZU && movingXR)
         {
             cursorMode = cursorModes.PANDIAGUR;
-        } else if (movingZU && movingXL)
+        }
+        else if (movingZU && movingXL)
         {
             cursorMode = cursorModes.PANDIAGUL;
-        } else if (movingZD && movingXR)
+        }
+        else if (movingZD && movingXR)
         {
             cursorMode = cursorModes.PANDIAGDR;
-        } else if (movingZD && movingXL)
+        }
+        else if (movingZD && movingXL)
         {
             cursorMode = cursorModes.PANDIAGDL;
         }
@@ -254,7 +263,7 @@ public class NavMovement : MonoBehaviour
             scrollDist += (pos.y - temp);
 
             camTransform.position = pos;
-        }        
+        }
     }
 
     void DragCamera() // Credit to Grimshad - https://answers.unity.com/questions/827834/click-and-drag-camera.html
@@ -277,7 +286,7 @@ public class NavMovement : MonoBehaviour
             float yDiff = (Mathf.Abs(lastMouseY - Input.mousePosition.y) * dragFactor);
 
             if (lastMouseY < Input.mousePosition.y)
-            { 
+            {
                 camTransform.Translate(Vector3.back * dragSpeed * yDiff * Time.deltaTime);
             }
             if (lastMouseY > Input.mousePosition.y)
@@ -311,7 +320,8 @@ public class NavMovement : MonoBehaviour
         if (isRotating)
         {
             cursorMode = cursorModes.ROTATE;
-        } else if (rightClickDrag)
+        }
+        else if (rightClickDrag)
         {
             cursorMode = cursorModes.DRAG;
         }
@@ -355,4 +365,6 @@ public class NavMovement : MonoBehaviour
 
         Cursor.SetCursor(cursorIcon, Vector2.zero, CursorMode.Auto);
     }
+
+    bool IsMouseOverGameWindow { get { return !(0 > Input.mousePosition.x || 0 > Input.mousePosition.y || Screen.width < Input.mousePosition.x || Screen.height < Input.mousePosition.y); } }
 }

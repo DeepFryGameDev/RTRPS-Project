@@ -15,7 +15,8 @@ public enum BiomeTypes
     OCEAN,
     LAKE,
     DESERT,
-    BEACH
+    BEACH,
+    SWAMP
 }
 
 public class BiomeProcessing : MonoBehaviour

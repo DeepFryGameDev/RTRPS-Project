@@ -7,7 +7,7 @@ public class AppControls : MonoBehaviour
 	// Fields
 	public string sceneName = "";
 	public bool cameraControl = false;
-	public Transform camera;
+	public Transform appControlsCamera;
 
 	private Vector3 lastPosition = Vector3.zero;
 
@@ -50,9 +50,9 @@ public class AppControls : MonoBehaviour
 	{
 		var diff = Input.mousePosition - lastPosition;
 		float angle = diff.x/Screen.width;
-		camera.RotateAround(transform.up, -angle);
+		appControlsCamera.transform.Rotate(transform.up, -angle);
 		angle = diff.y/Screen.height;
-		camera.RotateAround(camera.right, angle);
+		appControlsCamera.transform.Rotate(appControlsCamera.right, angle);
 
 		lastPosition = Input.mousePosition;
 	}

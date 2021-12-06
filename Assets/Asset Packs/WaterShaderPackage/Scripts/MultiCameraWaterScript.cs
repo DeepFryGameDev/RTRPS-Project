@@ -60,13 +60,13 @@ namespace nightowl.WaterShader
 		protected override bool HasMoved(Camera cam)
 		{
 			return true;
-			Vector3 position = cam.transform.position + cam.transform.eulerAngles;
+			/*Vector3 position = cam.transform.position + cam.transform.eulerAngles;
 			bool hasMoved = !position.Equals(cameraPositions[cam]);
 			if (hasMoved)
 			{
 				cameraPositions[cam] = position;
 			}
-			return hasMoved;
+			return hasMoved;*/
 		}
 
 		protected override void Clear()

@@ -8,7 +8,7 @@ public class NavInterface : MonoBehaviour
 
     [SerializeField] [Range(0, 90)] float cameraAngle;
     
-    [Range(1, 25)] public float cameraDistance; // also used by NavMovement for drag movement
+    [Range(1, 50)] public float cameraDistance; // also used by NavMovement for drag movement
     public float terrainHeight; // also used by NavMovement for zooming
 
     void OnValidate()

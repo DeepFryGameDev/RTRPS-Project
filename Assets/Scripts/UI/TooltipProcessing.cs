@@ -160,7 +160,7 @@ public class TooltipProcessing : MonoBehaviour
 
     void ShowHideTooltips()
     {
-        Debug.Log(tooltipMode);
+        //Debug.Log(tooltipMode);
 
         switch (tooltipMode)
         {
