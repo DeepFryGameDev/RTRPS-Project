@@ -1,23 +1,22 @@
 # RTRPS-Project
 Real Time Role Playing Strategy Project - In development
 
-	SANDBOX LEVEL (Stage 1)
-	1. Create plane with enough room for two players and some objectives between them (complete)
-	- Script with adjustable camera angle to be set as static (complete)
-		○ Moving mouse cursor to borders of the screen will allow camera to pan around (complete)
-	2. Add some hills and plains (complete)
-	- Add some mesh objects for scenery and interaction (complete)
-		○ Trees (scattered and forest)
-		○ Mountain Ranges
-		○ Desert and Tundra (at bottom and top of map, respectively)
-		○ Pond
-		○ River
-		○ Beaches
-	- Surround map with water (complete)
-	3. Scripts
-	- Set/store environmental land (plains, forest, desert, tundra, beach, pond/lake/river/ocean)
-	- Add tooltip for hovering over land and/or unit
-	- When hovering mouse over land, show tooltip with name and type of hovered land
-	4. Add basic unit
-	- Script - Show basic unit name in tooltip above land type they are standing on
-  	- Script - When unit is clicked, hold tooltip in UI showing above data until cancel button is pressed (or change data if another unit is clicked)
+	SANDBOX LEVEL (Stage 2)
+	1. Create minimap at bottom right of screen
+	2. Make terrain details tooltip appear consistently, above the minimap, and focus on tile aimed from camera instead of mouse
+	3. Unit details in tooltip on bottom left of screen.
+	- Graphic to show on right side of tooltip
+	- If graphic above is hovered over, show tooltip popup with unit's stats (Stamina, Strength, etc)
+	- On left side of toolip, at the top, set unit's class (builder, etc)
+	- Under class at the top show exp bar and value
+	- Under exp, show terrain type they are standing on
+	- Aligned to left, add HP first, then below:
+		○ For villager class/subclass, show resources on hand waiting to be dropped off with progress bar showing how full their bags are
+		○ For combatant classes, show MP/Energy with progress bar of maximum value
+	4. Create panel to house select units abilities - this panel should be shown at all times, but empty when no unit is selected, and when unit is selected, shows buttons with abilities that unit can perform. Ie gather, build, etc.
+	5. Add Town Center for resources to be delivered
+	6. Add ability for units to move to location mouse is right clicked
+	7. Create scripts for various resources to be gathered:
+	- Wood from trees
+	- Ore from mines
+Food from lake/farm
