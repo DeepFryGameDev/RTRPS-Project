@@ -73,3 +73,7 @@ crashlytics-build.properties
 Assets/Asset Packs/WaterShaderPackage/Scenes/
 Assets/Asset Packs/WaterShaderPackage/LegacyShader.zip
 Assets/Asset Packs/WaterShaderPackage/LegacyShader.zip.meta
+*.psd
+Assets/UI GFX/4000_Fantasy_Icons/
+Assets/UI GFX/Progress Bars - Fantasy UI Pack 2/
+Assets/UI GFX/
