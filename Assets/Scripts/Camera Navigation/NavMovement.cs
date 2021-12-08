@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class NavMovement : MonoBehaviour
 {
@@ -24,7 +25,8 @@ public class NavMovement : MonoBehaviour
     [SerializeField] Transform camTransform;
 
     // for drag movement
-    bool rightClickDrag;
+    bool rightClickDrag, overUI;
+    UIProcessing uip;
     float lastMouseX, lastMouseY;
 
     // for rotation
@@ -58,6 +60,8 @@ public class NavMovement : MonoBehaviour
         SetCursor();
 
         scrollDist = camTransform.position.y;
+
+        uip = GameObject.Find("UI").GetComponent<UIProcessing>();
     }
 
     // Update is called once per frame
@@ -269,12 +273,14 @@ public class NavMovement : MonoBehaviour
     void DragCamera() // Credit to Grimshad - https://answers.unity.com/questions/827834/click-and-drag-camera.html
     {
         if (Input.GetMouseButtonDown(1))
-        {
+        { 
             lastMouseY = Input.mousePosition.y;
             lastMouseX = Input.mousePosition.x;
+
+            overUI = IsPointerOverUIElement();
         }
 
-        if (Input.GetMouseButton(1))
+        if (Input.GetMouseButton(1) && !overUI)
         {
             if (lastMouseX != Input.mousePosition.x && lastMouseY != Input.mousePosition.y && cursorMode != cursorModes.DRAG)
             {
@@ -310,6 +316,7 @@ public class NavMovement : MonoBehaviour
         if (Input.GetMouseButtonUp(1))
         {
             rightClickDrag = false;
+            overUI = false;
         }
     }
 
@@ -364,6 +371,34 @@ public class NavMovement : MonoBehaviour
         }
 
         Cursor.SetCursor(cursorIcon, Vector2.zero, CursorMode.Auto);
+    }
+
+    //Gets all event system raycast results of current mouse or touch position. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)
+    static List<RaycastResult> GetEventSystemRaycastResults()
+    {
+        PointerEventData eventData = new PointerEventData(EventSystem.current);
+        eventData.position = Input.mousePosition;
+        List<RaycastResult> raysastResults = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventData, raysastResults);
+        return raysastResults;
+    }
+
+    //Returns 'true' if we touched or hovering on Unity UI element. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)
+    private bool IsPointerOverUIElement(List<RaycastResult> eventSystemRaysastResults)
+    {
+        for (int index = 0; index < eventSystemRaysastResults.Count; index++)
+        {
+            RaycastResult curRaysastResult = eventSystemRaysastResults[index];
+            if (curRaysastResult.gameObject.layer == uip.UILayer)
+                return true;
+        }
+        return false;
+    }
+
+    //Returns 'true' if we touched or hovering on Unity UI element. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)
+    public bool IsPointerOverUIElement()
+    {
+        return IsPointerOverUIElement(GetEventSystemRaycastResults());
     }
 
     bool IsMouseOverGameWindow { get { return !(0 > Input.mousePosition.x || 0 > Input.mousePosition.y || Screen.width < Input.mousePosition.x || Screen.height < Input.mousePosition.y); } }

@@ -6,13 +6,6 @@ using UnityEngine;
 public class TooltipProcessing : MonoBehaviour
 {
     [SerializeField] GameObject BiomeTooltip;
-    [SerializeField] GameObject SelectedUnitTooltip;
-    [SerializeField] TMP_Text biomeTooltip_biomeNameText;
-    [SerializeField] TMP_Text biomeTooltip_primaryTypeText;
-    [SerializeField] TMP_Text biomeTooltip_secondaryTypeText;
-    [SerializeField] TMP_Text selectedUnitTooltip_NameText;
-    [SerializeField] TMP_Text selectedUnitTooltip_BiomeText;
-    [SerializeField] GameObject unitsParent;
 
     BiomeTile biomeHovered;
 
@@ -24,7 +17,6 @@ public class TooltipProcessing : MonoBehaviour
     void Start()
     {
         ShowTooltip(BiomeTooltip, false);
-        ShowTooltip(SelectedUnitTooltip, false);
 
         camTransform = Camera.main.transform;
     }
@@ -32,57 +24,9 @@ public class TooltipProcessing : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        CheckForUnitDeselect();
-
-        SetUnitTooltip();
         SetBiomeTooltip();
 
         BiomeTooltipProcessing();
-        UnitTooltipProcessing();
-    }
-
-    void SelectUnit()
-    {
-        unitsParent.GetComponent<SelectedUnitProcessing>().selectedUnits.Clear();
-
-        unitsParent.GetComponent<SelectedUnitProcessing>().selectedUnits.Add(unitHovered);
-        selectedUnitTooltip_BiomeText.text = getPrimaryBiomeType(biomeHovered.biomeType);
-        VillagerUnit villagerUnit = unitHovered as VillagerUnit;
-
-        if (villagerUnit != null)
-        {
-            selectedUnitTooltip_NameText.text = villagerUnit.villagerClass.ToString();
-        }
-    }
-
-    void CheckForUnitDeselect()
-    {
-        if (unitsParent.GetComponent<SelectedUnitProcessing>().selectedUnits.Count > 0 && Input.GetKeyDown(KeyCode.Escape) ||
-            unitsParent.GetComponent<SelectedUnitProcessing>().selectedUnits.Count > 0 && Input.GetKeyDown(KeyCode.Mouse0)
-            )
-        {
-            unitsParent.GetComponent<SelectedUnitProcessing>().selectedUnits.Clear();
-        }
-    }
-
-    void SetUnitTooltip()
-    {
-        RaycastHit[] hits;
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        hits = Physics.RaycastAll(ray, 1000);
-
-        foreach (RaycastHit hit in hits)
-        {
-            if (hit.transform.gameObject.CompareTag("Unit"))
-            {
-                unitHovered = hit.transform.GetComponent<Unit>();
-
-                if (Input.GetKeyDown(KeyCode.Mouse0))
-                {
-                    SelectUnit();
-                }
-            }
-        }
     }
 
     void SetBiomeTooltip()
@@ -114,19 +58,8 @@ public class TooltipProcessing : MonoBehaviour
         if (biomeHovered != null)
         {
             ShowTooltip(BiomeTooltip, true);
-            biomeTooltip_biomeNameText.text = biomeHovered.biomeName;
-            biomeTooltip_primaryTypeText.text = getPrimaryBiomeType(biomeHovered.biomeType);
-            biomeTooltip_secondaryTypeText.text = getSecondaryBiomeType(biomeHovered.biomeType);
-        }
-    }
-
-    void UnitTooltipProcessing()
-    {
-        VillagerUnit villagerUnit = unitHovered as VillagerUnit;
-
-        if (villagerUnit != null)
-        {
-
+            BiomeTooltip.transform.Find("Name").GetComponent<TMP_Text>().text = biomeHovered.biomeName;
+            BiomeTooltip.transform.Find("Type").GetComponent<TMP_Text>().text = getPrimaryBiomeType(biomeHovered.biomeType);
         }
     }
 
@@ -150,16 +83,5 @@ public class TooltipProcessing : MonoBehaviour
             default:
                 return string.Empty;
         }        
-    }
-
-    string getSecondaryBiomeType(BiomeTypes biomeType)
-    {
-        switch (biomeType)
-        {
-            case BiomeTypes.PLAINSHILL:
-                return "Hill";
-            default:
-                return string.Empty;
-        }
     }
 }
