@@ -131,7 +131,13 @@ public class UIProcessing : MonoBehaviour
 
     void SetBiome()
     {
-        GetTextComp(unitStatsPanel.transform.Find("BiomeText")).text = UppercaseFirst(currentUnit.GetBiome().biomeType.ToString());
+        if (currentUnit.GetBiome())
+        {
+            GetTextComp(unitStatsPanel.transform.Find("BiomeText")).text = UppercaseFirst(currentUnit.GetBiome().biomeType.ToString());
+        } else
+        {
+            GetTextComp(unitStatsPanel.transform.Find("BiomeText")).text = string.Empty;
+        }        
     }
 
     void ShowPanels(bool show)

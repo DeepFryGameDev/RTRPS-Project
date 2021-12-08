@@ -7,7 +7,8 @@ public enum villagerClasses
     VILLAGER,
     HARVESTER,
     BUILDER,
-    FARMER
+    FARMER,
+    VENDOR
 }
 
 public class VillagerUnit : Unit
