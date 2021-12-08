@@ -9,6 +9,7 @@ public class Unit : MonoBehaviour
     BiomeTile onBiome;
 
     [HideInInspector] public bool usesEnergy = false;
+    [HideInInspector] public bool isSelected;
 
     protected UnitProcessing up;
 

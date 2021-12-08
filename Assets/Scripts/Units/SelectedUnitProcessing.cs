@@ -25,6 +25,10 @@ public class SelectedUnitProcessing : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Escape))
             {
+                foreach (Unit u in selectedUnits)
+                {
+                    u.isSelected = false;
+                }
                 selectedUnits.Clear();
             }
 
@@ -38,6 +42,7 @@ public class SelectedUnitProcessing : MonoBehaviour
                 {
                     if (hit.transform.gameObject.CompareTag("Unit"))
                     {
+                        hit.transform.GetComponent<Unit>().isSelected = true;
                         if (IfVillager(hit.transform.GetComponent<Unit>()))
                         {
                             AddVillagerToSelectedUnits(hit.transform.GetComponent<VillagerUnit>());
