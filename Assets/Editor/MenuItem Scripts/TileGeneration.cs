@@ -14,11 +14,11 @@ public class TileGeneration : MonoBehaviour
     public static void GenerateTiles()
     {
         DebugMessage("Running Tile Generation");
-        int xSize = (int)GameObject.Find("CameraNavigation").GetComponent<NavMovement>().terrainMap.terrainData.size.x;
+        int xSize = (int)Terrain.activeTerrain.terrainData.size.x;
         int xMin = -(xSize / 2);
         int xMax = (xSize / 2);
 
-        int zSize = (int)GameObject.Find("CameraNavigation").GetComponent<NavMovement>().terrainMap.terrainData.size.y;
+        int zSize = (int)Terrain.activeTerrain.terrainData.size.y;
         int zMin = -(zSize / 2);
         int zMax = (zSize / 2);
 

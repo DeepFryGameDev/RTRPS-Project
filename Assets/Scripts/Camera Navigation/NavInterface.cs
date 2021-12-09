@@ -4,11 +4,13 @@ using UnityEngine;
 
 public class NavInterface : MonoBehaviour
 {
-    [SerializeField] bool debugging;
-
+    [Tooltip("Camera's default view angle")]
     [SerializeField] [Range(0, 90)] float cameraAngle;
-    
+
+    [Tooltip("Camera's distance from terrain")]
     [Range(1, 50)] public float cameraDistance; // also used by NavMovement for drag movement
+
+    [Tooltip("How high above 0 the terrain is placed")]
     public float terrainHeight; // also used by NavMovement for zooming
 
     void OnValidate()

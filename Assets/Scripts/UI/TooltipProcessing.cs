@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class TooltipProcessing : MonoBehaviour
 {
+    [Tooltip("Set to Biome Tooltip to use in UI")]
     [SerializeField] GameObject BiomeTooltip;
 
     BiomeTile biomeHovered;

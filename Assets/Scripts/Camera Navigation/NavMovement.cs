@@ -6,23 +6,33 @@ using UnityEngine.EventSystems;
 
 public class NavMovement : MonoBehaviour
 {
-    [SerializeField] bool debugging;
-
+    [Tooltip("How close the cursor is to the edge of the screen to pan the camera.")]
     [SerializeField] [Range(1f, 150f)] float panBorderSize;
+    [Tooltip("The speed of camera panning when cursor is on the edge of the screen.")]
     [SerializeField] [Range(1f, 10f)] float panSpeed;
+    [Tooltip("A higher value results in a bigger difference in pan speed depending on where in the pan border the cursor is in.")]
     [SerializeField] [Range(1f, 50f)] float panFactor;
+    [Tooltip("How fast the camera pans when using movement keys (WASD/Arrow keys).")]
     [SerializeField] [Range(1f, 100f)] float panSpeedOnKeyPress;
+    [Tooltip("How fast the camera pans when using movement keys and holding sprint button (Left Shift).")]
     [SerializeField] [Range(1f, 100f)] float panSpeedOnSprintPress;
+    [Tooltip("Multiplied by the scrollFactor to determine how quickly to zoom using middle mouse button.")]
     [SerializeField] [Range(1f, 100f)] float scrollSpeed;
+    [Tooltip("Multiplied by the scrollSpeed to determine how quickly to zoom using middle mouse button.")]
     [SerializeField] [Range(1f, 100f)] float scrollFactor;
+    [Tooltip("A larger value represents a larger jump to world position from where the right mouse button was originally clicked.")]
     [SerializeField] [Range(0.1f, 1.0f)] float dragFactor;
+    [Tooltip("How fast to move the camera when dragging after holding right mouse button.")]
     [SerializeField] [Range(1f, 50f)] float dragSpeed;
+    [Tooltip("Closest y position the camera is able to zoom into.")]
     [SerializeField] [Range(1f, 10f)] float minScroll;
+    [Tooltip("Farthest y position the camera is able to zoom out to.")]
     [SerializeField] [Range(10f, 50f)] float maxScroll;
+    [Tooltip("How quickly the camera rotates when holding down the scroll wheel.")]
     [SerializeField] [Range(1f, 20f)] float rotateSpeed;
 
-    public Terrain terrainMap;
-    [SerializeField] Transform camTransform;
+    Terrain terrainMap;
+    Transform camTransform;
 
     // for drag movement
     bool rightClickDrag, overUI;
@@ -59,9 +69,11 @@ public class NavMovement : MonoBehaviour
         cursorMode = cursorModes.IDLE;
         SetCursor();
 
+        camTransform = Camera.main.transform;
         scrollDist = camTransform.position.y;
 
         uip = GameObject.Find("UI").GetComponent<UIProcessing>();
+        terrainMap = Terrain.activeTerrain;
     }
 
     // Update is called once per frame

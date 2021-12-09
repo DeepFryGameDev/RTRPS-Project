@@ -21,6 +21,12 @@ public class VillagerUnit : Unit
         SetUnitProcessingVars();
     }
 
+    public void BeginGathering(Resource resource)
+    {
+        resource.unitsInteracting.Add(this);
+        Debug.Log("Gathering " + resource.resourceType);
+    }
+
     protected override void SetUnitProcessingVars()
     {
         base.SetUnitProcessingVars();

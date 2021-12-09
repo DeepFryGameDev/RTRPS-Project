@@ -6,13 +6,20 @@ using UnityEngine.EventSystems;
 
 public class UnitMovement : MonoBehaviour
 {
+    [Tooltip("A larger value results in more time allowed for right mouse click to be registered as a move action.")]
     [SerializeField] float rClickFrameCountFactor = 1;
+    [Tooltip("Unit's navmesh move speed is determined by their movement rating * this value.")]
+    [SerializeField] [Range(1, 25)] float moveSpeedFactor = 10;
+
+    // For resources
+    float stopRadius;
+    bool resourceClicked;
+    Resource chosenResource;
 
     List<Unit> selectedUnits;
     UIProcessing uip;
     float rClickFrameCount;
     NavMeshAgent agent;
-
     TerrainCollider tcol;
     Ray terrainRay;
 
@@ -30,6 +37,11 @@ public class UnitMovement : MonoBehaviour
     {
         RightClickFrameCounter();
         CheckForMoveUnit();
+
+        if (resourceClicked)
+        {
+            StopUnitMovementAtResource();
+        }
     }
 
     void RightClickFrameCounter()
@@ -52,6 +64,10 @@ public class UnitMovement : MonoBehaviour
             if (Input.GetKeyUp(KeyCode.Mouse1) && rClickFrameCount >= 0 && rClickFrameCount <= 1)
             {
                 bool canMove = true;
+                Vector3 resourcePos = new Vector3();
+                resourceClicked = false;
+
+                stopRadius = 0;
 
                 RaycastHit[] hits;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -81,23 +97,69 @@ public class UnitMovement : MonoBehaviour
                 // Checking if any resource is clicked
                 foreach (RaycastHit hit in hits)
                 {
-                    if (hit.transform.gameObject.CompareTag("Resource"))
+                    if (IfVillager(selectedUnits[0]))
                     {
-                        Debug.Log("Hit " + hit.transform.name +", move to RIGHT in front of this and start harvesting");
+                        if (hit.transform.gameObject.CompareTag("Resource"))
+                        {
+                            resourceClicked = true;
+                            resourcePos = hit.transform.position;
+                            resourcePos.y = Terrain.activeTerrain.SampleHeight(hit.transform.position);
+
+                            chosenResource = hit.transform.GetComponent<Resource>();
+                            stopRadius = chosenResource.interactionBounds;                            
+                        }
+                    } else
+                    {
                         canMove = false;
-                    }
+                    }                    
                 }
 
                 // If able to move, gather world position and move
                 if (canMove)
-                {           
-                    agent = selectedUnits[0].GetComponent<NavMeshAgent>();
-
-                    //agent.ResetPath();
-                    //agent.isStopped = true;
-                    agent.SetDestination(GetWorldPosition());
+                {
+                    ProcessMoveUnit(resourcePos);
                 }
             }
+        }
+    }
+
+    private void ProcessMoveUnit(Vector3 resourcePos)
+    {
+        agent = selectedUnits[0].GetComponent<NavMeshAgent>();
+
+        // Ensure movement speed is set appropriately
+        agent.speed = (agent.GetComponent<Unit>().GetMovement() * moveSpeedFactor);
+
+        // Set stopping distance for any resource clicked
+        agent.stoppingDistance = stopRadius;
+
+        // Stop any current navigation
+        agent.enabled = false;
+        agent.enabled = true;
+
+        // Move to where mouse is clicked (or resource if clicked)
+        if (!resourceClicked)
+        {
+            agent.SetDestination(GetWorldPosition());
+        }
+        else
+        {
+            agent.SetDestination(resourcePos);
+        }
+    }
+
+    void StopUnitMovementAtResource()
+    {
+        bool arrived = agent.remainingDistance <= agent.stoppingDistance;
+
+        if (arrived)
+        {
+            resourceClicked = false;
+
+            agent.isStopped = true;
+            agent.enabled = false;
+
+            agent.GetComponent<VillagerUnit>().BeginGathering(chosenResource);
         }
     }
 
@@ -119,9 +181,18 @@ public class UnitMovement : MonoBehaviour
         return new Vector3(0, 0, 0);
     }
 
-    void MoveUnit() 
-    { 
-    
+    bool IfVillager(Unit unit)
+    {
+        VillagerUnit tryVillager = unit as VillagerUnit;
+
+        if (tryVillager != null)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     //Gets all event system raycast results of current mouse or touch position. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)

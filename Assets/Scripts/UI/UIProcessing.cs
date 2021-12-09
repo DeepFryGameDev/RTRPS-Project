@@ -6,11 +6,14 @@ using UnityEngine.UI;
 
 public class UIProcessing : MonoBehaviour
 {
+    [Tooltip("Set this to value for UI Layer - default is 5")]
     public int UILayer;
 
-    [SerializeField] SelectedUnitProcessing selectedUnitProcessing;
+    [Tooltip("Set to unit graphic panel in UI")]
     [SerializeField] GameObject unitGraphicPanel;
+    [Tooltip("Set to unit stats panel in UI")]
     [SerializeField] GameObject unitStatsPanel;
+    [Tooltip("Set to unit action panel in UI")]
     [SerializeField] GameObject unitActionPanel;
 
     List<Unit> selectedUnits;
@@ -19,7 +22,7 @@ public class UIProcessing : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        selectedUnits = selectedUnitProcessing.selectedUnits;
+        selectedUnits = GameObject.Find("Units").GetComponent<SelectedUnitProcessing>().selectedUnits;
     }
 
     // Update is called once per frame
