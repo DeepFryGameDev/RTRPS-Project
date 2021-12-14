@@ -22,7 +22,7 @@ public class UIProcessing : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        selectedUnits = GameObject.Find("Units").GetComponent<SelectedUnitProcessing>().selectedUnits;
+        selectedUnits = FindObjectOfType<SelectedUnitProcessing>().selectedUnits;
     }
 
     // Update is called once per frame

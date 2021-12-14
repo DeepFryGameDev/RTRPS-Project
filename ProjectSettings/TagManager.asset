@@ -9,6 +9,7 @@ TagManager:
   - Terrain
   - Building
   - Resource
+  - Depot
   layers:
   - Default
   - TransparentFX
@@ -17,7 +18,7 @@ TagManager:
   - Water
   - UI
   - FOV
-  - 
+  - Unit
   - 
   - 
   - 

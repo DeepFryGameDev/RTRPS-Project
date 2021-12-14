@@ -26,4 +26,9 @@ public class NavCursorIcons : MonoBehaviour
     public Texture2D panDrag;
     [Tooltip("Cursor graphic for rotating camera with scroll wheel click")]
     public Texture2D rotate;
+
+    [Tooltip("Cursor animation for moving to a spot in the world")]
+    public GameObject moveTargetPrefab;
+    [Tooltip("Cursor animation for moving to a task")]
+    public GameObject taskTargetPrefab;
 }

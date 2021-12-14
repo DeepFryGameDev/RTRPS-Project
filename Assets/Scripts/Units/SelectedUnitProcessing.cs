@@ -5,13 +5,13 @@ using UnityEngine.EventSystems;
 
 public class SelectedUnitProcessing : MonoBehaviour
 {
-    public List<Unit> selectedUnits;
+    [ReadOnly] public List<Unit> selectedUnits;
 
     UIProcessing uip;
 
     private void Start()
     {
-        uip = GameObject.Find("UI").GetComponent<UIProcessing>();
+        uip = FindObjectOfType<UIProcessing>();
     }
 
     private void Update()

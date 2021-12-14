@@ -78,6 +78,5 @@ public class Unit : MonoBehaviour
                 SetBiome(hit.transform.GetComponent<BiomeTile>());
             }
         }
-
     }
 }

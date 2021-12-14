@@ -15,14 +15,14 @@ public class Resource : MonoBehaviour
     public ResourceTypes resourceType;
     public int totalResources;
 
-    public List<VillagerUnit> unitsInteracting;
+    [HideInInspector] public List<VillagerUnit> unitsInteracting;
 
-    [HideInInspector] public int resourcesRemaining;
+    [ReadOnly] public int resourcesRemaining;
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        resourcesRemaining = totalResources;
     }
 
     // Update is called once per frame

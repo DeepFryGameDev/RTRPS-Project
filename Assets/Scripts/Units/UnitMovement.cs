@@ -16,6 +16,11 @@ public class UnitMovement : MonoBehaviour
     bool resourceClicked;
     Resource chosenResource;
 
+    // For moving
+    //float collisionCheckDistance = 3;
+    bool isMoving;
+    Vector3 agentDestination;
+
     List<Unit> selectedUnits;
     UIProcessing uip;
     float rClickFrameCount;
@@ -42,6 +47,8 @@ public class UnitMovement : MonoBehaviour
         {
             StopUnitMovementAtResource();
         }
+
+        CheckForUnitCollision();
     }
 
     void RightClickFrameCounter()
@@ -127,6 +134,8 @@ public class UnitMovement : MonoBehaviour
     {
         agent = selectedUnits[0].GetComponent<NavMeshAgent>();
 
+        SwitchNavMeshAgent(agent, false);
+
         // Ensure movement speed is set appropriately
         agent.speed = (agent.GetComponent<Unit>().GetMovement() * moveSpeedFactor);
 
@@ -137,15 +146,30 @@ public class UnitMovement : MonoBehaviour
         agent.enabled = false;
         agent.enabled = true;
 
+        // To check for collision (currently not being used)
+        isMoving = true;
+
+        // Set villager active task to false as they are being moved manually
+        if (IfVillager(agent.GetComponent<Unit>()))
+        {
+            if (agent.GetComponent<VillagerUnit>().gatherTaskIsActive)
+            {
+                agent.GetComponent<VillagerUnit>().gatherTaskIsActive = false;
+                agent.GetComponent<VillagerUnit>().StopGathering();
+            }
+        }
+
         // Move to where mouse is clicked (or resource if clicked)
         if (!resourceClicked)
         {
-            agent.SetDestination(GetWorldPosition());
+            agentDestination = GetWorldPosition();
         }
         else
         {
-            agent.SetDestination(resourcePos);
+            agentDestination = resourcePos;
         }
+
+        agent.SetDestination(agentDestination);
     }
 
     void StopUnitMovementAtResource()
@@ -155,11 +179,89 @@ public class UnitMovement : MonoBehaviour
         if (arrived)
         {
             resourceClicked = false;
+            isMoving = false;
 
             agent.isStopped = true;
             agent.enabled = false;
 
+            SwitchNavMeshAgent(agent, true);
+
+            agent.transform.LookAt(chosenResource.transform);
+
             agent.GetComponent<VillagerUnit>().BeginGathering(chosenResource);
+        }
+    }
+
+    public void ProcessMoveVillagerUnitInTask(bool toDepot, Unit unit, Resource resource, Depot depot)
+    {
+        agent = unit.GetComponent<NavMeshAgent>();
+
+        SwitchNavMeshAgent(agent, false);
+
+        // Ensure movement speed is set appropriately
+        agent.speed = (unit.GetMovement() * moveSpeedFactor);
+
+        // Set stopping distance for any resource clicked
+        if (toDepot)
+        {
+            agent.stoppingDistance = depot.interactionBounds;
+        } else
+        {
+            agent.stoppingDistance = resource.interactionBounds;
+        }        
+
+        // To check for collision (currently not being used)
+        isMoving = true;
+
+        // Move to where mouse is clicked (or resource if clicked)
+        if (toDepot)
+        {
+            agentDestination = depot.transform.position;
+        }
+        else
+        {
+            agentDestination = resource.transform.position;
+        }
+
+        agent.SetDestination(agentDestination);
+    }
+
+    void SwitchNavMeshAgent(NavMeshAgent agent, bool shouldBeObstacle)
+    {
+        if (shouldBeObstacle)
+        {
+            agent.GetComponent<NavMeshAgent>().enabled = false;
+            agent.GetComponent<NavMeshObstacle>().enabled = true;
+        } else
+        {
+            agent.GetComponent<NavMeshObstacle>().enabled = false;
+            agent.GetComponent<NavMeshAgent>().enabled = true;            
+        }
+    }
+
+    void CheckForUnitCollision()
+    {
+        if (isMoving)
+        {
+            /*RaycastHit[] hits;
+            Ray ray = new Ray(agent.transform.position, agentDestination);
+            hits = Physics.RaycastAll(ray, 1);
+
+            foreach (RaycastHit hit in hits)
+            {
+                if (hit.transform.gameObject.CompareTag("Unit"))
+                {
+                    Debug.Log("Reset path");
+                    Debug.Log(hit.transform.gameObject.name);
+
+                    // delete below after testing
+                    resourceClicked = false;
+                    isMoving = false;
+
+                    agent.isStopped = true;
+                    agent.enabled = false;
+                }
+            }*/
         }
     }
 
@@ -192,6 +294,30 @@ public class UnitMovement : MonoBehaviour
         else
         {
             return false;
+        }
+    }
+
+    void ShowCursorAnim(bool isMoveTarget)
+    {
+        if (isMoveTarget) //Show move target
+        {
+
+        } else // Show task target
+        {
+            StartCoroutine(taskTargetAnim());
+        }
+    }
+
+    IEnumerator taskTargetAnim()
+    {
+        bool targetHidden = false;
+
+        //instantiate prefab at mouse click
+
+        while (!targetHidden)
+        {
+
+            yield return new WaitForEndOfFrame();
         }
     }
 
