@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -29,6 +30,7 @@ public class SelectedUnitProcessing : MonoBehaviour
                 {
                     u.isSelected = false;
                 }
+                HighlightSelectedUnits(false);
                 selectedUnits.Clear();
             }
 
@@ -47,10 +49,19 @@ public class SelectedUnitProcessing : MonoBehaviour
                         {
                             AddVillagerToSelectedUnits(hit.transform.GetComponent<VillagerUnit>());
                         }
+                        HighlightSelectedUnits(true);
                     }
                 }
             }
         }        
+    }
+
+    void HighlightSelectedUnits(bool highlight)
+    {
+        foreach (Unit unit in selectedUnits)
+        {
+            unit.GetComponent<Outline>().enabled = highlight;
+        }
     }
 
     void AddVillagerToSelectedUnits(VillagerUnit vu)
