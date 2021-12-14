@@ -29,6 +29,8 @@ public class VillagerUnit : Unit
         up = FindObjectOfType<UnitProcessing>();
         um = FindObjectOfType<UnitMovement>();
         SetUnitProcessingVars();
+
+        UnitAwake();
     }
 
     public void BeginGathering(Resource resource)
@@ -185,11 +187,11 @@ public class VillagerUnit : Unit
 
     void SetMaxHP()
     {
-        this.SetMaxHP(Mathf.RoundToInt((GetStamina() * up.villagerHPFromStaminaFactor) + GetWillpower() * up.villagerHPFromWillpowerFactor));
+        this.SetMaxHP(Mathf.RoundToInt((GetStamina() * up.vilHPFromStaminaFactor) + GetWillpower() * up.vilHPFromWillpowerFactor));
     }
 
     void SetMaxMP()
     {
-        this.SetMaxMP(Mathf.RoundToInt(GetStamina() * up.villagerEnergyFromStaminaFactor));
+        this.SetMaxMP(Mathf.RoundToInt(GetStamina() * up.vilEnergyFromStaminaFactor));
     }
 }

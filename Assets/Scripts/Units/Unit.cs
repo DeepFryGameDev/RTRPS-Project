@@ -79,4 +79,10 @@ public class Unit : MonoBehaviour
             }
         }
     }
+
+    protected void UnitAwake()
+    {
+        GetComponent<Outline>().OutlineWidth = up.highlightWidth;
+        GetComponent<Outline>().enabled = false;
+    }
 }

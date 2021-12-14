@@ -8,8 +8,10 @@ public class UnitMovement : MonoBehaviour
 {
     [Tooltip("A larger value results in more time allowed for right mouse click to be registered as a move action.")]
     [SerializeField] float rClickFrameCountFactor = 1;
-    [Tooltip("Unit's navmesh move speed is determined by their movement rating * this value.")]
-    [SerializeField] [Range(1, 25)] float moveSpeedFactor = 10;
+    [Tooltip("Unit's navmesh base move speed to be calculated before factor.")]
+    [SerializeField] [Range(1, 5)] float moveSpeedBaseline = 1;
+    [Tooltip("Unit's navmesh move speed is determined by the baseline + their movement rating * this value.")]
+    [SerializeField] [Range(0.1f, 25)] float moveSpeedFactor = 10;
 
     // For resources
     float stopRadius;
@@ -27,6 +29,7 @@ public class UnitMovement : MonoBehaviour
     NavMeshAgent agent;
     TerrainCollider tcol;
     Ray terrainRay;
+    CursorManager cm;
 
     // Start is called before the first frame update
     void Start()
@@ -35,6 +38,7 @@ public class UnitMovement : MonoBehaviour
         uip = GameObject.Find("UI").GetComponent<UIProcessing>();
         rClickFrameCount = 0;
         tcol = Terrain.activeTerrain.GetComponent<TerrainCollider>();
+        cm = GameObject.Find("UI/MoveTargetAnim").GetComponent<CursorManager>();
     }
 
     // Update is called once per frame
@@ -137,7 +141,7 @@ public class UnitMovement : MonoBehaviour
         SwitchNavMeshAgent(agent, false);
 
         // Ensure movement speed is set appropriately
-        agent.speed = (agent.GetComponent<Unit>().GetMovement() * moveSpeedFactor);
+        agent.speed = moveSpeedBaseline + (agent.GetComponent<Unit>().GetMovement() * moveSpeedFactor);
 
         // Set stopping distance for any resource clicked
         agent.stoppingDistance = stopRadius;
@@ -168,6 +172,9 @@ public class UnitMovement : MonoBehaviour
         {
             agentDestination = resourcePos;
         }
+
+        // Show UX feedback cursor animation
+        ShowCursorAnim(resourceClicked);
 
         agent.SetDestination(agentDestination);
     }
@@ -283,6 +290,14 @@ public class UnitMovement : MonoBehaviour
         return new Vector3(0, 0, 0);
     }
 
+    Vector3 GetScreenPosition()
+    {
+        Vector3 screenPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 20);
+        Vector3 screenPos = Camera.main.ScreenToWorldPoint(screenPoint);
+
+        return screenPos;
+    }
+
     bool IfVillager(Unit unit)
     {
         VillagerUnit tryVillager = unit as VillagerUnit;
@@ -297,26 +312,46 @@ public class UnitMovement : MonoBehaviour
         }
     }
 
-    void ShowCursorAnim(bool isMoveTarget)
+    void ShowCursorAnim(bool isResourceTarget)
     {
-        if (isMoveTarget) //Show move target
+        if (isResourceTarget) //Show task target
         {
-
-        } else // Show task target
+            StartCoroutine(TaskTargetAnim());
+        } else // Show move target
         {
-            StartCoroutine(taskTargetAnim());
+            MoveTargetAnim();
         }
     }
 
-    IEnumerator taskTargetAnim()
+    void MoveTargetAnim()
+    {
+        cm.GenerateMarker(agentDestination);
+    }
+
+    IEnumerator TaskTargetAnim()
     {
         bool targetHidden = false;
 
-        //instantiate prefab at mouse click
+        //instantiate prefab at mouse click location in world
+        GameObject targetAnim = Instantiate(GameObject.FindObjectOfType<NavCursorIcons>().taskTargetPrefab, GetScreenPosition(), Quaternion.identity, uip.transform);
+
+        float fadeFactor = GameObject.FindObjectOfType<NavCursorIcons>().taskAnimFadeFactor;
+        float animScale = GameObject.FindObjectOfType<NavCursorIcons>().taskAnimBaseScale;
+
+        targetAnim.transform.localScale = new Vector3(animScale, animScale, animScale);
+        targetAnim.transform.eulerAngles = new Vector3(0, 90, 270); //faces prefab towards camera
 
         while (!targetHidden)
         {
+            float lowerScale = fadeFactor * Time.deltaTime;
 
+            targetAnim.transform.localScale = new Vector3(targetAnim.transform.localScale.x - lowerScale, targetAnim.transform.localScale.y - lowerScale, targetAnim.transform.localScale.z - lowerScale);
+            
+            if (targetAnim.transform.localScale.x <= 0)
+            {
+                Destroy(targetAnim);
+                targetHidden = true;
+            }
             yield return new WaitForEndOfFrame();
         }
     }

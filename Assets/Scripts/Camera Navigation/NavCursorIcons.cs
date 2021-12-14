@@ -27,8 +27,10 @@ public class NavCursorIcons : MonoBehaviour
     [Tooltip("Cursor graphic for rotating camera with scroll wheel click")]
     public Texture2D rotate;
 
-    [Tooltip("Cursor animation for moving to a spot in the world")]
-    public GameObject moveTargetPrefab;
     [Tooltip("Cursor animation for moving to a task")]
     public GameObject taskTargetPrefab;
+    [Tooltip("Larger number results in quicker fade time for task cursor anim")]
+    [Range(1, 3)] public float taskAnimFadeFactor;
+    [Tooltip("Larger number results in larger graphic at start of instantiation")]
+    [Range(1, 5)] public float taskAnimBaseScale;
 }

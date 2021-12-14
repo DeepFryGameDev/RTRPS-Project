@@ -46,6 +46,7 @@ public class NavMovement : MonoBehaviour
     float scrollDist, minScrollClamp, maxScrollClamp;
 
     // for cursor management
+    NavCursorIcons nci;
     enum cursorModes
     {
         IDLE,
@@ -64,6 +65,9 @@ public class NavMovement : MonoBehaviour
 
     void Start()
     {
+        uip = GameObject.Find("UI").GetComponent<UIProcessing>();
+        nci = GameObject.Find("UI").GetComponent<NavCursorIcons>();
+
         Cursor.lockState = CursorLockMode.Confined;
 
         cursorMode = cursorModes.IDLE;
@@ -72,7 +76,6 @@ public class NavMovement : MonoBehaviour
         camTransform = Camera.main.transform;
         scrollDist = camTransform.position.y;
 
-        uip = GameObject.Find("UI").GetComponent<UIProcessing>();
         terrainMap = Terrain.activeTerrain;
     }
 
@@ -348,37 +351,37 @@ public class NavMovement : MonoBehaviour
         switch (cursorMode)
         {
             case cursorModes.IDLE:
-                cursorIcon = GetComponent<NavCursorIcons>().idle;
+                cursorIcon = nci.idle;
                 break;
             case cursorModes.PANUP:
-                cursorIcon = GetComponent<NavCursorIcons>().panUp;
+                cursorIcon = nci.panUp;
                 break;
             case cursorModes.PANDOWN:
-                cursorIcon = GetComponent<NavCursorIcons>().panDown;
+                cursorIcon = nci.panDown;
                 break;
             case cursorModes.PANLEFT:
-                cursorIcon = GetComponent<NavCursorIcons>().panLeft;
+                cursorIcon = nci.panLeft;
                 break;
             case cursorModes.PANRIGHT:
-                cursorIcon = GetComponent<NavCursorIcons>().panRight;
+                cursorIcon = nci.panRight;
                 break;
             case cursorModes.PANDIAGUL:
-                cursorIcon = GetComponent<NavCursorIcons>().panDiagUL;
+                cursorIcon = nci.panDiagUL;
                 break;
             case cursorModes.PANDIAGUR:
-                cursorIcon = GetComponent<NavCursorIcons>().panDiagUR;
+                cursorIcon = nci.panDiagUR;
                 break;
             case cursorModes.PANDIAGDL:
-                cursorIcon = GetComponent<NavCursorIcons>().panDiagDL;
+                cursorIcon = nci.panDiagDL;
                 break;
             case cursorModes.PANDIAGDR:
-                cursorIcon = GetComponent<NavCursorIcons>().panDiagDR;
+                cursorIcon = nci.panDiagDR;
                 break;
             case cursorModes.DRAG:
-                cursorIcon = GetComponent<NavCursorIcons>().panDrag;
+                cursorIcon = nci.panDrag;
                 break;
             case cursorModes.ROTATE:
-                cursorIcon = GetComponent<NavCursorIcons>().rotate;
+                cursorIcon = nci.rotate;
                 break;
         }
 
