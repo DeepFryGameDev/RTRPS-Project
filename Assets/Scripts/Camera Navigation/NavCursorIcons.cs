@@ -27,6 +27,13 @@ public class NavCursorIcons : MonoBehaviour
     [Tooltip("Cursor graphic for rotating camera with scroll wheel click")]
     public Texture2D rotate;
 
+    [Tooltip("Cursor graphic for hovering over a wood resource")]
+    public Texture2D woodResource;
+    [Tooltip("Cursor graphic for hovering over an ore resource")]
+    public Texture2D oreResource;
+    [Tooltip("Cursor graphic for hovering over a food resource")]
+    public Texture2D foodResource;
+
     [Tooltip("Cursor animation for moving to a task")]
     public GameObject taskTargetPrefab;
     [Tooltip("Larger number results in quicker fade time for task cursor anim")]

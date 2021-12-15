@@ -39,39 +39,21 @@ public class NavMovement : MonoBehaviour
     UIProcessing uip;
     float lastMouseX, lastMouseY;
 
-    // for rotation
-    bool isRotating;
-
     // for keeping camera above terrain
     float scrollDist, minScrollClamp, maxScrollClamp;
 
     // for cursor management
-    NavCursorIcons nci;
-    enum cursorModes
-    {
-        IDLE,
-        PANUP,
-        PANDOWN,
-        PANLEFT,
-        PANRIGHT,
-        PANDIAGUL,
-        PANDIAGUR,
-        PANDIAGDL,
-        PANDIAGDR,
-        DRAG,
-        ROTATE
-    }
-    cursorModes cursorMode;
+    CursorManager cm;
 
     void Start()
     {
         uip = GameObject.Find("UI").GetComponent<UIProcessing>();
-        nci = GameObject.Find("UI").GetComponent<NavCursorIcons>();
+        cm = GameObject.FindObjectOfType<CursorManager>();
 
         Cursor.lockState = CursorLockMode.Confined;
 
-        cursorMode = cursorModes.IDLE;
-        SetCursor();
+        cm.cursorMode = cursorModes.IDLE;
+        cm.SetCursor();
 
         camTransform = Camera.main.transform;
         scrollDist = camTransform.position.y;
@@ -98,8 +80,6 @@ public class NavMovement : MonoBehaviour
             KeepCameraAtTerrainHeight();
 
             KeepCameraInBounds();
-
-            SetCursor();
         }        
     }
 
@@ -130,7 +110,7 @@ public class NavMovement : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Mouse2))
         {
-            isRotating = true;
+            cm.cursorRotate = true;
         }
 
         if (Input.GetKey(KeyCode.Mouse2))
@@ -142,7 +122,7 @@ public class NavMovement : MonoBehaviour
 
         if (Input.GetKeyUp(KeyCode.Mouse2))
         {
-            isRotating = false;
+            cm.cursorRotate = false;
         }
     }
 
@@ -167,9 +147,9 @@ public class NavMovement : MonoBehaviour
         Vector3 pos = camTransform.position;
         bool movingZU = false, movingZD = false, movingXL = false, movingXR = false;
 
-        if (cursorMode != cursorModes.IDLE)
+        if (cm.cursorMode != cursorModes.IDLE)
         {
-            cursorMode = cursorModes.IDLE;
+            cm.cursorMode = cursorModes.IDLE;
         }
 
         float keyPanSpeed;
@@ -192,7 +172,7 @@ public class NavMovement : MonoBehaviour
         else if (Input.mousePosition.y >= Screen.height - panBorderSize && Input.mousePosition.y <= Screen.height)
         {
             movingZU = true;
-            cursorMode = cursorModes.PANUP;
+            cm.cursorMode = cursorModes.PANUP;
 
             float position = (Input.mousePosition.y - (Screen.height - panBorderSize));
             float speed = panFactor * panSpeed * (position / panBorderSize);
@@ -208,7 +188,7 @@ public class NavMovement : MonoBehaviour
         else if (Input.mousePosition.y <= panBorderSize && (Input.mousePosition.y - panBorderSize) >= -panBorderSize)
         {
             movingZD = true;
-            cursorMode = cursorModes.PANDOWN;
+            cm.cursorMode = cursorModes.PANDOWN;
 
             float position = (Input.mousePosition.y - panBorderSize);
             float speed = panFactor * panSpeed * Mathf.Abs(-position / -panBorderSize);
@@ -224,7 +204,7 @@ public class NavMovement : MonoBehaviour
         else if (Input.mousePosition.x >= Screen.width - panBorderSize && Input.mousePosition.x <= Screen.width)
         {
             movingXR = true;
-            cursorMode = cursorModes.PANRIGHT;
+            cm.cursorMode = cursorModes.PANRIGHT;
 
             float position = (Input.mousePosition.x - (Screen.width - panBorderSize));
             float speed = panFactor * panSpeed * (position / panBorderSize);
@@ -240,7 +220,7 @@ public class NavMovement : MonoBehaviour
         else if (Input.mousePosition.x <= panBorderSize && (Input.mousePosition.x - panBorderSize) >= -panBorderSize)
         {
             movingXL = true;
-            cursorMode = cursorModes.PANLEFT;
+            cm.cursorMode = cursorModes.PANLEFT;
 
             float position = (Input.mousePosition.x - panBorderSize);
             float speed = panFactor * panSpeed * Mathf.Abs(-position / -panBorderSize);
@@ -250,19 +230,19 @@ public class NavMovement : MonoBehaviour
 
         if (movingZU && movingXR)
         {
-            cursorMode = cursorModes.PANDIAGUR;
+            cm.cursorMode = cursorModes.PANDIAGUR;
         }
         else if (movingZU && movingXL)
         {
-            cursorMode = cursorModes.PANDIAGUL;
+            cm.cursorMode = cursorModes.PANDIAGUL;
         }
         else if (movingZD && movingXR)
         {
-            cursorMode = cursorModes.PANDIAGDR;
+            cm.cursorMode = cursorModes.PANDIAGDR;
         }
         else if (movingZD && movingXL)
         {
-            cursorMode = cursorModes.PANDIAGDL;
+            cm.cursorMode = cursorModes.PANDIAGDL;
         }
     }
 
@@ -297,10 +277,11 @@ public class NavMovement : MonoBehaviour
 
         if (Input.GetMouseButton(1) && !overUI)
         {
-            if (lastMouseX != Input.mousePosition.x && lastMouseY != Input.mousePosition.y && cursorMode != cursorModes.DRAG)
+            if (lastMouseX != Input.mousePosition.x && lastMouseY != Input.mousePosition.y && cm.cursorMode != cursorModes.DRAG)
             {
                 rightClickDrag = true;
-                cursorMode = cursorModes.DRAG;
+                cm.cursorDrag = true;
+                cm.cursorMode = cursorModes.DRAG;
             }
 
             float xDiff = (Mathf.Abs(lastMouseX - Input.mousePosition.x) * dragFactor);
@@ -331,61 +312,9 @@ public class NavMovement : MonoBehaviour
         if (Input.GetMouseButtonUp(1))
         {
             rightClickDrag = false;
+            cm.cursorDrag = false;
             overUI = false;
         }
-    }
-
-    void SetCursor()
-    {
-        Texture2D cursorIcon = null;
-
-        if (isRotating)
-        {
-            cursorMode = cursorModes.ROTATE;
-        }
-        else if (rightClickDrag)
-        {
-            cursorMode = cursorModes.DRAG;
-        }
-
-        switch (cursorMode)
-        {
-            case cursorModes.IDLE:
-                cursorIcon = nci.idle;
-                break;
-            case cursorModes.PANUP:
-                cursorIcon = nci.panUp;
-                break;
-            case cursorModes.PANDOWN:
-                cursorIcon = nci.panDown;
-                break;
-            case cursorModes.PANLEFT:
-                cursorIcon = nci.panLeft;
-                break;
-            case cursorModes.PANRIGHT:
-                cursorIcon = nci.panRight;
-                break;
-            case cursorModes.PANDIAGUL:
-                cursorIcon = nci.panDiagUL;
-                break;
-            case cursorModes.PANDIAGUR:
-                cursorIcon = nci.panDiagUR;
-                break;
-            case cursorModes.PANDIAGDL:
-                cursorIcon = nci.panDiagDL;
-                break;
-            case cursorModes.PANDIAGDR:
-                cursorIcon = nci.panDiagDR;
-                break;
-            case cursorModes.DRAG:
-                cursorIcon = nci.panDrag;
-                break;
-            case cursorModes.ROTATE:
-                cursorIcon = nci.rotate;
-                break;
-        }
-
-        Cursor.SetCursor(cursorIcon, Vector2.zero, CursorMode.Auto);
     }
 
     //Gets all event system raycast results of current mouse or touch position. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)

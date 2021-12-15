@@ -10,8 +10,10 @@ public class UnitMovement : MonoBehaviour
     [SerializeField] float rClickFrameCountFactor = 1;
     [Tooltip("Unit's navmesh base move speed to be calculated before factor.")]
     [SerializeField] [Range(1, 5)] float moveSpeedBaseline = 1;
-    [Tooltip("Unit's navmesh move speed is determined by the baseline + their movement rating * this value.")]
+    [Tooltip("Unit's navmesh move speed is determined by the baseline + their agility * agility factor + their movement rating * this value.")]
     [SerializeField] [Range(0.1f, 25)] float moveSpeedFactor = 10;
+    [Tooltip("Unit's navmesh move speed is determined by the baseline + their movement rating * move speed factor + their movement rating * this value.")]
+    [SerializeField] [Range(0.1f, 25)] float moveSpeedAgilityFactor = 3;
 
     // For resources
     float stopRadius;
@@ -34,11 +36,12 @@ public class UnitMovement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        selectedUnits = GetComponent<SelectedUnitProcessing>().selectedUnits;
-        uip = GameObject.Find("UI").GetComponent<UIProcessing>();
         rClickFrameCount = 0;
+
+        selectedUnits = GetComponent<SelectedUnitProcessing>().selectedUnits;
+        uip = GameObject.FindObjectOfType<UIProcessing>();
         tcol = Terrain.activeTerrain.GetComponent<TerrainCollider>();
-        cm = GameObject.Find("UI/MoveTargetAnim").GetComponent<CursorManager>();
+        cm = GameObject.FindObjectOfType<CursorManager>();
     }
 
     // Update is called once per frame
@@ -116,7 +119,13 @@ public class UnitMovement : MonoBehaviour
                             resourcePos = hit.transform.position;
                             resourcePos.y = Terrain.activeTerrain.SampleHeight(hit.transform.position);
 
-                            chosenResource = hit.transform.GetComponent<Resource>();
+                            if (hit.transform.GetComponent<Resource>())
+                            {
+                                chosenResource = hit.transform.GetComponent<Resource>();
+                            } else
+                            {
+                                chosenResource = hit.transform.parent.GetComponent<Resource>();
+                            }                            
                             stopRadius = chosenResource.interactionBounds;                            
                         }
                     } else
@@ -141,7 +150,7 @@ public class UnitMovement : MonoBehaviour
         SwitchNavMeshAgent(agent, false);
 
         // Ensure movement speed is set appropriately
-        agent.speed = moveSpeedBaseline + (agent.GetComponent<Unit>().GetMovement() * moveSpeedFactor);
+        agent.speed = GetMoveSpeed();
 
         // Set stopping distance for any resource clicked
         agent.stoppingDistance = stopRadius;
@@ -206,7 +215,7 @@ public class UnitMovement : MonoBehaviour
         SwitchNavMeshAgent(agent, false);
 
         // Ensure movement speed is set appropriately
-        agent.speed = (unit.GetMovement() * moveSpeedFactor);
+        agent.speed = GetMoveSpeed();
 
         // Set stopping distance for any resource clicked
         if (toDepot)
@@ -354,6 +363,11 @@ public class UnitMovement : MonoBehaviour
             }
             yield return new WaitForEndOfFrame();
         }
+    }
+
+    float GetMoveSpeed()
+    {
+        return (moveSpeedBaseline + (agent.GetComponent<Unit>().GetAgility() * moveSpeedAgilityFactor) + (agent.GetComponent<Unit>().GetMovement() * moveSpeedFactor));
     }
 
     //Gets all event system raycast results of current mouse or touch position. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)

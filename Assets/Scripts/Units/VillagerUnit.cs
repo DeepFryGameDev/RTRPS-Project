@@ -6,9 +6,10 @@ using UnityEngine.AI;
 public enum villagerClasses
 {
     VILLAGER,
-    HARVESTER,
     BUILDER,
     FARMER,
+    MINER,
+    LUMBERJACK,
     VENDOR
 }
 
@@ -23,6 +24,62 @@ public class VillagerUnit : Unit
     [HideInInspector] public Coroutine gatherTaskCoroutine;
 
     UnitMovement um;
+
+    void SetBaseAttributes()
+    {
+        usesEnergy = true;
+
+        if (villagerClass.Equals(villagerClasses.VILLAGER))
+        {
+            SetStrength(1);
+            SetStamina(1);
+            SetAgility(1);
+            SetLuck(1);
+            SetIntelligence(1);
+            SetWillpower(1);
+            SetMovement(1);
+        }
+        else if (villagerClass.Equals(villagerClasses.BUILDER))
+        {
+            SetStrength(3);
+            SetStamina(2);
+            SetAgility(1);
+            SetLuck(2);
+            SetIntelligence(1);
+            SetWillpower(2);
+            SetMovement(2);
+        }
+        else if (villagerClass.Equals(villagerClasses.LUMBERJACK))
+        {
+            SetStrength(4);
+            SetStamina(2);
+            SetAgility(1);
+            SetLuck(1);
+            SetIntelligence(2);
+            SetWillpower(1);
+            SetMovement(2);
+        }
+        else if (villagerClass.Equals(villagerClasses.MINER))
+        {
+            SetStrength(1);
+            SetStamina(4);
+            SetAgility(2);
+            SetLuck(1);
+            SetIntelligence(1);
+            SetWillpower(2);
+            SetMovement(2);
+        }
+        else if (villagerClass.Equals(villagerClasses.FARMER))
+        {
+            SetStrength(1);
+            SetStamina(2);
+            SetAgility(1);
+            SetLuck(1);
+            SetIntelligence(4);
+            SetWillpower(2);
+            SetMovement(2);
+        }
+    }
 
     private void Awake()
     {
@@ -48,13 +105,14 @@ public class VillagerUnit : Unit
     {
         while (gatherTaskIsActive)
         {
-            // Ensure resource still has any remaining.  If so, continue.  If not, set gatherTaskIsActive = false and skip this.
-            while (resourcesHolding < 10 && activeGatherTask.resource.resourcesRemaining > 0)
+            while (resourcesHolding < GetCarryLimit() && activeGatherTask.resource.resourcesRemaining > 0)
             {
                 yield return new WaitForSeconds(1);
                 AddResourcetoUnit();
+                Debug.Log(gameObject.name + " carrying " + activeGatherTask.resource.resourceType + " - " + resourcesHolding + "/" + GetCarryLimit());
             }
 
+            Debug.Log(gameObject.name + " en route to depot - " + activeGatherTask.depot.gameObject.name);
             um.ProcessMoveVillagerUnitInTask(true, this, activeGatherTask.resource, activeGatherTask.depot);
 
             bool isAtDepot = false;
@@ -64,22 +122,44 @@ public class VillagerUnit : Unit
                 yield return new WaitForEndOfFrame();
             }
 
+            yield return new WaitForSeconds(up.vilResourceDropoffTime); // simulates dropping resource off
             DropResourceOffAtDepot();
+
+            Debug.Log(gameObject.name + " dropped off resources at depot - " + activeGatherTask.depot.gameObject.name);
 
             if (activeGatherTask.resource.resourcesRemaining > 0) // Check if resource still has any left.  If Yes, wait 1 second, and move unit back to gather more.
             {
-                yield return new WaitForSeconds(1); // simulates dropping resource off
+                Debug.Log(gameObject.name + " going back for more - " + activeGatherTask.resource.gameObject.name);
+                
                 um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
-
                 bool isAtResource = false;
                 while (!isAtResource)
                 {
                     isAtResource = IsAtDest();
                     yield return new WaitForEndOfFrame();
                 }
-            } else
+            } else if (activeGatherTask.resource.resourcesRemaining == 0) // Ensure resource still has any remaining.  If so, continue.  If not, check for closest of same resource with some remaining, and start there
             {
-                gatherTaskIsActive = false;
+                activeGatherTask.resource = GetClosestResource(activeGatherTask.resource);
+
+                if (activeGatherTask.resource == null)
+                {
+                    Debug.Log(gameObject.name + " - No more resources remaining at activeGatherTask.resource, and no closest resource of same type found.  Stopping gather task");
+                    gatherTaskIsActive = false;
+                }
+                else
+                {
+                    Debug.Log(gameObject.name + " - No more resources remaining at activeGatherTask.resource, going to closest resource of same type - " + activeGatherTask.resource.gameObject.name);
+
+                    um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
+
+                    bool isAtResource = false;
+                    while (!isAtResource)
+                    {
+                        isAtResource = IsAtDest();
+                        yield return new WaitForEndOfFrame();
+                    }
+                }
             }            
         }
     }
@@ -113,14 +193,14 @@ public class VillagerUnit : Unit
 
     Depot GetClosestDepot(Resource resource)
     {
-        GameObject[] depots;
-        depots = GameObject.FindGameObjectsWithTag("Depot");
+        GameObject[] objs;
+        objs = GameObject.FindGameObjectsWithTag("Depot");
 
         GameObject closest = null;
         float distance = Mathf.Infinity;
         Vector3 tempPos = transform.position;
 
-        foreach (GameObject depot in depots)
+        foreach (GameObject depot in objs)
         {
             Vector3 diff = depot.transform.position - tempPos;
             if (diff.sqrMagnitude < distance)
@@ -131,6 +211,39 @@ public class VillagerUnit : Unit
         }
 
         return closest.GetComponent<Depot>();
+    }
+
+    Resource GetClosestResource(Resource resource)
+    {
+        GameObject[] objs;
+        objs = GameObject.FindGameObjectsWithTag("Resource");
+
+        Resource closest = null;
+        float distance = Mathf.Infinity;
+        Vector3 tempPos = transform.position;
+
+        foreach (GameObject resourceObj in objs)
+        {
+            Resource resourceToCheck;
+            if (resourceObj.GetComponent<Resource>())
+            {
+                resourceToCheck = resourceObj.GetComponent<Resource>();
+            } else
+            {
+                resourceToCheck = resourceObj.transform.parent.GetComponent<Resource>();
+            }
+            if (resourceToCheck.resourceType == activeGatherTask.resource.resourceType &&
+                resourceToCheck.resourcesRemaining > 0)
+            {
+                Vector3 diff = resourceObj.transform.position - tempPos;
+                if (diff.sqrMagnitude < distance)
+                {
+                    closest = resourceToCheck;
+                    distance = diff.sqrMagnitude;
+                }
+            }
+        }
+        return closest;
     }
 
     public void StopGathering()
@@ -150,41 +263,6 @@ public class VillagerUnit : Unit
         SetMP(GetMaxMP());
     }
 
-    void SetBaseAttributes()
-    {
-        usesEnergy = true;
-
-        if (villagerClass.Equals(villagerClasses.VILLAGER))
-        {
-            SetStrength(1);
-            SetStamina(1);
-            SetAgility(1);
-            SetLuck(1);
-            SetIntelligence(1);
-            SetWillpower(1);
-            SetMovement(1);
-        } else if (villagerClass.Equals(villagerClasses.BUILDER))
-        {
-            SetStrength(3);
-            SetStamina(2);
-            SetAgility(1);
-            SetLuck(2);
-            SetIntelligence(1);
-            SetWillpower(2);
-            SetMovement(2);
-        } else if (villagerClass.Equals(villagerClasses.FARMER))
-        {
-            SetStrength(1);
-            SetStamina(3);
-            SetAgility(2);
-            SetLuck(1);
-            SetIntelligence(2);
-            SetWillpower(2);
-            SetMovement(2);
-        }
-
-    }
-
     void SetMaxHP()
     {
         this.SetMaxHP(Mathf.RoundToInt((GetStamina() * up.vilHPFromStaminaFactor) + GetWillpower() * up.vilHPFromWillpowerFactor));
@@ -193,5 +271,21 @@ public class VillagerUnit : Unit
     void SetMaxMP()
     {
         this.SetMaxMP(Mathf.RoundToInt(GetStamina() * up.vilEnergyFromStaminaFactor));
+    }
+
+    int GetCarryLimit()
+    {
+        if (activeGatherTask.resource.resourceType == ResourceTypes.WOOD)
+        {
+            return Mathf.RoundToInt(GetStrength() * up.vilWoodCarryLimitFromStrengthFactor);
+        } else if (activeGatherTask.resource.resourceType == ResourceTypes.ORE)
+        {
+            return Mathf.RoundToInt(GetStamina() * up.vilOreCarryLimitFromStaminaFactor);
+        } else if (activeGatherTask.resource.resourceType == ResourceTypes.FOOD)
+        {
+            return Mathf.RoundToInt(GetIntelligence() * up.vilFoodCarryLimitFromIntelligenceFactor);
+        }
+
+        return 0;
     }
 }
