@@ -16,6 +16,15 @@ public class UIProcessing : MonoBehaviour
     [Tooltip("Set to unit action panel in UI")]
     [SerializeField] GameObject unitActionPanel;
 
+    [Tooltip("Set to icon used for wood resource in UI")]
+    public Sprite woodResourceIcon;
+    [Tooltip("Set to icon used for ore resource in UI")]
+    public Sprite oreResourceIcon;
+    [Tooltip("Set to icon used for food resource in UI")]
+    public Sprite foodResourceIcon;
+    [Tooltip("Set to icon used for gold resource in UI")]
+    public Sprite goldResourceIcon;
+
     List<Unit> selectedUnits;
     Unit currentUnit;
 
@@ -23,6 +32,11 @@ public class UIProcessing : MonoBehaviour
     void Start()
     {
         selectedUnits = FindObjectOfType<SelectedUnitProcessing>().selectedUnits;
+
+        transform.Find("Canvas/TopBar/ResourceSpacer/Lumber/Icon").GetComponent<Image>().sprite = woodResourceIcon;
+        transform.Find("Canvas/TopBar/ResourceSpacer/Ore/Icon").GetComponent<Image>().sprite = oreResourceIcon;
+        transform.Find("Canvas/TopBar/ResourceSpacer/Food/Icon").GetComponent<Image>().sprite = foodResourceIcon;
+        transform.Find("Canvas/TopBar/ResourceSpacer/Gold/Icon").GetComponent<Image>().sprite = goldResourceIcon;
     }
 
     // Update is called once per frame
@@ -134,6 +148,8 @@ public class UIProcessing : MonoBehaviour
 
     void SetBiome()
     {
+        currentUnit.GetCurrentBiomeTile();
+
         if (currentUnit.GetBiome())
         {
             GetTextComp(unitStatsPanel.transform.Find("BiomeText")).text = UppercaseFirst(currentUnit.GetBiome().biomeType.ToString());

@@ -22,16 +22,15 @@ public class UnitMovement : MonoBehaviour
 
     // For moving
     //float collisionCheckDistance = 3;
-    bool isMoving;
     Vector3 agentDestination;
 
     List<Unit> selectedUnits;
     UIProcessing uip;
     float rClickFrameCount;
-    NavMeshAgent agent;
     TerrainCollider tcol;
     Ray terrainRay;
     CursorManager cm;
+    GatherManager gm;
 
     // Start is called before the first frame update
     void Start()
@@ -39,9 +38,10 @@ public class UnitMovement : MonoBehaviour
         rClickFrameCount = 0;
 
         selectedUnits = GetComponent<SelectedUnitProcessing>().selectedUnits;
-        uip = GameObject.FindObjectOfType<UIProcessing>();
+        uip = FindObjectOfType<UIProcessing>();
         tcol = Terrain.activeTerrain.GetComponent<TerrainCollider>();
-        cm = GameObject.FindObjectOfType<CursorManager>();
+        cm = FindObjectOfType<CursorManager>();
+        gm = FindObjectOfType<GatherManager>();
     }
 
     // Update is called once per frame
@@ -49,13 +49,6 @@ public class UnitMovement : MonoBehaviour
     {
         RightClickFrameCounter();
         CheckForMoveUnit();
-
-        if (resourceClicked)
-        {
-            StopUnitMovementAtResource();
-        }
-
-        CheckForUnitCollision();
     }
 
     void RightClickFrameCounter()
@@ -145,30 +138,23 @@ public class UnitMovement : MonoBehaviour
 
     private void ProcessMoveUnit(Vector3 resourcePos)
     {
-        agent = selectedUnits[0].GetComponent<NavMeshAgent>();
-
-        SwitchNavMeshAgent(agent, false);
-
         // Ensure movement speed is set appropriately
-        agent.speed = GetMoveSpeed();
+        selectedUnits[0].agent.speed = GetMoveSpeed(selectedUnits[0]);
 
         // Set stopping distance for any resource clicked
-        agent.stoppingDistance = stopRadius;
+        selectedUnits[0].agent.stoppingDistance = stopRadius;
 
         // Stop any current navigation
-        agent.enabled = false;
-        agent.enabled = true;
-
-        // To check for collision (currently not being used)
-        isMoving = true;
+        selectedUnits[0].agent.enabled = false;
+        selectedUnits[0].agent.enabled = true;
 
         // Set villager active task to false as they are being moved manually
-        if (IfVillager(agent.GetComponent<Unit>()))
+        if (IfVillager(selectedUnits[0].GetComponent<Unit>()))
         {
-            if (agent.GetComponent<VillagerUnit>().gatherTaskIsActive)
+            if (selectedUnits[0].GetComponent<VillagerUnit>().gatherTaskIsActive)
             {
-                agent.GetComponent<VillagerUnit>().gatherTaskIsActive = false;
-                agent.GetComponent<VillagerUnit>().StopGathering();
+                selectedUnits[0].GetComponent<VillagerUnit>().gatherTaskIsActive = false;
+                selectedUnits[0].GetComponent<VillagerUnit>().StopGathering();
             }
         }
 
@@ -185,49 +171,33 @@ public class UnitMovement : MonoBehaviour
         // Show UX feedback cursor animation
         ShowCursorAnim(resourceClicked);
 
-        agent.SetDestination(agentDestination);
-    }
+        selectedUnits[0].agent.SetDestination(agentDestination);
 
-    void StopUnitMovementAtResource()
-    {
-        bool arrived = agent.remainingDistance <= agent.stoppingDistance;
-
-        if (arrived)
+        if (resourceClicked)
         {
-            resourceClicked = false;
-            isMoving = false;
+            StartCoroutine(selectedUnits[0].GetComponent<VillagerUnit>().PrepareGathering(chosenResource));
 
-            agent.isStopped = true;
-            agent.enabled = false;
-
-            SwitchNavMeshAgent(agent, true);
-
-            agent.transform.LookAt(chosenResource.transform);
-
-            agent.GetComponent<VillagerUnit>().BeginGathering(chosenResource);
-        }
+            if (chosenResource.GetComponent<Outline>())
+                StartCoroutine(gm.HighlightConfirmedResource(chosenResource));
+        }            
     }
 
     public void ProcessMoveVillagerUnitInTask(bool toDepot, Unit unit, Resource resource, Depot depot)
     {
-        agent = unit.GetComponent<NavMeshAgent>();
-
-        SwitchNavMeshAgent(agent, false);
+        // Reset agent's path
+        unit.agent.ResetPath();
 
         // Ensure movement speed is set appropriately
-        agent.speed = GetMoveSpeed();
+        unit.agent.speed = GetMoveSpeed(unit);
 
         // Set stopping distance for any resource clicked
         if (toDepot)
         {
-            agent.stoppingDistance = depot.interactionBounds;
+            unit.agent.stoppingDistance = depot.interactionBounds;
         } else
         {
-            agent.stoppingDistance = resource.interactionBounds;
+            unit.agent.stoppingDistance = resource.interactionBounds;
         }        
-
-        // To check for collision (currently not being used)
-        isMoving = true;
 
         // Move to where mouse is clicked (or resource if clicked)
         if (toDepot)
@@ -239,46 +209,9 @@ public class UnitMovement : MonoBehaviour
             agentDestination = resource.transform.position;
         }
 
-        agent.SetDestination(agentDestination);
-    }
+        //Debug.Log("Moving unit " + unit.gameObject.name + " - toDepot: " + toDepot);
 
-    void SwitchNavMeshAgent(NavMeshAgent agent, bool shouldBeObstacle)
-    {
-        if (shouldBeObstacle)
-        {
-            agent.GetComponent<NavMeshAgent>().enabled = false;
-            agent.GetComponent<NavMeshObstacle>().enabled = true;
-        } else
-        {
-            agent.GetComponent<NavMeshObstacle>().enabled = false;
-            agent.GetComponent<NavMeshAgent>().enabled = true;            
-        }
-    }
-
-    void CheckForUnitCollision()
-    {
-        if (isMoving)
-        {
-            /*RaycastHit[] hits;
-            Ray ray = new Ray(agent.transform.position, agentDestination);
-            hits = Physics.RaycastAll(ray, 1);
-
-            foreach (RaycastHit hit in hits)
-            {
-                if (hit.transform.gameObject.CompareTag("Unit"))
-                {
-                    Debug.Log("Reset path");
-                    Debug.Log(hit.transform.gameObject.name);
-
-                    // delete below after testing
-                    resourceClicked = false;
-                    isMoving = false;
-
-                    agent.isStopped = true;
-                    agent.enabled = false;
-                }
-            }*/
-        }
+        unit.agent.SetDestination(agentDestination);
     }
 
     Vector3 GetWorldPosition()
@@ -365,9 +298,9 @@ public class UnitMovement : MonoBehaviour
         }
     }
 
-    float GetMoveSpeed()
+    float GetMoveSpeed(Unit unit)
     {
-        return (moveSpeedBaseline + (agent.GetComponent<Unit>().GetAgility() * moveSpeedAgilityFactor) + (agent.GetComponent<Unit>().GetMovement() * moveSpeedFactor));
+        return (moveSpeedBaseline + (unit.GetAgility() * moveSpeedAgilityFactor) + (unit.GetComponent<Unit>().GetMovement() * moveSpeedFactor));
     }
 
     //Gets all event system raycast results of current mouse or touch position. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)

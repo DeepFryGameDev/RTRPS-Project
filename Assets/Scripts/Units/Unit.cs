@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Unit : MonoBehaviour
 {
@@ -11,7 +12,10 @@ public class Unit : MonoBehaviour
     [HideInInspector] public bool usesEnergy = false;
     [HideInInspector] public bool isSelected;
 
+    [HideInInspector] public NavMeshAgent agent;
+
     protected UnitProcessing up;
+    protected UnitMovement um;
 
     public int GetEXP() { return experience; }
     public void SetEXP(int exp) { experience = exp; }
@@ -53,19 +57,16 @@ public class Unit : MonoBehaviour
         SetLevel(1);
     }
 
-    private void Awake()
-    {
-        up = FindObjectOfType<UnitProcessing>();
-    }
-
     protected virtual void SetUnitProcessingVars()
     {
         SetExpToNextLevel(Mathf.RoundToInt(level * up.toNextLevelFactor));
 
         GetCurrentBiomeTile();
+
+        agent = GetComponent<NavMeshAgent>();
     }
 
-    void GetCurrentBiomeTile()
+    public void GetCurrentBiomeTile()
     {
         RaycastHit[] hits;
         Ray ray = new Ray(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), -transform.up);

@@ -59,16 +59,80 @@ public class TileGeneration : MonoBehaviour
             for (int z = zMin; z <= (zMin + 100); z++)
             {
                 float terrainHeight = Terrain.activeTerrain.SampleHeight(new Vector3(x, 0, z));
-                Debug.Log("Placing tile at " + x + ", " + terrainHeight + ", " + z);
-                GameObject tile = Instantiate(tilePrefab, new Vector3(x, terrainHeight, z), Quaternion.identity, parentForTiles) as GameObject;
+                Vector3 pos = new Vector3(x, terrainHeight, z);
+                Debug.Log("Placing tile at " + pos);
+                GameObject tile = Instantiate(tilePrefab, pos, Quaternion.identity, parentForTiles) as GameObject;
                 Debug.Log(tile.name);
                 tile.name = "Tile (" + x + ", " + z + ")";
                 tile.GetComponent<BiomeTile>().defaultX = x;
                 tile.GetComponent<BiomeTile>().defaultZ = z;
+
+                //Set biome type
+                switch (TerrainSurface.GetMainTexture(pos))
+                {
+                    case 3:
+                        Debug.Log(pos + " - Plains/Great Plains");
+                        tile.GetComponent<BiomeTile>().biomeType = BiomeTypes.PLAINS;
+                        tile.GetComponent<BiomeTile>().biomeName = "Great Plains";
+                        break;
+                    case 6:
+                        Debug.Log(pos + " - Beach/Newport Beach");
+                        tile.GetComponent<BiomeTile>().biomeType = BiomeTypes.BEACH;
+                        tile.GetComponent<BiomeTile>().biomeName = "Newport Beach";
+                        break;
+                    case 8:
+                        Debug.Log(pos + " - Ocean/Pacific Ocean");
+                        tile.GetComponent<BiomeTile>().biomeType = BiomeTypes.OCEAN;
+                        tile.GetComponent<BiomeTile>().biomeName = "Pacific Ocean";
+                        break;
+                }
             }
         }
 
         DebugMessage("GenerateTiles Completed successfully!");
+    }
+
+    [MenuItem("DeepFry/Tiles/Verify/Verify Tile Terrain")]
+    public static void VerifyTileTerrain()
+    {
+        DebugMessage("Verifying terrain is painted correctly");
+        int xSize = (int)Terrain.activeTerrain.terrainData.size.x;
+        int xMin = -(xSize / 2);
+        int xMax = (xSize / 2);
+
+        int zSize = (int)Terrain.activeTerrain.terrainData.size.y;
+        int zMin = -(zSize / 2);
+        int zMax = (zSize / 2);
+
+        DebugMessage("Loading parent 'BiomeTiles' for tiles");
+        Transform parentForTiles = GameObject.Find("BiomeTiles").transform;
+        if (parentForTiles == null)
+        {
+            throw new FileNotFoundException("Parent object not found - please check configuration");
+        }
+        else
+        {
+            DebugMessage("Parent found!");
+        }        
+
+        DebugMessage("Verifying Tiles");
+
+        // for testing
+        for (int x = xMin; x <= (xMin + 100); x++)
+        {
+            for (int z = zMin; z <= (zMin + 100); z++)
+            {
+                float terrainHeight = Terrain.activeTerrain.SampleHeight(new Vector3(x, 0, z));
+                Vector3 pos = new Vector3(x, terrainHeight, z);
+
+                if (TerrainSurface.GetMainTexture(pos) != 3 && TerrainSurface.GetMainTexture(pos) != 6 && TerrainSurface.GetMainTexture(pos) != 8)
+                {
+                    Debug.Log("Texture index for " + pos + " - " + TerrainSurface.GetMainTexture(pos));
+                }                
+            }
+        }
+
+        DebugMessage("VerifyTileTerrain Completed successfully!");
     }
 
     [MenuItem("DeepFry/Tiles/Delete/All Tiles")]
@@ -192,51 +256,7 @@ public class TileGeneration : MonoBehaviour
         }
 
         DebugMessage("RealignTiles Completed successfully!");
-    }
-
-    [MenuItem("DeepFry/Tiles/Organize/OrganizeAllTilesByBiome")]
-    public static void OrganizeTiles()
-    {
-        DebugMessage("Organizing tiles");
-        DebugMessage("Loading parent 'BiomeTiles' for tiles");
-        Transform parentForTiles = GameObject.Find("BiomeTiles").transform;
-        Transform parentForOceanTiles = GameObject.Find("BiomeTiles").transform.Find("OceanTiles").transform;
-        Transform parentForBeachTiles = GameObject.Find("BiomeTiles").transform.Find("BeachTiles").transform;
-        Transform parentForPlainsTiles = GameObject.Find("BiomeTiles").transform.Find("PlainsTiles").transform;
-        if (parentForTiles == null)
-        {
-            throw new FileNotFoundException("Parent object not found - please check configuration");
-        }
-        else
-        {
-            DebugMessage("Parent found! Organizing Tiles.");
-        }
-
-        foreach (Transform child in parentForTiles)
-        {
-            Debug.Log("working on child " + child.gameObject.name);
-
-            if (child.GetComponent<BiomeTile>() == null)
-            {
-                continue;
-            } else
-            {
-                if (child.GetComponent<BiomeTile>().biomeType == BiomeTypes.OCEAN)
-                {
-                    child.SetParent(parentForOceanTiles);
-                }
-                else if (child.GetComponent<BiomeTile>().biomeType == BiomeTypes.BEACH)
-                {
-                    child.SetParent(parentForBeachTiles);
-                }
-                else if (child.GetComponent<BiomeTile>().biomeType == BiomeTypes.PLAINS)
-                {
-                    child.SetParent(parentForPlainsTiles);
-                }
-            }
-        }
-    }
-
+    }  
 
     [MenuItem("DeepFry/Tiles/Select/SelectAllOceanTiles")]
     public static void SelectAllOceanTiles()

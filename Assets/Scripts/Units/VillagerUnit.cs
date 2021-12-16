@@ -23,7 +23,7 @@ public class VillagerUnit : Unit
     [HideInInspector] public GatherTask activeGatherTask = new GatherTask();
     [HideInInspector] public Coroutine gatherTaskCoroutine;
 
-    UnitMovement um;
+    GatherManager gm;
 
     void SetBaseAttributes()
     {
@@ -85,9 +85,36 @@ public class VillagerUnit : Unit
     {
         up = FindObjectOfType<UnitProcessing>();
         um = FindObjectOfType<UnitMovement>();
+        gm = FindObjectOfType<GatherManager>();
+
         SetUnitProcessingVars();
 
         UnitAwake();
+    }
+
+    public IEnumerator PrepareGathering(Resource resource)
+    {
+        ResourceTypes tempResourceType = resource.resourceType;
+        activeGatherTask.resource = resource;
+
+        bool isAtResource = false;
+        while (!isAtResource)
+        {
+            yield return new WaitForEndOfFrame();
+            if (!agent.pathPending)
+            {
+                isAtResource = IsAtDest();
+            }
+        }
+
+        if (resource == null)
+            resource = GetClosestResource(tempResourceType);
+
+        StopAgentMovement();
+
+        transform.LookAt(resource.transform);
+
+        BeginGathering(resource);        
     }
 
     public void BeginGathering(Resource resource)
@@ -95,70 +122,112 @@ public class VillagerUnit : Unit
         resource.unitsInteracting.Add(this);
         gatherTaskIsActive = true;
 
-        activeGatherTask.resource = resource;
         activeGatherTask.depot = GetClosestDepot(resource);
 
         gatherTaskCoroutine = StartCoroutine(GatherResource());
     }
 
-    public IEnumerator GatherResource()
+    IEnumerator GatherResource()
     {
         while (gatherTaskIsActive)
         {
+            if (activeGatherTask.resource.resourcesRemaining == 0) //someone else has already depleted these resources, but this unit is already en route
+            {
+                activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
+
+                um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
+
+                bool isAtResource = false;
+                while (!isAtResource)
+                {
+                    yield return new WaitForEndOfFrame();
+                    if (!agent.pathPending)
+                    {
+                        if (activeGatherTask.resource == null && resourcesHolding == 0)
+                        {
+                            activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
+                            um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
+                        }
+                        isAtResource = IsAtDest();
+                    }
+                }
+                StopAgentMovement();
+            }
+
             while (resourcesHolding < GetCarryLimit() && activeGatherTask.resource.resourcesRemaining > 0)
             {
                 yield return new WaitForSeconds(1);
                 AddResourcetoUnit();
-                Debug.Log(gameObject.name + " carrying " + activeGatherTask.resource.resourceType + " - " + resourcesHolding + "/" + GetCarryLimit());
+                //Debug.Log(gameObject.name + " carrying " + activeGatherTask.resource.resourceType + " - " + resourcesHolding + "/" + GetCarryLimit());
+                StartCoroutine(gm.ShowResourceGatherUX(this.gameObject, activeGatherTask.resource.resourceType, 1, true));
             }
-
-            Debug.Log(gameObject.name + " en route to depot - " + activeGatherTask.depot.gameObject.name);
+            
             um.ProcessMoveVillagerUnitInTask(true, this, activeGatherTask.resource, activeGatherTask.depot);
 
             bool isAtDepot = false;
             while (!isAtDepot)
             {
-                isAtDepot = IsAtDest();
                 yield return new WaitForEndOfFrame();
+                if (!agent.pathPending)
+                {
+                    if (activeGatherTask.resource == null && resourcesHolding == 0)
+                    {
+                        activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
+                        um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
+                    }
+                    isAtDepot = IsAtDest();
+                }
             }
+            StopAgentMovement();
 
             yield return new WaitForSeconds(up.vilResourceDropoffTime); // simulates dropping resource off
             DropResourceOffAtDepot();
 
-            Debug.Log(gameObject.name + " dropped off resources at depot - " + activeGatherTask.depot.gameObject.name);
-
-            if (activeGatherTask.resource.resourcesRemaining > 0) // Check if resource still has any left.  If Yes, wait 1 second, and move unit back to gather more.
-            {
-                Debug.Log(gameObject.name + " going back for more - " + activeGatherTask.resource.gameObject.name);
-                
+            if (activeGatherTask.resource != null) // Check if resource still has any left (object hasn't been destroyed).  If Yes, wait 1 second, and move unit back to gather more.
+            {                
                 um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
                 bool isAtResource = false;
                 while (!isAtResource)
                 {
-                    isAtResource = IsAtDest();
                     yield return new WaitForEndOfFrame();
+                    if (!agent.pathPending)
+                    {
+                        if (activeGatherTask.resource == null && resourcesHolding == 0)
+                        {
+                            activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
+                            um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
+                        }
+                        isAtResource = IsAtDest();
+                    }
                 }
-            } else if (activeGatherTask.resource.resourcesRemaining == 0) // Ensure resource still has any remaining.  If so, continue.  If not, check for closest of same resource with some remaining, and start there
+                StopAgentMovement();
+            } else if (activeGatherTask.resource == null) // Ensure resource still has any remaining (object has been destroyed).  If so, continue.  If not, check for closest of same resource with some remaining, and start there
             {
-                activeGatherTask.resource = GetClosestResource(activeGatherTask.resource);
+                activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
 
                 if (activeGatherTask.resource == null)
                 {
-                    Debug.Log(gameObject.name + " - No more resources remaining at activeGatherTask.resource, and no closest resource of same type found.  Stopping gather task");
                     gatherTaskIsActive = false;
                 }
                 else
                 {
-                    Debug.Log(gameObject.name + " - No more resources remaining at activeGatherTask.resource, going to closest resource of same type - " + activeGatherTask.resource.gameObject.name);
-
                     um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
 
                     bool isAtResource = false;
                     while (!isAtResource)
                     {
-                        isAtResource = IsAtDest();
                         yield return new WaitForEndOfFrame();
+                        if (!agent.pathPending)
+                        {
+                            if (activeGatherTask.resource == null && resourcesHolding == 0)
+                            {
+                                activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
+                                um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
+                            }
+                            isAtResource = IsAtDest();
+                        } 
                     }
+                    StopAgentMovement();
                 }
             }            
         }
@@ -183,6 +252,9 @@ public class VillagerUnit : Unit
             GameObject.FindObjectOfType<PlayerResources>().food += resourcesHolding;
         }
 
+        StartCoroutine(gm.ShowResourceGatherUX(activeGatherTask.depot.gameObject, activeGatherTask.resource.resourceType, resourcesHolding, true));
+        StartCoroutine(gm.ShowResourceGatherUX(this.gameObject, activeGatherTask.resource.resourceType, resourcesHolding, false));
+
         resourcesHolding = 0;
     }
 
@@ -196,24 +268,40 @@ public class VillagerUnit : Unit
         GameObject[] objs;
         objs = GameObject.FindGameObjectsWithTag("Depot");
 
+        depotTypes chosenDepotType = new depotTypes();
+
+        if (activeGatherTask.resource.resourceType == ResourceTypes.FOOD)
+        {
+            chosenDepotType = depotTypes.FOOD;
+        } else if (activeGatherTask.resource.resourceType == ResourceTypes.ORE)
+        {
+            chosenDepotType = depotTypes.ORE;
+        } else if (activeGatherTask.resource.resourceType == ResourceTypes.WOOD)
+        {
+            chosenDepotType = depotTypes.WOOD;
+        }
+
         GameObject closest = null;
         float distance = Mathf.Infinity;
         Vector3 tempPos = transform.position;
 
         foreach (GameObject depot in objs)
         {
-            Vector3 diff = depot.transform.position - tempPos;
-            if (diff.sqrMagnitude < distance)
+            if (depot.GetComponent<Depot>().depotType == depotTypes.ALL || depot.GetComponent<Depot>().depotType == chosenDepotType)
             {
-                closest = depot;
-                distance = diff.sqrMagnitude;
+                Vector3 diff = depot.transform.position - tempPos;
+                if (diff.sqrMagnitude < distance)
+                {
+                    closest = depot;
+                    distance = diff.sqrMagnitude;
+                }
             }
         }
 
         return closest.GetComponent<Depot>();
     }
 
-    Resource GetClosestResource(Resource resource)
+    Resource GetClosestResource(ResourceTypes resourceType)
     {
         GameObject[] objs;
         objs = GameObject.FindGameObjectsWithTag("Resource");
@@ -232,7 +320,7 @@ public class VillagerUnit : Unit
             {
                 resourceToCheck = resourceObj.transform.parent.GetComponent<Resource>();
             }
-            if (resourceToCheck.resourceType == activeGatherTask.resource.resourceType &&
+            if (resourceToCheck.resourceType == resourceType &&
                 resourceToCheck.resourcesRemaining > 0)
             {
                 Vector3 diff = resourceObj.transform.position - tempPos;
@@ -244,6 +332,13 @@ public class VillagerUnit : Unit
             }
         }
         return closest;
+    }
+
+    void StopAgentMovement()
+    {
+        agent.isStopped = true;
+        agent.enabled = false;
+        agent.enabled = true;
     }
 
     public void StopGathering()
