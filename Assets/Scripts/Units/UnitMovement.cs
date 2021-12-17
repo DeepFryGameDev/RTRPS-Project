@@ -134,35 +134,43 @@ public class UnitMovement : MonoBehaviour
                 // If able to move, gather world position and move
                 if (canMove)
                 {
-                    Vector3 destination = new Vector3();
-
                     if (resourceClicked)
                     {
-                        destination = resourcePos;
+                        // Show UX feedback cursor animation
+                        ShowCursorAnim(true);
+
+                        if (chosenResource.GetComponent<Outline>())
+                            StartCoroutine(gm.HighlightConfirmedResource(chosenResource));
+
+                        foreach (Unit unit in selectedUnits)
+                        {
+                            PrepareUnitForGathering(unit);
+                        }
                     } else
                     {
-                        destination = GetWorldPosition();
-                    }
+                        // Show UX feedback cursor animation
+                        ShowCursorAnim(false);
 
-                    foreach (Unit unit in selectedUnits)
-                    {
-                        ProcessMoveUnit(unit, destination);
-                    }                    
+                        foreach (Unit unit in selectedUnits)
+                        {
+                            ProcessMoveUnit(unit, GetWorldPosition());
+                        }
+                    }               
                 }
             }
         }
     }
 
-    private void ProcessMoveUnit(Unit unit, Vector3 destPos) // initial movement, including if moving to a resource
+    void PrepareUnitForGathering(Unit unit)
     {
         // Ensure movement speed is set appropriately
         unit.agent.speed = GetMoveSpeed(unit);
 
         // Set stopping distance for any resource clicked (or if multiple units, they will stop a bit further away to avoid bumping into eachother)
-        if (stopRadius == 0) // no resource clicked
+        if (selectedUnits.Count == 1)
         {
-            unit.agent.stoppingDistance = selectedUnits.Count * moveBumpFactor;
-        } else // resource clicked
+            unit.agent.stoppingDistance = stopRadius;
+        } else
         {
             unit.agent.stoppingDistance = stopRadius + (selectedUnits.Count * resourceBumpFactor);
         }        
@@ -181,21 +189,35 @@ public class UnitMovement : MonoBehaviour
             }
         }
 
-        // Move to where mouse is clicked (or resource if clicked)
-        agentDestination = destPos;
+        unit.GetComponent<VillagerUnit>().PrepareGather(chosenResource);
+    }
 
-        // Show UX feedback cursor animation
-        ShowCursorAnim(resourceClicked);
+    private void ProcessMoveUnit(Unit unit, Vector3 destPos) // initial movement, including if moving to a resource
+    {
+        // Ensure movement speed is set appropriately
+        unit.agent.speed = GetMoveSpeed(unit);
 
-        unit.agent.SetDestination(agentDestination);
-
-        if (resourceClicked)
+        // Set stopping distance if multiple units, so they will stop a bit further away to avoid bumping into eachother
+        if (selectedUnits.Count > 1)
         {
-            StartCoroutine(unit.GetComponent<VillagerUnit>().PrepareGathering(chosenResource));
+            unit.agent.stoppingDistance = selectedUnits.Count * moveBumpFactor;
+        }        
 
-            if (chosenResource.GetComponent<Outline>())
-                StartCoroutine(gm.HighlightConfirmedResource(chosenResource));
+        // Stop any current navigation
+        unit.agent.enabled = false;
+        unit.agent.enabled = true;
+
+        // Set villager active task to false as they are being moved manually
+        if (IfVillager(unit.GetComponent<Unit>()))
+        {
+            if (unit.GetComponent<VillagerUnit>().gatherTaskIsActive)
+            {
+                unit.GetComponent<VillagerUnit>().gatherTaskIsActive = false;
+                unit.GetComponent<VillagerUnit>().StopGathering();
+            }
         }
+
+        unit.agent.SetDestination(destPos);
     }
 
     public void ProcessMoveVillagerUnitInTask(bool toDepot, Unit unit, Resource resource, Depot depot)

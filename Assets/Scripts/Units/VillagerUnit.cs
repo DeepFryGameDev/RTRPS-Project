@@ -25,6 +25,7 @@ public class VillagerUnit : Unit
 
     GatherManager gm;
     GatherPhases gatherPhase;
+    ResourceTypes originalResourceType;
 
     void SetBaseAttributes()
     {
@@ -93,193 +94,146 @@ public class VillagerUnit : Unit
         UnitAwake();
     }
 
-    void prototyping()
+    public void PrepareGather(Resource resource)
     {
-        /*
-         * Preparation:
-         * set activeGatherTask.resource to the resource requested
-         * set gatherPhase = SEEKINGRESOURCE
-         * 
-         * 
-         * 
-         * GatherResource coroutine loop should use the 4 modes from gatherPhase to be run while gatherTaskIsActive:
-         * 
-         * 1. SEEKINGRESOURCE
-         * 
-         * confirm chosen resource is not null.  If at any point it is null during this phase, the closest resource of same type should be set to new chosen resource
-         * if carryLimit has not been reached - move to chosen resource, while continuing to check it is not null.  If it is, run above logic and loop back to here
-         * if closest resource turns null at any point, all resources on the map have been depleted, and the coroutine can be exit by setting gatherTaskIsActive to false and using yield break.
-         * 
-         * once in range of chosen resource, set gatherPhase to GATHERING:
-         * 2. GATHERING
-         * 
-         * stop moving
-         * look at resource
-         * while carry limit has not been reached:
-         * gather from it once
-         * if resources still remain on this resource, continue to gather from it
-         * if resources on this are gone (resource = null), set chosen resource to closest resource of this type and set mode back to SEEKINGRESOURCE.
-         * if closest resource type is null (no more resources of this type available) set bool 'resourcesGoneButStillCarrying' to true
-         * 
-         * once carry limit has been reached (or resourcesGoneButStillCarrying is true), set gatherPhase to MOVETODEPOT:
-         * 3. MOVETODEPOT 
-         * 
-         * Find closest depot, and move to it
-         * while not in range of closest depot:
-         * move to depot.  If at any point during this phase the depot is null (player or enemy destroyed it), search for closest depot again and continue moving
-         * 
-         * 
-         * Once in range of depot, set gatherPhase to DEPOSITING:
-         * 4. DEPOSITING
-         * 
-         * stop moving
-         * look at depot
-         * deposit resources into the chosen depot
-         * 
-         * if resourcesGoneButStillCarrying is true, exit from the coroutine by setting gatherTaskIsActive to false and using yield break.
-         * 
-         * if this point is reached, loop back to the beginning phase - (line 106), SEEKINGRESOURCE
-         */
-    }
-
-    public IEnumerator PrepareGathering(Resource resource)
-    {
-        ResourceTypes tempResourceType = resource.resourceType;
+        // set activeGatherTask.resource to the resource requested
         activeGatherTask.resource = resource;
+        originalResourceType = resource.resourceType;
 
-        bool isAtResource = false;
-        while (!isAtResource)
-        {
-            yield return new WaitForEndOfFrame();
-            if (!agent.pathPending)
-            {
-                isAtResource = IsAtDest();
-            }
-        }
+        // set gatherPhase = SEEKINGRESOURCE
+        gatherPhase = GatherPhases.SEEKINGRESOURCE;
 
-        if (resource == null)
-            resource = GetClosestResource(tempResourceType);
-
-        StopAgentMovement();
-
-        transform.LookAt(resource.transform);
-
-        BeginGathering(resource);        
-    }
-
-    public void BeginGathering(Resource resource)
-    {
-        resource.unitsInteracting.Add(this);
+        // turn on gatherTaskIsActive
         gatherTaskIsActive = true;
 
-        activeGatherTask.depot = GetClosestDepot(resource);
-
+        // start GatherResource
         gatherTaskCoroutine = StartCoroutine(GatherResource());
-    }
+    }    
 
     IEnumerator GatherResource()
     {
         while (gatherTaskIsActive)
         {
-            if (activeGatherTask.resource.resourcesRemaining == 0) //someone else has already depleted these resources, but this unit is already en route
+            switch (gatherPhase)
             {
-                activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
+                case GatherPhases.SEEKINGRESOURCE:
+                    bool changedResource = false;
 
-                um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
-
-                bool isAtResource = false;
-                while (!isAtResource)
-                {
-                    yield return new WaitForEndOfFrame();
-                    if (!agent.pathPending)
+                    if (resourcesHolding == GetCarryLimit()) // if carryLimit has been reached
                     {
-                        if (activeGatherTask.resource == null && resourcesHolding == 0)
-                        {
-                            activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
-                            um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
-                        }
-                        isAtResource = IsAtDest();
+                        gatherPhase = GatherPhases.MOVETODEPOT; // set gatherPhase to MOVETODEPOT (this would occur if player attempts to send unit to gather if they have already reached carryLimit)
+                        continue;
                     }
-                }
-                StopAgentMovement();
+
+                    if (activeGatherTask.resource == null) // confirm chosen resource is not null.
+                    {
+                        if (GetClosestResource() == null) // if closest resource turns null at any point
+                        {
+                            // all resources on the map have been depleted, and the coroutine can be exit by setting gatherTaskIsActive to false and using yield break.
+                            gatherTaskIsActive = false;
+                            yield break;
+                        } else
+                        {   // If at any point it is null during this phase, but there are still resources available, the closest resource of same type should be set to new chosen resource
+                            activeGatherTask.resource = GetClosestResource();
+                            changedResource = true;
+                        }                        
+                    }
+
+                    if (activeGatherTask.resource.unitsInteracting.Count == activeGatherTask.resource.maxUnitsGathering) // If at any point there are x units already on the resource(GatherManager.maxUnitsGatheringFromOneResource.Count)
+                    {
+                        activeGatherTask.resource = GetClosestResource(); // set the closest resource of same type
+                        changedResource = true;
+                    }
+
+                    if (resourcesHolding < GetCarryLimit() && (changedResource || agent.velocity == Vector3.zero)) // if carryLimit has not been reached
+                    {
+                        // move to chosen resource
+                        um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, null);
+                    }
+
+                    if (!agent.pathPending && IsAtDest(activeGatherTask.resource.transform)) // once in range of chosen resource
+                    {
+                        StopAgentMovement(); // stop moving
+
+                        activeGatherTask.resource.unitsInteracting.Add(this); // add unit to resource's unitsInteracting
+
+                        gatherPhase = GatherPhases.GATHERING; // set gatherPhase to GATHERING
+                    }
+
+                    break;
+            case GatherPhases.GATHERING:
+
+                    if (resourcesHolding < GetCarryLimit() && (activeGatherTask.resource == null || activeGatherTask.resource.resourcesRemaining == 0)) // if resources on this are gone and can carry more
+                    {
+                        // set mode back to SEEKINGRESOURCE
+                        gatherPhase = GatherPhases.SEEKINGRESOURCE;
+                        continue;
+                    }
+
+                    transform.LookAt(activeGatherTask.resource.transform); // look at resource (in case it was moved between gathering)
+
+                    if (resourcesHolding < GetCarryLimit() && activeGatherTask.resource.resourcesRemaining > 0) // while carry limit has not been reached
+                    {
+                        // gather once
+                        yield return new WaitForSeconds(1); //simulates time gathering - this will be updated to take into account unit's stats
+                        AddResourcetoUnit(); // adds resource to unit
+                        StartCoroutine(gm.ShowResourceGatherUX(this.gameObject, activeGatherTask.resource.resourceType, 1, true)); // show UX feedback
+
+                        //Debug.Log(gameObject.name + " carrying " + activeGatherTask.resource.resourceType + " - " + resourcesHolding + "/" + GetCarryLimit());
+                    }
+
+                    if (resourcesHolding == GetCarryLimit()) // once carry limit has been reached
+                    {
+                        // remove unit from resource's unitsInteracting
+                        activeGatherTask.resource.unitsInteracting.Remove(this);
+
+                        // set gatherPhase to MOVETODEPOT:
+                        gatherPhase = GatherPhases.MOVETODEPOT;
+                    }
+
+                    break;
+            case GatherPhases.MOVETODEPOT:
+                    bool changedDepot = false;
+
+                    if (activeGatherTask.depot != GetClosestDepot(activeGatherTask.resource)) // If at any point during this phase the depot is null (player or enemy destroyed it)
+                    {
+                        activeGatherTask.depot = GetClosestDepot(activeGatherTask.resource); // Set closest depot
+                        changedDepot = true;
+                    }
+
+                    if (agent.velocity == Vector3.zero || changedDepot) // if haven't started moving to depot or depot was changed
+                    {
+                        // move to depot
+                        um.ProcessMoveVillagerUnitInTask(true, this, activeGatherTask.resource, activeGatherTask.depot);
+                    }
+
+                    if (!agent.pathPending && IsAtDest(activeGatherTask.depot.transform)) // once in range of depot
+                    {
+                        StopAgentMovement(); // stop moving
+
+                        gatherPhase = GatherPhases.DEPOSITING; // set gatherPhase to DEPOSITING
+                    }
+
+                    break;
+            case GatherPhases.DEPOSITING:
+                    transform.LookAt(activeGatherTask.depot.transform); // look at depot
+
+                    yield return new WaitForSeconds(up.vilResourceDropoffTime); // simulates dropping resource off
+                    DropResourceOffAtDepot(); // deposit resources into the chosen depot
+
+                    if ((activeGatherTask.resource == null || activeGatherTask.resource.resourcesRemaining == 0) && GetClosestResource() == null) // if no more resources available, exit from the coroutine by setting gatherTaskIsActive to false and using yield break.
+                    {
+                        gatherTaskIsActive = false;
+                        yield break;
+                    } else
+                    {
+                        gatherPhase = GatherPhases.SEEKINGRESOURCE; // if this point is reached, loop back to the beginning phase - SEEKINGRESOURCE
+                    }
+
+                    break;
             }
 
-            while (resourcesHolding < GetCarryLimit() && activeGatherTask.resource.resourcesRemaining > 0)
-            {
-                yield return new WaitForSeconds(1);
-                AddResourcetoUnit();
-                //Debug.Log(gameObject.name + " carrying " + activeGatherTask.resource.resourceType + " - " + resourcesHolding + "/" + GetCarryLimit());
-                StartCoroutine(gm.ShowResourceGatherUX(this.gameObject, activeGatherTask.resource.resourceType, 1, true));
-            }
-            
-            um.ProcessMoveVillagerUnitInTask(true, this, activeGatherTask.resource, activeGatherTask.depot);
-
-            bool isAtDepot = false;
-            while (!isAtDepot)
-            {
-                yield return new WaitForEndOfFrame();
-                if (!agent.pathPending)
-                {
-                    if (activeGatherTask.resource == null && resourcesHolding == 0)
-                    {
-                        activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
-                        um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
-                    }
-                    isAtDepot = IsAtDest();
-                }
-            }
-            StopAgentMovement();
-
-            yield return new WaitForSeconds(up.vilResourceDropoffTime); // simulates dropping resource off
-            DropResourceOffAtDepot();
-
-            if (activeGatherTask.resource != null) // Check if resource still has any left (object hasn't been destroyed).  If Yes, wait 1 second, and move unit back to gather more.
-            {                
-                um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
-                bool isAtResource = false;
-                while (!isAtResource)
-                {
-                    yield return new WaitForEndOfFrame();
-                    if (!agent.pathPending)
-                    {
-                        if (activeGatherTask.resource == null && resourcesHolding == 0)
-                        {
-                            activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
-                            um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
-                        }
-                        isAtResource = IsAtDest();
-                    }
-                }
-                StopAgentMovement();
-            } else if (activeGatherTask.resource == null) // Ensure resource still has any remaining (object has been destroyed).  If so, continue.  If not, check for closest of same resource with some remaining, and start there
-            {
-                activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
-
-                if (activeGatherTask.resource == null)
-                {
-                    gatherTaskIsActive = false;
-                }
-                else
-                {
-                    um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
-
-                    bool isAtResource = false;
-                    while (!isAtResource)
-                    {
-                        yield return new WaitForEndOfFrame();
-                        if (!agent.pathPending)
-                        {
-                            if (activeGatherTask.resource == null && resourcesHolding == 0)
-                            {
-                                activeGatherTask.resource = GetClosestResource(activeGatherTask.resource.resourceType);
-                                um.ProcessMoveVillagerUnitInTask(false, this, activeGatherTask.resource, activeGatherTask.depot);
-                            }
-                            isAtResource = IsAtDest();
-                        } 
-                    }
-                    StopAgentMovement();
-                }
-            }            
+            yield return new WaitForEndOfFrame();
         }
     }
 
@@ -308,9 +262,17 @@ public class VillagerUnit : Unit
         resourcesHolding = 0;
     }
 
-    bool IsAtDest()
+    bool IsAtDest(Transform dest)
     {
-        return GetComponent<NavMeshAgent>().remainingDistance <= GetComponent<NavMeshAgent>().stoppingDistance;
+        bool atDest = false;
+
+        if (Vector3.Distance(transform.position, dest.position) <= GetComponent<NavMeshAgent>().stoppingDistance &&
+           GetComponent<NavMeshAgent>().remainingDistance <= GetComponent<NavMeshAgent>().stoppingDistance)
+        {
+            atDest = true;
+        }
+
+        return atDest;
     }
 
     Depot GetClosestDepot(Resource resource)
@@ -351,7 +313,7 @@ public class VillagerUnit : Unit
         return closest.GetComponent<Depot>();
     }
 
-    Resource GetClosestResource(ResourceTypes resourceType)
+    Resource GetClosestResource()
     {
         GameObject[] objs;
         objs = GameObject.FindGameObjectsWithTag("Resource");
@@ -370,8 +332,10 @@ public class VillagerUnit : Unit
             {
                 resourceToCheck = resourceObj.transform.parent.GetComponent<Resource>();
             }
-            if (resourceToCheck.resourceType == resourceType &&
-                resourceToCheck.resourcesRemaining > 0)
+
+            if (resourceToCheck.resourceType == originalResourceType &&
+                resourceToCheck.resourcesRemaining > 0 &&
+                resourceToCheck != activeGatherTask.resource)
             {
                 Vector3 diff = resourceObj.transform.position - tempPos;
                 if (diff.sqrMagnitude < distance)

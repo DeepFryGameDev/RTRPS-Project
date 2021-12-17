@@ -15,8 +15,10 @@ public class Resource : MonoBehaviour
     public float interactionBounds;
     public ResourceTypes resourceType;
     public int totalResources;
+    [Tooltip("How many units can be gathering from this resource")]
+    public int maxUnitsGathering;
 
-    [HideInInspector] public List<VillagerUnit> unitsInteracting;
+    [ReadOnly] public List<VillagerUnit> unitsInteracting;
 
     [ReadOnly] public int resourcesRemaining;
 
