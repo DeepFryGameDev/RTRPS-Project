@@ -8,11 +8,29 @@ public class SelectedUnitProcessing : MonoBehaviour
 {
     [ReadOnly] public List<Unit> selectedUnits;
 
+    // For multi-selection
+    RectTransform selectionBox;
+    Vector2 startPos;
+    List<Unit> unitsToSelect = new List<Unit>();
+
+    // For clearing selected units
+    bool unitsCleared = false;
+
     UIProcessing uip;
+    UnitProcessing up;
+
+    // for multi select
+    bool leftClickDrag, inClick;
+    float lastMouseX, lastMouseY;
 
     private void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
+        up = FindObjectOfType<UnitProcessing>();
+
+        selectionBox = uip.transform.Find("MultiSelectCanvas/SelectionBox").GetComponent<RectTransform>();
+        uip.ShowPanels(false);
+        uip.ShowMultipleUnitsPanel(false);
     }
 
     private void Update()
@@ -24,18 +42,29 @@ public class SelectedUnitProcessing : MonoBehaviour
     {
         if (!IsPointerOverUIElement())
         {
-            if (Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Escape))
+            if ((Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Escape)) && !unitsCleared)
             {
                 foreach (Unit u in selectedUnits)
                 {
                     u.isSelected = false;
                 }
-                HighlightSelectedUnits(false);
+                foreach (Unit unit in selectedUnits)
+                {
+                    unit.GetComponent<Outline>().OutlineWidth = up.highlightWidth; // in case it wasn't properly set back during multi select
+                    HighlightUnit(unit, false);
+                }
+                
                 selectedUnits.Clear();
+                unitsCleared = true;
             }
 
             if (Input.GetKeyDown(KeyCode.Mouse0))
             {
+                inClick = true;
+
+                lastMouseY = Input.mousePosition.y; // To help determine if mouse is dragging for multi-select
+                lastMouseX = Input.mousePosition.x; // To help determine if mouse is dragging for multi-select
+
                 RaycastHit[] hits;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 hits = Physics.RaycastAll(ray, 1000);
@@ -45,23 +74,107 @@ public class SelectedUnitProcessing : MonoBehaviour
                     if (hit.transform.gameObject.CompareTag("Unit"))
                     {
                         hit.transform.GetComponent<Unit>().isSelected = true;
-                        if (IfVillager(hit.transform.GetComponent<Unit>()))
+                        /*if (IfVillager(hit.transform.GetComponent<Unit>()))
                         {
                             AddVillagerToSelectedUnits(hit.transform.GetComponent<VillagerUnit>());
-                        }
-                        HighlightSelectedUnits(true);
+                        }*/
+
+                        selectedUnits.Add(hit.transform.GetComponent<Unit>());
+
+                        HighlightUnit(hit.transform.GetComponent<Unit>(), true);
+                        unitsCleared = false;
+                        uip.SetCurrentUnit(hit.transform.GetComponent<Unit>());
+                        uip.resetUI = true;
                     }
                 }
+
+                startPos = Input.mousePosition;
+            }
+
+            if (Input.GetKeyUp(KeyCode.Mouse0))
+            {
+                inClick = false;
+
+                if (leftClickDrag)
+                {
+                    ReleaseSelectionBox();
+                    leftClickDrag = false;
+                }
+            }
+
+            if (Input.GetKey(KeyCode.Mouse0) && inClick)
+            {
+                if (lastMouseX != Input.mousePosition.x && lastMouseY != Input.mousePosition.y)
+                {
+                    leftClickDrag = true;
+                }
+
+                if (leftClickDrag)
+                    UpdateSelectionBox(Input.mousePosition);
             }
         }        
     }
 
-    void HighlightSelectedUnits(bool highlight)
+    void UpdateSelectionBox (Vector2 curMousePos)
     {
-        foreach (Unit unit in selectedUnits)
+        if (!selectionBox.gameObject.activeInHierarchy)        
+            selectionBox.gameObject.SetActive(true);
+
+        float width = curMousePos.x - startPos.x;
+        float height = curMousePos.y - startPos.y;
+
+        selectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
+
+        selectionBox.anchoredPosition = startPos + new Vector2(width / 2, height / 2);
+
+        Vector2 min = selectionBox.anchoredPosition - (selectionBox.sizeDelta / 2);
+        Vector2 max = selectionBox.anchoredPosition + (selectionBox.sizeDelta / 2);
+
+        Unit[] units = FindObjectsOfType<Unit>();
+        foreach (Unit unit in units)
         {
-            unit.GetComponent<Outline>().enabled = highlight;
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(unit.transform.position);
+
+            if (screenPos.x > min.x && screenPos.x < max.x && screenPos.y > min.y && screenPos.y < max.y)
+            {              
+                if (!unitsToSelect.Contains(unit) && unitsToSelect.Count < uip.selectedUnitsMax)
+                {
+                    HighlightUnit(unit, true);
+                    unitsToSelect.Add(unit);
+                }                
+            } else
+            {
+                HighlightUnit(unit, false);
+                if (unitsToSelect.Contains(unit))
+                {
+                    unitsToSelect.Remove(unit);
+                }
+            }
         }
+    }
+
+    void ReleaseSelectionBox()
+    {
+        selectionBox.gameObject.SetActive(false);
+
+        foreach (Unit unit in unitsToSelect)
+        {
+            unit.isSelected = true;
+            selectedUnits.Add(unit);
+        }
+
+        if (selectedUnits.Count > 0)
+        {
+            unitsCleared = false;
+        }
+
+        uip.SetCurrentUnit(selectedUnits[0]);
+        uip.resetUI = true;
+    }
+
+    void HighlightUnit(Unit unit, bool highlight)
+    {
+        unit.GetComponent<Outline>().enabled = highlight;
     }
 
     void AddVillagerToSelectedUnits(VillagerUnit vu)

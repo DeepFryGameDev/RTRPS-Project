@@ -4,6 +4,14 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+public enum GatherPhases
+{
+    SEEKINGRESOURCE,
+    GATHERING,
+    MOVETODEPOT,
+    DEPOSITING
+}
+
 public class GatherManager : MonoBehaviour
 {
     [Tooltip("Duration in seconds of outline when clicking a resource")]

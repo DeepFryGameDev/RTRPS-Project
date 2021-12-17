@@ -8,6 +8,7 @@ public class Unit : MonoBehaviour
     int experience, HP, MP, strength, stamina, agility, luck, intelligence, willpower, movement, level;
     int expToNextLevel, maxHP, maxMP;
     BiomeTile onBiome;
+    Sprite faceGraphic;
 
     [HideInInspector] public bool usesEnergy = false;
     [HideInInspector] public bool isSelected;
@@ -47,6 +48,10 @@ public class Unit : MonoBehaviour
     public void SetMaxHP(int maxHP) { this.maxHP = maxHP; }
     public int GetMaxMP() { return maxMP; }
     public void SetMaxMP(int maxMP) { this.maxMP = maxMP; }
+
+    public Sprite GetFaceGraphic() { return faceGraphic; }
+
+    protected void SetFaceGraphic(Sprite graphic) { this.faceGraphic = graphic; }
 
     public BiomeTile GetBiome() { return onBiome; }
     public void SetBiome(BiomeTile onBiome) { this.onBiome = onBiome; }

@@ -24,6 +24,7 @@ public class VillagerUnit : Unit
     [HideInInspector] public Coroutine gatherTaskCoroutine;
 
     GatherManager gm;
+    GatherPhases gatherPhase;
 
     void SetBaseAttributes()
     {
@@ -90,6 +91,55 @@ public class VillagerUnit : Unit
         SetUnitProcessingVars();
 
         UnitAwake();
+    }
+
+    void prototyping()
+    {
+        /*
+         * Preparation:
+         * set activeGatherTask.resource to the resource requested
+         * set gatherPhase = SEEKINGRESOURCE
+         * 
+         * 
+         * 
+         * GatherResource coroutine loop should use the 4 modes from gatherPhase to be run while gatherTaskIsActive:
+         * 
+         * 1. SEEKINGRESOURCE
+         * 
+         * confirm chosen resource is not null.  If at any point it is null during this phase, the closest resource of same type should be set to new chosen resource
+         * if carryLimit has not been reached - move to chosen resource, while continuing to check it is not null.  If it is, run above logic and loop back to here
+         * if closest resource turns null at any point, all resources on the map have been depleted, and the coroutine can be exit by setting gatherTaskIsActive to false and using yield break.
+         * 
+         * once in range of chosen resource, set gatherPhase to GATHERING:
+         * 2. GATHERING
+         * 
+         * stop moving
+         * look at resource
+         * while carry limit has not been reached:
+         * gather from it once
+         * if resources still remain on this resource, continue to gather from it
+         * if resources on this are gone (resource = null), set chosen resource to closest resource of this type and set mode back to SEEKINGRESOURCE.
+         * if closest resource type is null (no more resources of this type available) set bool 'resourcesGoneButStillCarrying' to true
+         * 
+         * once carry limit has been reached (or resourcesGoneButStillCarrying is true), set gatherPhase to MOVETODEPOT:
+         * 3. MOVETODEPOT 
+         * 
+         * Find closest depot, and move to it
+         * while not in range of closest depot:
+         * move to depot.  If at any point during this phase the depot is null (player or enemy destroyed it), search for closest depot again and continue moving
+         * 
+         * 
+         * Once in range of depot, set gatherPhase to DEPOSITING:
+         * 4. DEPOSITING
+         * 
+         * stop moving
+         * look at depot
+         * deposit resources into the chosen depot
+         * 
+         * if resourcesGoneButStillCarrying is true, exit from the coroutine by setting gatherTaskIsActive to false and using yield break.
+         * 
+         * if this point is reached, loop back to the beginning phase - (line 106), SEEKINGRESOURCE
+         */
     }
 
     public IEnumerator PrepareGathering(Resource resource)
@@ -356,6 +406,8 @@ public class VillagerUnit : Unit
         SetHP(GetMaxHP());
         SetMaxMP();
         SetMP(GetMaxMP());
+
+        SetGraphic();
     }
 
     void SetMaxHP()
@@ -382,5 +434,26 @@ public class VillagerUnit : Unit
         }
 
         return 0;
+    }
+
+    void SetGraphic()
+    {
+        UnitSpriteGraphics usg = up.GetComponent<UnitSpriteGraphics>();
+
+        switch (villagerClass)
+        {
+            case villagerClasses.VILLAGER:
+                SetFaceGraphic(usg.VillagerFace);
+                break;
+            case villagerClasses.FARMER:
+                SetFaceGraphic(usg.FarmerFace);
+                break;
+            case villagerClasses.LUMBERJACK:
+                SetFaceGraphic(usg.LumberjackFace);
+                break;
+            case villagerClasses.MINER:
+                SetFaceGraphic(usg.MinerFace);
+                break;
+        }
     }
 }

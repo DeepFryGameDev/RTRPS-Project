@@ -9,12 +9,20 @@ public class UIProcessing : MonoBehaviour
     [Tooltip("Set this to value for UI Layer - default is 5")]
     public int UILayer;
 
+    public int selectedUnitsMax = 20;
+    public float selectedUnitsUIEdgeSpace = 10;
+    [Range(1, 10)] public float hoveredUnitsOutlineWidth = 8;
+
     [Tooltip("Set to unit graphic panel in UI")]
     [SerializeField] GameObject unitGraphicPanel;
     [Tooltip("Set to unit stats panel in UI")]
     [SerializeField] GameObject unitStatsPanel;
     [Tooltip("Set to unit action panel in UI")]
     [SerializeField] GameObject unitActionPanel;
+    [Tooltip("Set to multiple units panel in UI")]
+    [SerializeField] GameObject multiUnitsPanel;
+    [Tooltip("Set to multiple units 'button' prefab")]
+    [SerializeField] GameObject multiUnitsButton;
 
     [Tooltip("Set to icon used for wood resource in UI")]
     public Sprite woodResourceIcon;
@@ -25,8 +33,12 @@ public class UIProcessing : MonoBehaviour
     [Tooltip("Set to icon used for gold resource in UI")]
     public Sprite goldResourceIcon;
 
+    [HideInInspector] public bool resetUI;
+    bool uiCleared = false;
+
     List<Unit> selectedUnits;
     Unit currentUnit;
+    float multiUnitsPanelSpacing;
 
     // Start is called before the first frame update
     void Start()
@@ -37,34 +49,110 @@ public class UIProcessing : MonoBehaviour
         transform.Find("Canvas/TopBar/ResourceSpacer/Ore/Icon").GetComponent<Image>().sprite = oreResourceIcon;
         transform.Find("Canvas/TopBar/ResourceSpacer/Food/Icon").GetComponent<Image>().sprite = foodResourceIcon;
         transform.Find("Canvas/TopBar/ResourceSpacer/Gold/Icon").GetComponent<Image>().sprite = goldResourceIcon;
+
+        HorizontalLayoutGroup horizontalLayoutGroup = multiUnitsPanel.transform.Find("MultiUnitsSpacer").GetComponent<HorizontalLayoutGroup>();
+        multiUnitsPanelSpacing = horizontalLayoutGroup.spacing;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        if (selectedUnits.Count == 1) // only one unit selected
+        UpdateUI();
+    }
+
+    public void SetCurrentUnit(Unit unitToSet)
+    {
+        currentUnit = unitToSet;
+    }
+
+    void UpdateUI()
+    {
+        if (resetUI && selectedUnits.Count == 1)
         {
-            currentUnit = selectedUnits[0];
+            resetUI = false;
+            uiCleared = false;
+
             // set graphic panel details
             SetGraphicPanel();
 
-            // set stat panel details
-            SetStatsPanel();
+            // set action panel details
+
+            // show panel
+            ShowPanels(true);
+        }
+
+        if (resetUI && selectedUnits.Count > 1)
+        {
+            resetUI = false;
+            uiCleared = false;
+
+            // set graphic panel details
+            SetGraphicPanel();
 
             // set action panel details
+
+            // also show multiple units panel
+            GenerateMultipleUnitsPanel();
+            
+            // show panels
+            ShowMultipleUnitsPanel(true);
+            ShowPanels(true);
+        }
+
+        if (selectedUnits.Count == 1) // only one unit selected
+        {
+            // set stat panel details
+            SetStatsPanel();
 
             // set biome
             SetBiome();
 
-            // show panel
-            ShowPanels(true);
-
-        } else if (selectedUnits.Count > 1) // multiple units selected
+            //Make sure multiple units panel is gone
+            ShowMultipleUnitsPanel(false);
+        }
+        else if (selectedUnits.Count > 1)
         {
+            // set stat panel details
+            SetStatsPanel();
 
-        } else // no units selected, hide panels
+            // set biome
+            SetBiome();
+        }
+
+        if (!uiCleared && selectedUnits.Count == 0)
         {
+            uiCleared = true;
             ShowPanels(false);
+            ShowMultipleUnitsPanel(false);
+        }
+    }
+
+    void GenerateMultipleUnitsPanel()
+    {
+        int selectedUnitsCount = selectedUnits.Count;
+        float prefabWidth = multiUnitsButton.GetComponent<RectTransform>().rect.width;
+
+        Transform spacer = multiUnitsPanel.transform.Find("MultiUnitsSpacer");
+
+        // set width of rect transform of multiUnitsPanel
+        // edge space + (units spacing * unit count) + (count * prefab width)
+        float newWidth = (selectedUnitsUIEdgeSpace + (multiUnitsPanelSpacing * selectedUnitsCount) + (prefabWidth * selectedUnitsCount));
+
+        RectTransform rt = multiUnitsPanel.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(newWidth, rt.rect.height);
+
+        // clear old units in spacer
+        foreach (Transform child in spacer)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // generate buttons and set them as children of spacer
+        for (int i = 0; i < selectedUnits.Count; i++)
+        {
+            GameObject newButton = Instantiate(multiUnitsButton, spacer);
+            newButton.name = i + ") UnitMultiSelectButton";
+            newButton.GetComponent<Image>().sprite = selectedUnits[i].GetFaceGraphic();
+            newButton.GetComponent<MultiUnitsSelectionButton>().unit = selectedUnits[i];
         }
     }
 
@@ -79,6 +167,8 @@ public class UIProcessing : MonoBehaviour
         }
 
         GetTextComp(unitGraphicPanel.transform.Find("Name")).text = name;
+
+        unitGraphicPanel.transform.Find("Graphic").GetComponent<Image>().sprite = currentUnit.GetFaceGraphic();
     }
 
     void SetStatsPanel()
@@ -90,11 +180,11 @@ public class UIProcessing : MonoBehaviour
 
             // exp
             GetTextComp(unitStatsPanel.transform.Find("EXPText")).text = currentUnit.GetEXP() + "/" + currentUnit.GetExpToNextLevel();
-            GetSlider(unitStatsPanel.transform.Find("EXPSlider")).fillAmount = currentUnit.GetEXP() / currentUnit.GetExpToNextLevel();
+            GetSlider(unitStatsPanel.transform.Find("EXPSlider")).fillAmount = (float)currentUnit.GetEXP() / (float)currentUnit.GetExpToNextLevel();
 
             // HP
             GetTextComp(unitStatsPanel.transform.Find("HPText")).text = currentUnit.GetHP() + "/" + currentUnit.GetMaxHP();
-            GetSlider(unitStatsPanel.transform.Find("HPSlider")).fillAmount = currentUnit.GetHP() / currentUnit.GetMaxHP();
+            GetSlider(unitStatsPanel.transform.Find("HPSlider")).fillAmount = (float)currentUnit.GetHP() / (float)currentUnit.GetMaxHP();
 
             // MP
             if (currentUnit.usesEnergy)
@@ -108,7 +198,7 @@ public class UIProcessing : MonoBehaviour
                 unitStatsPanel.transform.Find("EnergyText").gameObject.SetActive(true);
 
                 GetTextComp(unitStatsPanel.transform.Find("EnergyText")).text = currentUnit.GetMP() + "/" + currentUnit.GetMaxMP();
-                GetSlider(unitStatsPanel.transform.Find("EnergySlider")).fillAmount = currentUnit.GetMP() / currentUnit.GetMaxMP(); 
+                GetSlider(unitStatsPanel.transform.Find("EnergySlider")).fillAmount = (float)currentUnit.GetMP() / (float)currentUnit.GetMaxMP();
             } else
             {
                 unitStatsPanel.transform.Find("MPIconFrame").gameObject.SetActive(true);
@@ -120,7 +210,7 @@ public class UIProcessing : MonoBehaviour
                 unitStatsPanel.transform.Find("EnergyText").gameObject.SetActive(false);
 
                 GetTextComp(unitStatsPanel.transform.Find("MPText")).text = currentUnit.GetMP() + "/" + currentUnit.GetMaxMP();
-                GetSlider(unitStatsPanel.transform.Find("MPSlider")).fillAmount = currentUnit.GetMP() / currentUnit.GetMaxMP();
+                GetSlider(unitStatsPanel.transform.Find("MPSlider")).fillAmount = (float)currentUnit.GetMP() / (float)currentUnit.GetMaxMP();
             }
 
             // Strength
@@ -143,6 +233,9 @@ public class UIProcessing : MonoBehaviour
 
             // Movement
             GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Movement/MovementText")).text = currentUnit.GetMovement().ToString();
+        } else
+        {
+            Debug.LogError(currentUnit.gameObject.name + " is not a villager unit!");
         }
     }
 
@@ -159,11 +252,22 @@ public class UIProcessing : MonoBehaviour
         }        
     }
 
-    void ShowPanels(bool show)
+    public Unit GetUnitSelected(int ID)
+    {
+        Debug.Log("returning unit: " + selectedUnits[ID].gameObject.name);
+        return selectedUnits[ID];
+    }
+
+    public void ShowPanels(bool show)
     {
         unitGraphicPanel.SetActive(show);
         unitActionPanel.SetActive(show);
         unitStatsPanel.SetActive(show);
+    }
+
+    public void ShowMultipleUnitsPanel(bool show)
+    {
+        multiUnitsPanel.SetActive(show);
     }
 
     VillagerUnit GetVillagerUnit(Unit unit)

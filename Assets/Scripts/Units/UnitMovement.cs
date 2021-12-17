@@ -14,6 +14,10 @@ public class UnitMovement : MonoBehaviour
     [SerializeField] [Range(0.1f, 25)] float moveSpeedFactor = 10;
     [Tooltip("Unit's navmesh move speed is determined by the baseline + their movement rating * move speed factor + their movement rating * this value.")]
     [SerializeField] [Range(0.1f, 25)] float moveSpeedAgilityFactor = 3;
+    [Tooltip("When multiple units are moving to a point, they will stop a certain distance from the destination using the number of units moving * this value.")]
+    [SerializeField] [Range(0.1f, 1)] float moveBumpFactor = .5f;
+    [Tooltip("When multiple units are moving to a resource, they will stop a certain distance from the destination using the number of units moving * this value.")]
+    [SerializeField] [Range(0.1f, 1)] float resourceBumpFactor = .2f;
 
     // For resources
     float stopRadius;
@@ -130,56 +134,68 @@ public class UnitMovement : MonoBehaviour
                 // If able to move, gather world position and move
                 if (canMove)
                 {
-                    ProcessMoveUnit(resourcePos);
+                    Vector3 destination = new Vector3();
+
+                    if (resourceClicked)
+                    {
+                        destination = resourcePos;
+                    } else
+                    {
+                        destination = GetWorldPosition();
+                    }
+
+                    foreach (Unit unit in selectedUnits)
+                    {
+                        ProcessMoveUnit(unit, destination);
+                    }                    
                 }
             }
         }
     }
 
-    private void ProcessMoveUnit(Vector3 resourcePos)
+    private void ProcessMoveUnit(Unit unit, Vector3 destPos) // initial movement, including if moving to a resource
     {
         // Ensure movement speed is set appropriately
-        selectedUnits[0].agent.speed = GetMoveSpeed(selectedUnits[0]);
+        unit.agent.speed = GetMoveSpeed(unit);
 
-        // Set stopping distance for any resource clicked
-        selectedUnits[0].agent.stoppingDistance = stopRadius;
+        // Set stopping distance for any resource clicked (or if multiple units, they will stop a bit further away to avoid bumping into eachother)
+        if (stopRadius == 0) // no resource clicked
+        {
+            unit.agent.stoppingDistance = selectedUnits.Count * moveBumpFactor;
+        } else // resource clicked
+        {
+            unit.agent.stoppingDistance = stopRadius + (selectedUnits.Count * resourceBumpFactor);
+        }        
 
         // Stop any current navigation
-        selectedUnits[0].agent.enabled = false;
-        selectedUnits[0].agent.enabled = true;
+        unit.agent.enabled = false;
+        unit.agent.enabled = true;
 
         // Set villager active task to false as they are being moved manually
-        if (IfVillager(selectedUnits[0].GetComponent<Unit>()))
+        if (IfVillager(unit.GetComponent<Unit>()))
         {
-            if (selectedUnits[0].GetComponent<VillagerUnit>().gatherTaskIsActive)
+            if (unit.GetComponent<VillagerUnit>().gatherTaskIsActive)
             {
-                selectedUnits[0].GetComponent<VillagerUnit>().gatherTaskIsActive = false;
-                selectedUnits[0].GetComponent<VillagerUnit>().StopGathering();
+                unit.GetComponent<VillagerUnit>().gatherTaskIsActive = false;
+                unit.GetComponent<VillagerUnit>().StopGathering();
             }
         }
 
         // Move to where mouse is clicked (or resource if clicked)
-        if (!resourceClicked)
-        {
-            agentDestination = GetWorldPosition();
-        }
-        else
-        {
-            agentDestination = resourcePos;
-        }
+        agentDestination = destPos;
 
         // Show UX feedback cursor animation
         ShowCursorAnim(resourceClicked);
 
-        selectedUnits[0].agent.SetDestination(agentDestination);
+        unit.agent.SetDestination(agentDestination);
 
         if (resourceClicked)
         {
-            StartCoroutine(selectedUnits[0].GetComponent<VillagerUnit>().PrepareGathering(chosenResource));
+            StartCoroutine(unit.GetComponent<VillagerUnit>().PrepareGathering(chosenResource));
 
             if (chosenResource.GetComponent<Outline>())
                 StartCoroutine(gm.HighlightConfirmedResource(chosenResource));
-        }            
+        }
     }
 
     public void ProcessMoveVillagerUnitInTask(bool toDepot, Unit unit, Resource resource, Depot depot)
