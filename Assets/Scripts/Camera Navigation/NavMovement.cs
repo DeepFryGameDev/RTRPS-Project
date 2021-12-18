@@ -1,3 +1,4 @@
+using Cinemachine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,6 +32,8 @@ public class NavMovement : MonoBehaviour
     [Tooltip("How quickly the camera rotates when holding down the scroll wheel.")]
     [SerializeField] [Range(1f, 20f)] float rotateSpeed;
 
+    public CinemachineVirtualCamera focusCam;
+
     Terrain terrainMap;
     Transform camTransform;
 
@@ -45,10 +48,16 @@ public class NavMovement : MonoBehaviour
     // for cursor management
     CursorManager cm;
 
+    // for focusing on unit
+    SelectedUnitProcessing sup;
+    Unit unitToFocus;
+    bool focusUnit;
+
     void Start()
     {
         uip = GameObject.Find("UI").GetComponent<UIProcessing>();
-        cm = GameObject.FindObjectOfType<CursorManager>();
+        cm = FindObjectOfType<CursorManager>();
+        sup = FindObjectOfType<SelectedUnitProcessing>();
 
         Cursor.lockState = CursorLockMode.Confined;
 
@@ -80,7 +89,35 @@ public class NavMovement : MonoBehaviour
             KeepCameraAtTerrainHeight();
 
             KeepCameraInBounds();
-        }        
+
+            if (focusUnit)
+            {
+                FocusCameraOnUnit();
+            }
+        }      
+    }
+
+    public void DisableCamFocus()
+    {
+        if (focusUnit)
+        {
+            focusUnit = false;
+
+            focusCam.Follow = null;
+            focusCam.enabled = false;
+        }
+    }
+
+    private void FocusCameraOnUnit()
+    {
+        focusCam.Follow = unitToFocus.transform;
+        focusCam.enabled = true;
+    }
+
+    public void FocusUnit(Unit unit)
+    {
+        unitToFocus = unit;
+        focusUnit = true;
     }
 
     void KeepCameraInBounds()
@@ -167,7 +204,8 @@ public class NavMovement : MonoBehaviour
         if (Input.GetAxis("Vertical") > 0)
         {
             camTransform.Translate(Vector3.forward * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
-
+            
+            DisableCamFocus();
         }
         else if (Input.mousePosition.y >= Screen.height - panBorderSize && Input.mousePosition.y <= Screen.height)
         {
@@ -178,12 +216,16 @@ public class NavMovement : MonoBehaviour
             float speed = panFactor * panSpeed * (position / panBorderSize);
 
             camTransform.Translate(Vector3.forward * (speed * Time.deltaTime));
+
+            DisableCamFocus();
         }
 
         //down
         if (Input.GetAxis("Vertical") < 0)
         {
             camTransform.Translate(Vector3.back * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
+
+            DisableCamFocus();
         }
         else if (Input.mousePosition.y <= panBorderSize && (Input.mousePosition.y - panBorderSize) >= -panBorderSize)
         {
@@ -194,12 +236,16 @@ public class NavMovement : MonoBehaviour
             float speed = panFactor * panSpeed * Mathf.Abs(-position / -panBorderSize);
 
             camTransform.Translate(Vector3.back * (speed * Time.deltaTime));
+
+            DisableCamFocus();
         }
 
         //right
         if (Input.GetAxis("Horizontal") > 0)
         {
             camTransform.Translate(Vector3.right * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
+
+            DisableCamFocus();
         }
         else if (Input.mousePosition.x >= Screen.width - panBorderSize && Input.mousePosition.x <= Screen.width)
         {
@@ -210,12 +256,16 @@ public class NavMovement : MonoBehaviour
             float speed = panFactor * panSpeed * (position / panBorderSize);
 
             camTransform.Translate(Vector3.right * (speed * Time.deltaTime));
+
+            DisableCamFocus();
         }
 
         //left
         if (Input.GetAxis("Horizontal") < 0)
         {
             camTransform.Translate(Vector3.left * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
+
+            DisableCamFocus();
         }
         else if (Input.mousePosition.x <= panBorderSize && (Input.mousePosition.x - panBorderSize) >= -panBorderSize)
         {
@@ -226,6 +276,8 @@ public class NavMovement : MonoBehaviour
             float speed = panFactor * panSpeed * Mathf.Abs(-position / -panBorderSize);
 
             camTransform.Translate(Vector3.left * (speed * Time.deltaTime));
+
+            DisableCamFocus();
         }
 
         if (movingZU && movingXR)
@@ -282,6 +334,8 @@ public class NavMovement : MonoBehaviour
                 rightClickDrag = true;
                 cm.cursorDrag = true;
                 cm.cursorMode = cursorModes.DRAG;
+
+                DisableCamFocus();
             }
 
             float xDiff = (Mathf.Abs(lastMouseX - Input.mousePosition.x) * dragFactor);

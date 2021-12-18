@@ -8,6 +8,7 @@ public class MultiUnitsSelectionButton : MonoBehaviour
 
     UIProcessing uip;
     UnitProcessing up;
+    SelectedUnitProcessing sup;
 
     bool isClicked = false, doubleClicked = false;
     int frameCount;
@@ -17,6 +18,8 @@ public class MultiUnitsSelectionButton : MonoBehaviour
     {
         uip = FindObjectOfType<UIProcessing>();
         up = FindObjectOfType<UnitProcessing>();
+        sup = FindObjectOfType<SelectedUnitProcessing>();
+        
         frameCount = 0;
     }
 
@@ -53,7 +56,7 @@ public class MultiUnitsSelectionButton : MonoBehaviour
         if (frameCount < uip.selectedUnitDoubleClickFrameBuffer && isClicked)
         {
             doubleClicked = true;
-            Debug.Log("double clicked on unit " + unit.gameObject.name);
+            FocusUnit();
         }
 
         if (!isClicked)
@@ -61,5 +64,10 @@ public class MultiUnitsSelectionButton : MonoBehaviour
             isClicked = true;
             StartCoroutine(CheckForDoubleClick());
         }
+    }
+
+    void FocusUnit()
+    {
+        sup.FocusCameraOnUnit(unit);
     }
 }

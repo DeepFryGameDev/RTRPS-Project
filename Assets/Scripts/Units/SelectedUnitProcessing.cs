@@ -18,24 +18,60 @@ public class SelectedUnitProcessing : MonoBehaviour
 
     UIProcessing uip;
     UnitProcessing up;
+    NavMovement nm;
 
     // for multi select
     bool leftClickDrag, inClick;
     float lastMouseX, lastMouseY;
 
+    // for double click
+    bool isClicked = false, doubleClicked = false;
+    int frameCount;
+
     private void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
         up = FindObjectOfType<UnitProcessing>();
+        nm = FindObjectOfType<NavMovement>();
 
         selectionBox = uip.transform.Find("MultiSelectCanvas/SelectionBox").GetComponent<RectTransform>();
         uip.ShowPanels(false);
         uip.ShowMultipleUnitsPanel(false);
+
+        frameCount = 0;
     }
 
     private void Update()
     {
         SetSelectedUnits();
+        FocusUnit();
+    }
+
+    private void FocusUnit()
+    {
+        if (selectedUnits.Count == 1 && Input.GetKeyDown(KeyCode.F))
+        {
+            FocusCameraOnUnit(selectedUnits[0]);
+        }
+    }
+
+    public void FocusCameraOnUnit(Unit unit)
+    {
+        nm.FocusUnit(unit);
+    }
+
+    IEnumerator CheckForDoubleClick()
+    {
+        doubleClicked = false;
+
+        while (frameCount < uip.selectedUnitDoubleClickFrameBuffer && !doubleClicked)
+        {
+            frameCount++;
+            yield return new WaitForEndOfFrame();
+        }
+
+        frameCount = 0;
+        isClicked = false;
     }
 
     void SetSelectedUnits()
@@ -56,6 +92,8 @@ public class SelectedUnitProcessing : MonoBehaviour
                 
                 selectedUnits.Clear();
                 unitsCleared = true;
+
+                nm.DisableCamFocus();
             }
 
             if (Input.GetKeyDown(KeyCode.Mouse0))
@@ -85,6 +123,18 @@ public class SelectedUnitProcessing : MonoBehaviour
                         unitsCleared = false;
                         uip.SetCurrentUnit(hit.transform.GetComponent<Unit>());
                         uip.resetUI = true;
+
+                        if (frameCount < uip.selectedUnitDoubleClickFrameBuffer && isClicked)
+                        {
+                            doubleClicked = true;
+                            FocusCameraOnUnit(hit.transform.GetComponent<Unit>());
+                        }
+
+                        if (!isClicked)
+                        {
+                            isClicked = true;
+                            StartCoroutine(CheckForDoubleClick());
+                        }
                     }
                 }
 
