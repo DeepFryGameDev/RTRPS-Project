@@ -166,10 +166,10 @@ public class SelectedUnitProcessing : MonoBehaviour
         if (selectedUnits.Count > 0)
         {
             unitsCleared = false;
-        }
 
-        uip.SetCurrentUnit(selectedUnits[0]);
-        uip.resetUI = true;
+            uip.SetCurrentUnit(selectedUnits[0]);
+            uip.resetUI = true;
+        }    
     }
 
     void HighlightUnit(Unit unit, bool highlight)

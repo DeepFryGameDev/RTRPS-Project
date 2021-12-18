@@ -384,7 +384,7 @@ public class VillagerUnit : Unit
         this.SetMaxMP(Mathf.RoundToInt(GetStamina() * up.vilEnergyFromStaminaFactor));
     }
 
-    int GetCarryLimit()
+    public int GetCarryLimit()
     {
         if (activeGatherTask.resource.resourceType == ResourceTypes.WOOD)
         {

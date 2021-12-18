@@ -137,7 +137,7 @@ public class UnitMovement : MonoBehaviour
                     if (resourceClicked)
                     {
                         // Show UX feedback cursor animation
-                        ShowCursorAnim(true);
+                        StartCoroutine(TaskTargetAnim(GetScreenPosition()));
 
                         if (chosenResource.GetComponent<Outline>())
                             StartCoroutine(gm.HighlightConfirmedResource(chosenResource));
@@ -149,7 +149,7 @@ public class UnitMovement : MonoBehaviour
                     } else
                     {
                         // Show UX feedback cursor animation
-                        ShowCursorAnim(false);
+                        MoveTargetAnim(GetWorldPosition());
 
                         foreach (Unit unit in selectedUnits)
                         {
@@ -292,28 +292,17 @@ public class UnitMovement : MonoBehaviour
         }
     }
 
-    void ShowCursorAnim(bool isResourceTarget)
+    void MoveTargetAnim(Vector3 dest)
     {
-        if (isResourceTarget) //Show task target
-        {
-            StartCoroutine(TaskTargetAnim());
-        } else // Show move target
-        {
-            MoveTargetAnim();
-        }
+        cm.GenerateMarker(dest);
     }
 
-    void MoveTargetAnim()
-    {
-        cm.GenerateMarker(agentDestination);
-    }
-
-    IEnumerator TaskTargetAnim()
+    IEnumerator TaskTargetAnim(Vector3 dest)
     {
         bool targetHidden = false;
 
         //instantiate prefab at mouse click location in world
-        GameObject targetAnim = Instantiate(GameObject.FindObjectOfType<NavCursorIcons>().taskTargetPrefab, GetScreenPosition(), Quaternion.identity, uip.transform);
+        GameObject targetAnim = Instantiate(GameObject.FindObjectOfType<NavCursorIcons>().taskTargetPrefab, dest, Quaternion.identity, uip.transform);
 
         float fadeFactor = GameObject.FindObjectOfType<NavCursorIcons>().taskAnimFadeFactor;
         float animScale = GameObject.FindObjectOfType<NavCursorIcons>().taskAnimBaseScale;

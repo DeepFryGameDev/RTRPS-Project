@@ -12,6 +12,7 @@ public class UIProcessing : MonoBehaviour
     public int selectedUnitsMax = 20;
     public float selectedUnitsUIEdgeSpace = 10;
     [Range(1, 10)] public float hoveredUnitsOutlineWidth = 8;
+    [Range(1, 50)] public int selectedUnitDoubleClickFrameBuffer = 10;
 
     [Tooltip("Set to unit graphic panel in UI")]
     [SerializeField] GameObject unitGraphicPanel;
@@ -66,53 +67,47 @@ public class UIProcessing : MonoBehaviour
 
     void UpdateUI()
     {
-        if (resetUI && selectedUnits.Count == 1)
+        if (resetUI && selectedUnits.Count == 1) // Only need to be run once
         {
             resetUI = false;
             uiCleared = false;
 
             // set graphic panel details
             SetGraphicPanel();
-
-            // set action panel details
 
             // show panel
             ShowPanels(true);
-        }
-
-        if (resetUI && selectedUnits.Count > 1)
-        {
-            resetUI = false;
-            uiCleared = false;
-
-            // set graphic panel details
-            SetGraphicPanel();
-
-            // set action panel details
-
-            // also show multiple units panel
-            GenerateMultipleUnitsPanel();
-            
-            // show panels
-            ShowMultipleUnitsPanel(true);
-            ShowPanels(true);
-        }
-
-        if (selectedUnits.Count == 1) // only one unit selected
-        {
-            // set stat panel details
-            SetStatsPanel();
-
-            // set biome
-            SetBiome();
 
             //Make sure multiple units panel is gone
             ShowMultipleUnitsPanel(false);
         }
-        else if (selectedUnits.Count > 1)
+
+        if (resetUI && selectedUnits.Count > 1) // Only need to be run once
+        {
+            resetUI = false;
+            uiCleared = false;
+
+            // set graphic panel details
+            SetGraphicPanel();
+
+            // also show multiple units panel
+            if (!multiUnitsPanel.activeInHierarchy)
+            {
+                GenerateMultipleUnitsPanel();
+
+                // show panels
+                ShowMultipleUnitsPanel(true);
+                ShowPanels(true);
+            }            
+        }
+
+        if (selectedUnits.Count >= 1) // for things that need to be consistently updated
         {
             // set stat panel details
             SetStatsPanel();
+
+            // set action panel details
+            SetActionPanel();
 
             // set biome
             SetBiome();
@@ -234,6 +229,36 @@ public class UIProcessing : MonoBehaviour
             // Movement
             GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Movement/MovementText")).text = currentUnit.GetMovement().ToString();
         } else
+        {
+            Debug.LogError(currentUnit.gameObject.name + " is not a villager unit!");
+        }
+    }
+
+    void SetActionPanel()
+    {
+        if (GetVillagerUnit(currentUnit))
+        {
+            if (GetVillagerUnit(currentUnit).gatherTaskIsActive || GetVillagerUnit(currentUnit).resourcesHolding > 0)
+            {
+                // Update the Progress Bar for Gathering
+                GetTextComp(unitActionPanel.transform.Find("ActionText")).text = GetVillagerUnit(currentUnit).resourcesHolding + "/" + GetVillagerUnit(currentUnit).GetCarryLimit();
+                GetSlider(unitActionPanel.transform.Find("ActionSlider")).fillAmount = (float)GetVillagerUnit(currentUnit).resourcesHolding / GetVillagerUnit(currentUnit).GetCarryLimit();
+
+                if (!unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
+                {
+                    unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(true);
+                    unitActionPanel.transform.Find("ActionText").gameObject.SetActive(true);
+                }
+            } else
+            {
+                if (unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
+                {
+                    unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(false);
+                    unitActionPanel.transform.Find("ActionText").gameObject.SetActive(false);
+                }
+            }
+        }
+        else
         {
             Debug.LogError(currentUnit.gameObject.name + " is not a villager unit!");
         }
