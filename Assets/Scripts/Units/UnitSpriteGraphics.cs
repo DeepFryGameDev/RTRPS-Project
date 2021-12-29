@@ -8,4 +8,5 @@ public class UnitSpriteGraphics : MonoBehaviour
     public Sprite FarmerFace;
     public Sprite LumberjackFace;
     public Sprite MinerFace;
+    public Sprite BuilderFace;
 }

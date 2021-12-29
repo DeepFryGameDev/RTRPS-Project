@@ -418,6 +418,9 @@ public class VillagerUnit : Unit
             case villagerClasses.MINER:
                 SetFaceGraphic(usg.MinerFace);
                 break;
+            case villagerClasses.BUILDER:
+                SetFaceGraphic(usg.BuilderFace);
+                break;
         }
     }
 }
