@@ -19,6 +19,7 @@ public class SelectedUnitProcessing : MonoBehaviour
     UIProcessing uip;
     UnitProcessing up;
     NavMovement nm;
+    GatherManager gm;
 
     // for multi select
     bool leftClickDrag, inClick;
@@ -33,6 +34,7 @@ public class SelectedUnitProcessing : MonoBehaviour
         uip = FindObjectOfType<UIProcessing>();
         up = FindObjectOfType<UnitProcessing>();
         nm = FindObjectOfType<NavMovement>();
+        gm = FindObjectOfType<GatherManager>();
 
         selectionBox = uip.transform.Find("MultiSelectCanvas/SelectionBox").GetComponent<RectTransform>();
         uip.ShowPanels(false);
@@ -80,20 +82,37 @@ public class SelectedUnitProcessing : MonoBehaviour
         {
             if ((Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Escape)) && !unitsCleared)
             {
-                foreach (Unit u in selectedUnits)
+                if (!uip.actionButtonClicked)
                 {
-                    u.isSelected = false;
-                }
-                foreach (Unit unit in selectedUnits)
-                {
-                    unit.GetComponent<Outline>().OutlineWidth = up.highlightWidth; // in case it wasn't properly set back during multi select
-                    HighlightUnit(unit, false);
-                }
-                
-                selectedUnits.Clear();
-                unitsCleared = true;
+                    foreach (Unit u in selectedUnits)
+                    {
+                        u.isSelected = false;
+                    }
+                    foreach (Unit unit in selectedUnits)
+                    {
+                        unit.GetComponent<Outline>().OutlineWidth = up.highlightWidth; // in case it wasn't properly set back during multi select
+                        HighlightUnit(unit, false);
+                    }
 
-                nm.DisableCamFocus();
+                    selectedUnits.Clear();
+                    unitsCleared = true;
+
+                    nm.DisableCamFocus();
+                } else
+                {
+                    if (Input.GetKeyDown(KeyCode.Escape))
+                    {
+                        Resource[] allResources = FindObjectsOfType<Resource>();
+                        foreach (Resource res in allResources)
+                        {
+                            if (res.GetComponent<Outline>() && res.GetComponent<Outline>().enabled == true)
+                            {
+                                gm.HighlightResource(res, false);
+                            }
+                        }
+                    }
+                    uip.actionButtonClicked = false;
+                }   
             }
 
             if (Input.GetKeyDown(KeyCode.Mouse0))
@@ -109,7 +128,7 @@ public class SelectedUnitProcessing : MonoBehaviour
 
                 foreach (RaycastHit hit in hits)
                 {
-                    if (hit.transform.gameObject.CompareTag("Unit"))
+                    if (hit.transform.gameObject.CompareTag("Unit") && !uip.actionButtonClicked)
                     {
                         hit.transform.GetComponent<Unit>().isSelected = true;
                         /*if (IfVillager(hit.transform.GetComponent<Unit>()))

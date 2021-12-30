@@ -29,6 +29,10 @@ public class UIProcessing : MonoBehaviour
     [SerializeField] GameObject actionSpacer;
     [Tooltip("Set to action button prefab")]
     [SerializeField] GameObject actionButton;
+    [Tooltip("Speed of action button fade in/out when clicked")]
+    public float actionButtonFadeSpeed;
+    [Tooltip("How far to fade out when action button is clicked")]
+    [Range(0, 255)] public float actionButtonFadeMin;
 
     [Tooltip("Set to icon used for wood resource in UI")]
     public Sprite woodResourceIcon;
@@ -39,10 +43,12 @@ public class UIProcessing : MonoBehaviour
     [Tooltip("Set to icon used for gold resource in UI")]
     public Sprite goldResourceIcon;
 
+    [ReadOnly] public bool actionButtonClicked, gatherActionClicked, buildActionClicked, actionButtonFadeBreak;
+
     [HideInInspector] public bool resetUI;
     bool uiCleared = false;
 
-    List<Unit> selectedUnits;
+    [HideInInspector] public List<Unit> selectedUnits;
     Unit currentUnit;
     float multiUnitsPanelSpacing;
 
@@ -61,8 +67,8 @@ public class UIProcessing : MonoBehaviour
 
         HorizontalLayoutGroup horizontalLayoutGroup = multiUnitsPanel.transform.Find("MultiUnitsSpacer").GetComponent<HorizontalLayoutGroup>();
 
-        gathererActions = GameObject.Find("ActionManager").GetComponent<GathererActions>();
-        builderActions = GameObject.Find("ActionManager").GetComponent<BuilderActions>();
+        gathererActions = FindObjectOfType<GathererActions>();
+        builderActions = FindObjectOfType<BuilderActions>();
 
         multiUnitsPanelSpacing = horizontalLayoutGroup.spacing;
     }
@@ -301,7 +307,7 @@ public class UIProcessing : MonoBehaviour
 
                         // prepare action button
                         GameObject buildActionGO = GameObject.Instantiate(actionButton) as GameObject;
-                        buildActionGO.transform.SetParent(actionSpacer.transform);
+                        buildActionGO.transform.SetParent(actionSpacer.transform, false);
 
                         // Set Icon
                         buildActionGO.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>().sprite = action.icon;
@@ -309,9 +315,12 @@ public class UIProcessing : MonoBehaviour
                         // Set Name
                         GetTextComp(buildActionGO.transform.Find("SkillName")).text = action.name;
 
+                        // Set Shortcut
+                        GetTextComp(buildActionGO.transform.Find("ShortcutKeyFrame/ShortcutKey")).text = action.shortcutKey.ToString();
+
                         // Set Action
                         BuildAction ba = buildActionGO.AddComponent(typeof(BuildAction)) as BuildAction;
-                        ba.action = action.actionScript;
+                        ba.action = action;
 
                         // Set Unit
                         ba.unit = currentUnit;
@@ -334,7 +343,7 @@ public class UIProcessing : MonoBehaviour
 
                         // prepare action button
                         GameObject gatherActionGO = GameObject.Instantiate(actionButton) as GameObject;
-                        gatherActionGO.transform.SetParent(actionSpacer.transform);
+                        gatherActionGO.transform.SetParent(actionSpacer.transform, false);
 
                         // Set Icon
                         gatherActionGO.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>().sprite = action.icon;
@@ -342,9 +351,12 @@ public class UIProcessing : MonoBehaviour
                         // Set Name
                         GetTextComp(gatherActionGO.transform.Find("SkillName")).text = action.name;
 
+                        // Set Shortcut
+                        GetTextComp(gatherActionGO.transform.Find("ShortcutKeyFrame/ShortcutKey")).text = action.shortcutKey.ToString();
+
                         // Set Action
                         GatherAction ga = gatherActionGO.AddComponent(typeof(GatherAction)) as GatherAction;
-                        ga.action = action.actionScript;
+                        ga.action = action;
 
                         // Set Unit
                         ga.unit = currentUnit;
@@ -386,7 +398,41 @@ public class UIProcessing : MonoBehaviour
         multiUnitsPanel.SetActive(show);
     }
 
-    VillagerUnit GetVillagerUnit(Unit unit)
+    public void ButtonUIProcessing(GameObject ab)
+    {
+        StartCoroutine(ActionIconFade(ab.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>()));
+    }
+
+    IEnumerator ActionIconFade(Image icon)
+    {
+        Color originColor = icon.color;
+
+        while (actionButtonClicked)
+        {
+            if (!actionButtonFadeBreak)
+            {
+                float newAlpha = Mathf.Lerp(actionButtonFadeMin, 255, Mathf.PingPong((Time.time * actionButtonFadeSpeed), 1));
+                Color newColor = icon.color;
+                newColor.a = (newAlpha / 255.0f);
+                icon.color = newColor;
+            } else
+            {
+                break;
+            }
+
+            yield return null;
+        }
+
+        actionButtonFadeBreak = false;
+        ResetIconAlpha(originColor, icon);
+    }
+
+    void ResetIconAlpha(Color originColor, Image icon)
+    {
+        icon.color = originColor;
+    }
+
+    public VillagerUnit GetVillagerUnit(Unit unit)
     {
         VillagerUnit tryVillager = unit as VillagerUnit;
 

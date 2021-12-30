@@ -136,17 +136,51 @@ public class UnitMovement : MonoBehaviour
                 {
                     if (resourceClicked)
                     {
-                        // Show UX feedback cursor animation
-                        StartCoroutine(TaskTargetAnim(GetScreenPosition()));
-
-                        if (chosenResource.GetComponent<Outline>())
-                            StartCoroutine(gm.HighlightConfirmedResource(chosenResource));
+                        // check if should be able to gather
+                        bool canGather = false;
 
                         foreach (Unit unit in selectedUnits)
                         {
-                            PrepareUnitForGathering(unit);
+                            if (IfVillager(unit) && chosenResource.resourceType == ResourceTypes.WOOD && 
+                                (((VillagerUnit)unit).villagerClass == villagerClasses.VILLAGER || 
+                                ((VillagerUnit)unit).villagerClass == villagerClasses.GATHERER ||
+                                ((VillagerUnit)unit).villagerClass == villagerClasses.LUMBERJACK))
+                            {
+                                canGather = true;              
+                            }
+
+                            if (IfVillager(unit) && chosenResource.resourceType == ResourceTypes.ORE &&
+                                (((VillagerUnit)unit).villagerClass == villagerClasses.VILLAGER ||
+                                ((VillagerUnit)unit).villagerClass == villagerClasses.GATHERER ||
+                                ((VillagerUnit)unit).villagerClass == villagerClasses.MINER))
+                            {
+                                canGather = true;
+                            }
+
+                            if (IfVillager(unit) && chosenResource.resourceType == ResourceTypes.FOOD &&
+                                (((VillagerUnit)unit).villagerClass == villagerClasses.VILLAGER ||
+                                ((VillagerUnit)unit).villagerClass == villagerClasses.GATHERER ||
+                                ((VillagerUnit)unit).villagerClass == villagerClasses.FARMER))
+                            {
+                                canGather = true;
+                            }
                         }
-                    } else
+
+                        if (canGather)
+                        {
+                            StartGathering(chosenResource);
+                        } else
+                        {
+                            // Show UX feedback cursor animation
+                            MoveTargetAnim(GetWorldPosition());
+
+                            foreach (Unit unit in selectedUnits)
+                            {
+                                ProcessMoveUnit(unit, GetWorldPosition());
+                            }
+                        }                        
+                    }
+                    else
                     {
                         // Show UX feedback cursor animation
                         MoveTargetAnim(GetWorldPosition());
@@ -161,7 +195,43 @@ public class UnitMovement : MonoBehaviour
         }
     }
 
-    void PrepareUnitForGathering(Unit unit)
+    public void StartGathering(Resource resource)
+    {
+        // Turn off action button clicked
+        uip.gatherActionClicked = false;
+        // Break the fade coroutine
+        uip.actionButtonFadeBreak = true;
+
+        // Show UX feedback cursor animation
+        StartCoroutine(TaskTargetAnim(GetScreenPosition()));
+
+        if (resource.GetComponent<Outline>())
+            StartCoroutine(gm.HighlightConfirmedResource(resource));
+
+        foreach (Unit unit in selectedUnits)
+        {
+            switch (resource.resourceType)
+            {
+                case ResourceTypes.WOOD:
+                    if (uip.GetVillagerUnit(unit).villagerClass == villagerClasses.VILLAGER || uip.GetVillagerUnit(unit).villagerClass == villagerClasses.GATHERER
+                        || uip.GetVillagerUnit(unit).villagerClass == villagerClasses.LUMBERJACK)
+                        PrepareUnitForGathering(unit, resource);
+                    break;
+                case ResourceTypes.ORE:
+                    if (uip.GetVillagerUnit(unit).villagerClass == villagerClasses.VILLAGER || uip.GetVillagerUnit(unit).villagerClass == villagerClasses.GATHERER
+                        || uip.GetVillagerUnit(unit).villagerClass == villagerClasses.MINER)
+                        PrepareUnitForGathering(unit, resource);
+                    break;
+                case ResourceTypes.FOOD:
+                    if (uip.GetVillagerUnit(unit).villagerClass == villagerClasses.VILLAGER || uip.GetVillagerUnit(unit).villagerClass == villagerClasses.GATHERER
+                        || uip.GetVillagerUnit(unit).villagerClass == villagerClasses.FARMER)
+                        PrepareUnitForGathering(unit, resource);
+                    break;
+            }
+        }
+    }
+
+    void PrepareUnitForGathering(Unit unit, Resource resource)
     {
         // Ensure movement speed is set appropriately
         unit.agent.speed = GetMoveSpeed(unit);
@@ -189,7 +259,7 @@ public class UnitMovement : MonoBehaviour
             }
         }
 
-        unit.GetComponent<VillagerUnit>().PrepareGather(chosenResource);
+        unit.GetComponent<VillagerUnit>().PrepareGather(resource);
     }
 
     private void ProcessMoveUnit(Unit unit, Vector3 destPos) // initial movement, including if moving to a resource

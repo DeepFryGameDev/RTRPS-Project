@@ -6,16 +6,23 @@ using UnityEngine.EventSystems;
 public class BuildAction : MonoBehaviour
 {
     [ReadOnly] public Unit unit;
-    [ReadOnly] public string action;
+    [ReadOnly] public BaseAction action;
 
-    BuildManager bm;
+    UIProcessing uip;
 
     // Start is called before the first frame update
     void Start()
     {
-        bm = FindObjectOfType<BuildManager>();
-
         SetAction();
+        uip = FindObjectOfType<UIProcessing>();
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(action.shortcutKey))
+        {
+            Build();
+        }
     }
 
     public void SetAction()
@@ -35,7 +42,15 @@ public class BuildAction : MonoBehaviour
 
     void Build(PointerEventData data)
     {
-        //Display build menu, the options here will proceed to:
-        //Instantiate(bm.depotTest);
+        Build();
+    }
+
+    void Build()
+    {
+        //Show glow on cursor and keep action button highlighted
+
+        uip.actionButtonClicked = true;
+        uip.buildActionClicked = true;
+        uip.ButtonUIProcessing(this.gameObject);
     }
 }

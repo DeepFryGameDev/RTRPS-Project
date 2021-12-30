@@ -7,6 +7,7 @@ public enum villagerClasses
 {
     VILLAGER,
     BUILDER,
+    GATHERER,
     FARMER,
     MINER,
     LUMBERJACK,
@@ -233,7 +234,8 @@ public class VillagerUnit : Unit
                     break;
             }
 
-            yield return new WaitForEndOfFrame();
+            //yield return new WaitForEndOfFrame();
+            yield return null;
         }
     }
 

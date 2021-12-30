@@ -9,4 +9,5 @@ public class BaseAction
     public Sprite icon;
     public string actionScript;
     public int levelRequired;
+    public KeyCode shortcutKey;
 }
