@@ -10,6 +10,9 @@ TagManager:
   - Building
   - Resource
   - Depot
+  - Blueprint
+  - BuildingInProgress
+  - BuildingInProgressChild
   layers:
   - Default
   - TransparentFX

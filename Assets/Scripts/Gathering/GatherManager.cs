@@ -15,10 +15,6 @@ public enum GatherPhases
 
 public class GatherManager : MonoBehaviour
 {
-    [Tooltip("Duration in seconds of outline when clicking a resource")]
-    [SerializeField] float resourceConfirmationOutlineDuration;
-    [Tooltip("Width of outline when clicking a resource")]
-    [SerializeField] [Range(1, 10)] float resourceConfirmationOutlineWidth;
     [Tooltip("Set to resource gather UX feedback prefab in UI")]
     [SerializeField] GameObject resourceGatherUX;
     [Tooltip("Set to Gather Canvas in UI")]
@@ -30,7 +26,18 @@ public class GatherManager : MonoBehaviour
     [Tooltip("Speed of UX feedback on screen moving upwards along y position")]
     [SerializeField] float resourceGatherUXSpeed;
     [Tooltip("How quickly the UX Feedback fades")]
-    [SerializeField] float resourceGatherUXFadeFactor;    
+    [SerializeField] float resourceGatherUXFadeFactor;
+
+    [Tooltip("Minimum amount of time to gather a resource")]
+    public float minGatherTime;
+    [Tooltip("Maximum amount of time to gather a resource")]
+    public float maxGatherTime;
+    public float gatherWoodTimeStrengthFactor;
+    public float gatherWoodTimeWillpowerFactor;
+    public float gatherOreTimeStrengthFactor;
+    public float gatherOreTimeStaminaFactor;
+    public float gatherFoodTimeIntelligenceFactor;
+    public float gatherFoodTimeWillpowerFactor;
 
     UIProcessing uip;
     UnitMovement um;
@@ -77,7 +84,7 @@ public class GatherManager : MonoBehaviour
         {
             if (res.GetComponent<Outline>() && res.GetComponent<Outline>().enabled == true)
             {
-                HighlightResource(res, false);
+                uip.HighlightResource(res.GetComponent<Outline>(), false);
             }
         }
 
@@ -124,10 +131,12 @@ public class GatherManager : MonoBehaviour
 
                 if (canGather)
                 {
-                    HighlightResource(hit.transform.GetComponent<Resource>(), true);
+                    uip.HighlightResource(hit.transform.GetComponent<Outline>(), true);
 
                     if (Input.GetKeyDown(KeyCode.Mouse0))
                     {
+                        Debug.Log("Gathering");
+
                         um.StartGathering(hit.transform.GetComponent<Resource>());
                     }
                 }
@@ -196,20 +205,6 @@ public class GatherManager : MonoBehaviour
 
             yield return new WaitForEndOfFrame();
         }
-    }
-
-    public IEnumerator HighlightConfirmedResource(Resource resource)
-    {
-        resource.GetComponent<Outline>().OutlineWidth = resourceConfirmationOutlineWidth;
-        resource.GetComponent<Outline>().enabled = true;
-        yield return new WaitForSeconds(resourceConfirmationOutlineDuration);
-        resource.GetComponent<Outline>().enabled = false;
-    }
-
-    public void HighlightResource(Resource resource, bool highlight)
-    {
-        resource.GetComponent<Outline>().OutlineWidth = resourceConfirmationOutlineWidth;
-        resource.GetComponent<Outline>().enabled = highlight;
     }
 
     void SetToCanvasSpace(GameObject source, RectTransform prefab)

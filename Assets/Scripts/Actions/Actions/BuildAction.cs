@@ -32,7 +32,7 @@ public class BuildAction : MonoBehaviour
         EventTrigger.Entry entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.PointerClick;
 
-        if (action.Equals("Build"))
+        if (action.actionScript.Equals("Build"))
         {
             entry.callback.AddListener((data) => { Build((PointerEventData)data); });
         }
@@ -42,15 +42,17 @@ public class BuildAction : MonoBehaviour
 
     void Build(PointerEventData data)
     {
-        Build();
+        Build();      
     }
 
     void Build()
     {
         //Show glow on cursor and keep action button highlighted
-
-        uip.actionButtonClicked = true;
-        uip.buildActionClicked = true;
-        uip.ButtonUIProcessing(this.gameObject);
+        if (!uip.actionButtonClicked)
+        {
+            uip.actionButtonClicked = true;
+            uip.buildActionClicked = true;
+            uip.ButtonUIProcessing(this.gameObject);
+        }            
     }
 }

@@ -11,9 +11,13 @@ GameObject:
   - component: {fileID: 9218589542960149592}
   - component: {fileID: 2229665154520773907}
   - component: {fileID: 5254912756167591469}
+  - component: {fileID: 6353387453904238481}
+  - component: {fileID: 971760763922290767}
+  - component: {fileID: 6266592786402672311}
+  - component: {fileID: 1219662808064020966}
   m_Layer: 0
   m_Name: Hangar Base
-  m_TagString: Untagged
+  m_TagString: Building
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -81,6 +85,65 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!64 &6353387453904238481
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2439226165544727522}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 4
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -5231725537635603372, guid: 36f0db891a17c3b4393ced9039c0d47f, type: 3}
+--- !u!208 &971760763922290767
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2439226165544727522}
+  m_Enabled: 0
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 3.0000002, y: 1.519, z: 6.4630003}
+  m_MoveThreshold: 0.1
+  m_Carve: 0
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 1.519, z: 0}
+  m_TimeToStationary: 0.5
+--- !u!114 &6266592786402672311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2439226165544727522}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4d4aaae4dd4c104dac9f9f356b15605, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isOverlapping: 0
+--- !u!54 &1219662808064020966
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2439226165544727522}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &6940977642929595331
 GameObject:
   m_ObjectHideFlags: 0
@@ -93,7 +156,7 @@ GameObject:
   - component: {fileID: 8909210779282246811}
   m_Layer: 0
   m_Name: Depot_Blueprint
-  m_TagString: Untagged
+  m_TagString: Blueprint
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -125,4 +188,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46ab956ba9971b743871560099bb4adb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inProgressPrefab: {fileID: 6940977642929595331, guid: 5a741295f3adce74986197e4879ef4a0, type: 3}
+  building:
+    name: 
+    icon: {fileID: 0}
+    shortcutKey: 0
+    blueprintPrefab: {fileID: 0}
+    inProgressPrefab: {fileID: 0}
+    completePrefab: {fileID: 0}
+    woodRequired: 0
+    oreRequired: 0
+    foodRequired: 0
+    goldRequired: 0
+    maxUnitsInteracting: 0
+    interactionBounds: 0
+  listOfChildren: []

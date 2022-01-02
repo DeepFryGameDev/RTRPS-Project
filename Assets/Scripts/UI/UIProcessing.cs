@@ -33,6 +33,10 @@ public class UIProcessing : MonoBehaviour
     public float actionButtonFadeSpeed;
     [Tooltip("How far to fade out when action button is clicked")]
     [Range(0, 255)] public float actionButtonFadeMin;
+    [Tooltip("Duration in seconds of outline when clicking a resource")]
+    [SerializeField] float taskConfirmationOutlineDuration;
+    [Tooltip("Width of outline when clicking a resource")]
+    [SerializeField] [Range(1, 10)] float taskConfirmationOutlineWidth;
 
     [Tooltip("Set to icon used for wood resource in UI")]
     public Sprite woodResourceIcon;
@@ -43,7 +47,7 @@ public class UIProcessing : MonoBehaviour
     [Tooltip("Set to icon used for gold resource in UI")]
     public Sprite goldResourceIcon;
 
-    [ReadOnly] public bool actionButtonClicked, gatherActionClicked, buildActionClicked, actionButtonFadeBreak;
+    [ReadOnly] public bool actionButtonClicked, gatherActionClicked, buildActionClicked, buildingActionClicked, actionButtonFadeBreak;
 
     [HideInInspector] public bool resetUI;
     bool uiCleared = false;
@@ -60,10 +64,10 @@ public class UIProcessing : MonoBehaviour
     {
         selectedUnits = FindObjectOfType<SelectedUnitProcessing>().selectedUnits;
 
-        transform.Find("UICanvas/TopBar/ResourceSpacer/Lumber/Icon").GetComponent<Image>().sprite = woodResourceIcon;
-        transform.Find("UICanvas/TopBar/ResourceSpacer/Ore/Icon").GetComponent<Image>().sprite = oreResourceIcon;
-        transform.Find("UICanvas/TopBar/ResourceSpacer/Food/Icon").GetComponent<Image>().sprite = foodResourceIcon;
-        transform.Find("UICanvas/TopBar/ResourceSpacer/Gold/Icon").GetComponent<Image>().sprite = goldResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Lumber/Icon").GetComponent<Image>().sprite = woodResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Ore/Icon").GetComponent<Image>().sprite = oreResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Food/Icon").GetComponent<Image>().sprite = foodResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Gold/Icon").GetComponent<Image>().sprite = goldResourceIcon;
 
         HorizontalLayoutGroup horizontalLayoutGroup = multiUnitsPanel.transform.Find("MultiUnitsSpacer").GetComponent<HorizontalLayoutGroup>();
 
@@ -252,21 +256,28 @@ public class UIProcessing : MonoBehaviour
     {
         if (GetVillagerUnit(currentUnit))
         {
-            if (GetVillagerUnit(currentUnit).villagerClass == villagerClasses.FARMER ||
+            if ((GetVillagerUnit(currentUnit).villagerClass == villagerClasses.FARMER ||
                 GetVillagerUnit(currentUnit).villagerClass == villagerClasses.LUMBERJACK ||
                 GetVillagerUnit(currentUnit).villagerClass == villagerClasses.MINER ||
-                GetVillagerUnit(currentUnit).villagerClass == villagerClasses.VILLAGER)
+                GetVillagerUnit(currentUnit).villagerClass == villagerClasses.VILLAGER) &&
+                !GetVillagerUnit(currentUnit).buildTaskIsActive)
             {
                 // Update gathering bar if gathering class
-                if (GetVillagerUnit(currentUnit).gatherTaskIsActive || GetVillagerUnit(currentUnit).resourcesHolding > 0)
+                if ((GetVillagerUnit(currentUnit).gatherTaskIsActive || GetVillagerUnit(currentUnit).resourcesHolding > 0) && !GetVillagerUnit(currentUnit).buildTaskIsActive)
                 {
                     GetTextComp(unitActionPanel.transform.Find("ActionText")).text = GetVillagerUnit(currentUnit).resourcesHolding + "/" + GetVillagerUnit(currentUnit).GetCarryLimit();
+
                     GetSlider(unitActionPanel.transform.Find("ActionSlider")).fillAmount = (float)GetVillagerUnit(currentUnit).resourcesHolding / GetVillagerUnit(currentUnit).GetCarryLimit();
+                    GetSlider(unitActionPanel.transform.Find("ActionTimeSlider")).fillAmount = (float)GetVillagerUnit(currentUnit).gatherTimeElapsed / GetVillagerUnit(currentUnit).GetGatherTime();
 
                     if (!unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
                     {
                         unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(true);
                         unitActionPanel.transform.Find("ActionText").gameObject.SetActive(true);
+                    }
+                    if (!unitActionPanel.transform.Find("ActionTimeSlider").gameObject.activeInHierarchy)
+                    {
+                        unitActionPanel.transform.Find("ActionTimeSlider").gameObject.SetActive(true);
                     }
                 }
                 else
@@ -275,11 +286,43 @@ public class UIProcessing : MonoBehaviour
                     {
                         unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(false);
                         unitActionPanel.transform.Find("ActionText").gameObject.SetActive(false);
+                        unitActionPanel.transform.Find("ActionTimeSlider").gameObject.SetActive(false);
                     }
                 }
             }
-        }
-        else
+            
+            if ((GetVillagerUnit(currentUnit).villagerClass == villagerClasses.BUILDER ||
+                      GetVillagerUnit(currentUnit).villagerClass == villagerClasses.VILLAGER) &&
+                      !GetVillagerUnit(currentUnit).gatherTaskIsActive)
+            {
+                if (GetVillagerUnit(currentUnit).buildTaskIsActive)
+                {
+                    GetTextComp(unitActionPanel.transform.Find("ActionText")).text = GetVillagerUnit(currentUnit).personalBuildProgress + "%";
+
+                    GetSlider(unitActionPanel.transform.Find("ActionSlider")).fillAmount = GetVillagerUnit(currentUnit).personalBuildProgress / 100;
+                    GetSlider(unitActionPanel.transform.Find("ActionTimeSlider")).fillAmount = GetVillagerUnit(currentUnit).buildTimeElapsed / GetVillagerUnit(currentUnit).GetBuildTime();
+
+                    if (!unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
+                    {
+                        unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(true);
+                        unitActionPanel.transform.Find("ActionText").gameObject.SetActive(true);
+                    }
+                    if (!unitActionPanel.transform.Find("ActionTimeSlider").gameObject.activeInHierarchy)
+                    {
+                        unitActionPanel.transform.Find("ActionTimeSlider").gameObject.SetActive(true);
+                    }
+                }
+                else
+                {
+                    if (unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
+                    {
+                        unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(false);
+                        unitActionPanel.transform.Find("ActionText").gameObject.SetActive(false);
+                        unitActionPanel.transform.Find("ActionTimeSlider").gameObject.SetActive(false);
+                    }
+                }
+            }
+        } else
         {
             Debug.LogError(currentUnit.gameObject.name + " is not a villager unit!");
         }
@@ -400,11 +443,68 @@ public class UIProcessing : MonoBehaviour
 
     public void ButtonUIProcessing(GameObject ab)
     {
-        StartCoroutine(ActionIconFade(ab.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>()));
+        StartCoroutine(ActionIconFade(ab));
     }
 
-    IEnumerator ActionIconFade(Image icon)
+    IEnumerator ActionIconFade(GameObject actionButton)
     {
+        Image icon = actionButton.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>();
+        Color originColor = icon.color;
+
+        if (actionButton.GetComponent<BuildAction>())
+        {
+            while (buildActionClicked)
+            {
+                ProcessFade(icon);
+
+                yield return null;
+            }
+        } else if (actionButton.GetComponent<BuildingAction>())
+        {
+            while (buildingActionClicked)
+            {
+                ProcessFade(icon);
+
+                yield return null;
+            }
+        } else if (actionButton.GetComponent<GatherAction>())
+        {
+            while (gatherActionClicked)
+            {
+                ProcessFade(icon);
+
+                yield return null;
+            }
+        }
+
+        ResetIconAlpha(originColor, icon);
+    }
+
+    private void ProcessFade(Image icon)
+    {
+        float newAlpha = Mathf.Lerp(actionButtonFadeMin, 255, Mathf.PingPong((Time.time * actionButtonFadeSpeed), 1));
+        Color newColor = icon.color;
+        newColor.a = (newAlpha / 255.0f);
+        icon.color = newColor;
+    }
+
+    public IEnumerator HighlightConfirmedResource(Outline outline)
+    {
+        outline.OutlineWidth = taskConfirmationOutlineWidth;
+        outline.enabled = true;
+        yield return new WaitForSeconds(taskConfirmationOutlineDuration);
+        outline.enabled = false;
+    }
+
+    public void HighlightResource(Outline outline, bool highlight)
+    {
+        outline.OutlineWidth = taskConfirmationOutlineWidth;
+        outline.enabled = highlight;
+    }
+
+    /*IEnumerator ActionIconFade(GameObject actionButton)
+    {
+        Image icon = actionButton.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>();
         Color originColor = icon.color;
 
         while (actionButtonClicked)
@@ -425,7 +525,7 @@ public class UIProcessing : MonoBehaviour
 
         actionButtonFadeBreak = false;
         ResetIconAlpha(originColor, icon);
-    }
+    }*/
 
     void ResetIconAlpha(Color originColor, Image icon)
     {

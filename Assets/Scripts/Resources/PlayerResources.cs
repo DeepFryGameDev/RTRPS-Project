@@ -15,7 +15,7 @@ public class PlayerResources : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        resourceUIParent = GameObject.Find("UI/UICanvas/TopBar/ResourceSpacer");
+        resourceUIParent = GameObject.Find("MainCanvas/TopBar/ResourceSpacer");
     }
 
     // Update is called once per frame

@@ -48,9 +48,11 @@ public class GatherAction : MonoBehaviour
     void Gather()
     {
         //Show glow on cursor and keep action button highlighted
-
-        uip.actionButtonClicked = true;
-        uip.gatherActionClicked = true;
-        uip.ButtonUIProcessing(this.gameObject);
+        if (!uip.actionButtonClicked)
+        {
+            uip.actionButtonClicked = true;
+            uip.gatherActionClicked = true;
+            uip.ButtonUIProcessing(this.gameObject);
+        }            
     }
 }

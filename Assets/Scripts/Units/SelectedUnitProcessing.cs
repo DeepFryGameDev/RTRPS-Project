@@ -80,9 +80,13 @@ public class SelectedUnitProcessing : MonoBehaviour
     {
         if (!IsPointerOverUIElement())
         {
-            if ((Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Escape)) && !unitsCleared)
+            if ((Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Escape)) && !unitsCleared && !uip.buildingActionClicked)
             {
-                if (!uip.actionButtonClicked)
+                if (uip.buildActionClicked && !uip.buildingActionClicked)
+                {
+                    // do nothing... gonna need to clear this up later
+
+                } else if (!uip.actionButtonClicked)
                 {
                     foreach (Unit u in selectedUnits)
                     {
@@ -102,12 +106,13 @@ public class SelectedUnitProcessing : MonoBehaviour
                 {
                     if (Input.GetKeyDown(KeyCode.Escape))
                     {
+                        Debug.Log("Escape hit 2");
                         Resource[] allResources = FindObjectsOfType<Resource>();
                         foreach (Resource res in allResources)
                         {
                             if (res.GetComponent<Outline>() && res.GetComponent<Outline>().enabled == true)
                             {
-                                gm.HighlightResource(res, false);
+                                uip.HighlightResource(res.GetComponent<Outline>(), false);
                             }
                         }
                     }
@@ -115,7 +120,7 @@ public class SelectedUnitProcessing : MonoBehaviour
                 }   
             }
 
-            if (Input.GetKeyDown(KeyCode.Mouse0))
+            if (Input.GetKeyDown(KeyCode.Mouse0) && !uip.buildingActionClicked)
             {
                 inClick = true;
 

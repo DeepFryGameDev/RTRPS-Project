@@ -24,6 +24,10 @@ public class UnitMovement : MonoBehaviour
     bool resourceClicked;
     Resource chosenResource;
 
+    // For building
+    bool buildingInProgressClicked;
+    BuildInProgress buildInProg;
+
     // For moving
     //float collisionCheckDistance = 3;
     Vector3 agentDestination;
@@ -75,8 +79,8 @@ public class UnitMovement : MonoBehaviour
             if (Input.GetKeyUp(KeyCode.Mouse1) && rClickFrameCount >= 0 && rClickFrameCount <= 1)
             {
                 bool canMove = true;
-                Vector3 resourcePos = new Vector3();
                 resourceClicked = false;
+                buildingInProgressClicked = false;
 
                 stopRadius = 0;
 
@@ -105,7 +109,7 @@ public class UnitMovement : MonoBehaviour
                     }
                 }
 
-                // Checking if any resource is clicked
+                // Checking if any resource/build in progress is clicked
                 foreach (RaycastHit hit in hits)
                 {
                     if (IfVillager(selectedUnits[0]))
@@ -113,8 +117,6 @@ public class UnitMovement : MonoBehaviour
                         if (hit.transform.gameObject.CompareTag("Resource"))
                         {
                             resourceClicked = true;
-                            resourcePos = hit.transform.position;
-                            resourcePos.y = Terrain.activeTerrain.SampleHeight(hit.transform.position);
 
                             if (hit.transform.GetComponent<Resource>())
                             {
@@ -124,6 +126,19 @@ public class UnitMovement : MonoBehaviour
                                 chosenResource = hit.transform.parent.GetComponent<Resource>();
                             }                            
                             stopRadius = chosenResource.interactionBounds;                            
+                        } else if (hit.transform.CompareTag("BuildingInProgress") || hit.transform.CompareTag("BuildingInProgressChild")) // if any building in progress is clicked
+                        {                            
+                            buildingInProgressClicked = true;
+
+                            if (hit.transform.GetComponent<BuildInProgress>())
+                            {
+                                buildInProg = hit.transform.GetComponent<BuildInProgress>();
+                            }
+                            else
+                            {
+                                buildInProg = hit.transform.parent.GetComponent<BuildInProgress>();
+                            }
+                            stopRadius = buildInProg.building.interactionBounds;
                         }
                     } else
                     {
@@ -179,6 +194,34 @@ public class UnitMovement : MonoBehaviour
                                 ProcessMoveUnit(unit, GetWorldPosition());
                             }
                         }                        
+                    } else if (buildingInProgressClicked)
+                    {
+                        // check if should be able to gather
+                        bool canBuild = false;
+
+                        foreach (Unit unit in selectedUnits)
+                        {
+                            if (((VillagerUnit)unit).villagerClass == villagerClasses.VILLAGER ||
+                                ((VillagerUnit)unit).villagerClass == villagerClasses.BUILDER)
+                            {
+                                canBuild = true;
+                            }
+                        }
+
+                        if (canBuild)
+                        {
+                            StartBuild(buildInProg);
+                        }
+                        else
+                        {
+                            // Show UX feedback cursor animation
+                            MoveTargetAnim(GetWorldPosition());
+
+                            foreach (Unit unit in selectedUnits)
+                            {
+                                ProcessMoveUnit(unit, GetWorldPosition());
+                            }
+                        }
                     }
                     else
                     {
@@ -206,7 +249,7 @@ public class UnitMovement : MonoBehaviour
         StartCoroutine(TaskTargetAnim(GetScreenPosition()));
 
         if (resource.GetComponent<Outline>())
-            StartCoroutine(gm.HighlightConfirmedResource(resource));
+            StartCoroutine(uip.HighlightConfirmedResource(resource.GetComponent<Outline>()));
 
         foreach (Unit unit in selectedUnits)
         {
@@ -262,6 +305,57 @@ public class UnitMovement : MonoBehaviour
         unit.GetComponent<VillagerUnit>().PrepareGather(resource);
     }
 
+    public void StartBuild(BuildInProgress bip)
+    {
+        // Turn off action button clicked
+        uip.buildActionClicked = false;
+        // Break the fade coroutine
+        uip.actionButtonFadeBreak = true;
+
+        // Show UX feedback cursor animation
+        StartCoroutine(TaskTargetAnim(GetScreenPosition()));
+
+        if (bip.GetComponent<Outline>())
+            StartCoroutine(uip.HighlightConfirmedResource(bip.GetComponent<Outline>()));
+
+        foreach (Unit unit in selectedUnits)
+        {
+            PrepareUnitForBuild(unit, bip);
+        }
+    }
+
+    void PrepareUnitForBuild(Unit unit, BuildInProgress bip)
+    {
+        // Ensure movement speed is set appropriately
+        unit.agent.speed = GetMoveSpeed(unit);
+
+        // Set stopping distance for any resource clicked (or if multiple units, they will stop a bit further away to avoid bumping into eachother)
+        if (selectedUnits.Count == 1)
+        {
+            unit.agent.stoppingDistance = stopRadius;
+        }
+        else
+        {
+            unit.agent.stoppingDistance = stopRadius + (selectedUnits.Count * resourceBumpFactor);
+        }
+
+        // Stop any current navigation
+        unit.agent.enabled = false;
+        unit.agent.enabled = true;
+
+        // Set villager active task to false as they are being moved manually
+        if (IfVillager(unit.GetComponent<Unit>()))
+        {
+            if (unit.GetComponent<VillagerUnit>().gatherTaskIsActive)
+            {
+                unit.GetComponent<VillagerUnit>().gatherTaskIsActive = false;
+                unit.GetComponent<VillagerUnit>().StopGathering();
+            }
+        }
+
+        unit.GetComponent<VillagerUnit>().PrepareBuilding(bip.gameObject);
+    }
+
     private void ProcessMoveUnit(Unit unit, Vector3 destPos) // initial movement, including if moving to a resource
     {
         // Ensure movement speed is set appropriately
@@ -290,7 +384,7 @@ public class UnitMovement : MonoBehaviour
         unit.agent.SetDestination(destPos);
     }
 
-    public void ProcessMoveVillagerUnitInTask(bool toDepot, Unit unit, Resource resource, Depot depot)
+    public void ProcessMoveVillagerUnitInGatherTask(bool toDepot, Unit unit, Resource resource, Depot depot)
     {
         // Reset agent's path
         unit.agent.ResetPath();
@@ -307,7 +401,7 @@ public class UnitMovement : MonoBehaviour
             unit.agent.stoppingDistance = resource.interactionBounds;
         }        
 
-        // Move to where mouse is clicked (or resource if clicked)
+        // Move to the depot or resource
         if (toDepot)
         {
             agentDestination = depot.transform.position;
@@ -316,6 +410,25 @@ public class UnitMovement : MonoBehaviour
         {
             agentDestination = resource.transform.position;
         }
+
+        //Debug.Log("Moving unit " + unit.gameObject.name + " - toDepot: " + toDepot);
+
+        unit.agent.SetDestination(agentDestination);
+    }
+
+    public void ProcessMoveVillagerUnitToBuildInProgress(Unit unit, BuildInProgress bip)
+    {
+        // Reset agent's path
+        unit.agent.ResetPath();
+
+        // Ensure movement speed is set appropriately
+        unit.agent.speed = GetMoveSpeed(unit);
+
+        // Set stopping distance for the building clicked
+        unit.agent.stoppingDistance = bip.building.interactionBounds;
+
+        // Move to the build
+        agentDestination = bip.transform.position;
 
         //Debug.Log("Moving unit " + unit.gameObject.name + " - toDepot: " + toDepot);
 
