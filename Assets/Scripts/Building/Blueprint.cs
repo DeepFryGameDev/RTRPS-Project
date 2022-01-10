@@ -72,7 +72,7 @@ public class Blueprint : MonoBehaviour
 
         foreach (GameObject obj in listOfChildren)
         {
-            if (obj.GetComponent<CollidersOverlapping>() && obj.GetComponent<CollidersOverlapping>().isOverlapping)
+            if (obj.GetComponent<CollidersOverlappingForBuild>() && obj.GetComponent<CollidersOverlappingForBuild>().isOverlapping)
             {
                 return true;
             }

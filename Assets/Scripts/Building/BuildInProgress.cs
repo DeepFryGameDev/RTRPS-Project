@@ -8,6 +8,7 @@ public class BuildInProgress : MonoBehaviour
     [ReadOnly] public List<Unit> unitsInteracting;
 
     [HideInInspector] public BaseBuilding building;
+    [HideInInspector] public bool destroyed;
 
     List<MeshRenderer> bipRenderers;
     Material tempMat;
@@ -75,11 +76,5 @@ public class BuildInProgress : MonoBehaviour
 
         newColor.a = newAlpha;
         mat.color = newColor;
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.white;
-        Gizmos.DrawWireSphere(transform.position, building.interactionBounds);
     }
 }

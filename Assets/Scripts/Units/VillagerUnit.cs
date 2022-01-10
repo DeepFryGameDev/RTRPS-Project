@@ -37,6 +37,11 @@ public class VillagerUnit : Unit
     BuildPhases buildPhase;
     [HideInInspector] public BaseBuilding chosenBuilding;
 
+    InteractionCollision destInteractionCollision;
+    [ReadOnly] public bool isAtDest;
+
+    List<GameObject> listOfChildren = new List<GameObject>();
+
     void SetBaseAttributes()
     {
         usesEnergy = true;
@@ -293,15 +298,19 @@ public class VillagerUnit : Unit
 
     bool IsAtDest(Transform dest)
     {
-        bool atDest = false;
-
-        if (Vector3.Distance(transform.position, dest.position) <= GetComponent<NavMeshAgent>().stoppingDistance &&
-           GetComponent<NavMeshAgent>().remainingDistance <= GetComponent<NavMeshAgent>().stoppingDistance)
+        if (destInteractionCollision == null)
         {
-            atDest = true;
+            SetInteractionCollision(dest.gameObject);
         }
 
-        return atDest;
+        if (destInteractionCollision.isAtDest && isAtDest)
+        {
+            destInteractionCollision = null;
+            return true;
+        } else
+        {
+            return false;
+        }
     }
 
     Depot GetClosestDepot(Resource resource)
@@ -309,17 +318,17 @@ public class VillagerUnit : Unit
         GameObject[] objs;
         objs = GameObject.FindGameObjectsWithTag("Depot");
 
-        depotTypes chosenDepotType = new depotTypes();
+        depotResources chosenDepotType = new depotResources();
 
         if (activeGatherTask.resource.resourceType == ResourceTypes.FOOD)
         {
-            chosenDepotType = depotTypes.FOOD;
+            chosenDepotType = depotResources.FOOD;
         } else if (activeGatherTask.resource.resourceType == ResourceTypes.ORE)
         {
-            chosenDepotType = depotTypes.ORE;
+            chosenDepotType = depotResources.ORE;
         } else if (activeGatherTask.resource.resourceType == ResourceTypes.WOOD)
         {
-            chosenDepotType = depotTypes.WOOD;
+            chosenDepotType = depotResources.WOOD;
         }
 
         GameObject closest = null;
@@ -328,7 +337,7 @@ public class VillagerUnit : Unit
 
         foreach (GameObject depot in objs)
         {
-            if (depot.GetComponent<Depot>().depotType == depotTypes.ALL || depot.GetComponent<Depot>().depotType == chosenDepotType)
+            if (depot.GetComponent<Depot>().building.depotResource == depotResources.ALL || depot.GetComponent<Depot>().building.depotResource == chosenDepotType)
             {
                 Vector3 diff = depot.transform.position - tempPos;
                 if (diff.sqrMagnitude < distance)
@@ -416,13 +425,13 @@ public class VillagerUnit : Unit
                         break;
                     }
 
-                    if (bip.progress < 100) // if progress=100 has not been reached
+                    if (bip.progress < 100 && agent.velocity == Vector3.zero) // if progress=100 has not been reached
                     {
                         // move to build
-                        um.ProcessMoveVillagerUnitToBuildInProgress(this, bip); // this needs to be updated
+                        um.ProcessMoveVillagerUnitToBuildInProgress(this, bip); // this possibly needs to be updated
                     }
 
-                    if (!agent.pathPending && IsAtDest(bip.transform)) // once in range of chosen build
+                    if (agent.velocity != Vector3.zero && IsAtDest(bip.transform)) // once in range of chosen build
                     {
                         StopAgentMovement(); // stop moving
 
@@ -437,14 +446,22 @@ public class VillagerUnit : Unit
                         bip.unitsInteracting.Add(this);
                     }
 
+                    if (bip.destroyed)
+                    {
+                        buildTaskIsActive = false;
+                        break;
+                    }
+
                     if (bip.progress < 100)
                     {
                         //yield return new WaitForSeconds(GetBuildTime()); // simulates building time
-                        yield return StartCoroutine(SimBuildTime());
-                        ContributeToBuild(bip);
+                        yield return StartCoroutine(SimBuildTime(bip));
+
+                        if (bip.progress < 100)
+                            ContributeToBuild(bip);
                     }
 
-                    if (bip.progress == 100)
+                    if (bip.progress == 100 && !bip.destroyed)
                     {
                         // cancel this task
                         bm.FinishBuildingProcess(bip);
@@ -457,11 +474,11 @@ public class VillagerUnit : Unit
         }                    
     }
 
-    IEnumerator SimBuildTime()
+    IEnumerator SimBuildTime(BuildInProgress bip)
     {
         buildTimeElapsed = 0;
 
-        while (buildTimeElapsed < GetBuildTime())
+        while (buildTimeElapsed < GetBuildTime() && bip.progress < 100)
         {
             buildTimeElapsed += Time.deltaTime;
 
@@ -638,6 +655,39 @@ public class VillagerUnit : Unit
             case villagerClasses.BUILDER:
                 SetFaceGraphic(usg.BuilderFace);
                 break;
+        }
+    }
+
+    void SetInteractionCollision(GameObject objToCheck)
+    {
+        listOfChildren.Clear();
+
+        destInteractionCollision = null;
+
+        GetRecursiveChildren(objToCheck);
+
+        foreach (GameObject obj in listOfChildren)
+        {
+            if (obj.GetComponent<InteractionCollision>())
+            {
+                destInteractionCollision = obj.GetComponent<InteractionCollision>();
+                break;
+            }
+        }
+    }
+
+    private void GetRecursiveChildren(GameObject obj)
+    {
+        if (null == obj)
+            return;
+
+        foreach (Transform child in obj.transform)
+        {
+            if (null == child)
+                continue;
+            //child.gameobject contains the current child you can do whatever you want like add it to an array
+            listOfChildren.Add(child.gameObject);
+            GetRecursiveChildren(child.gameObject);
         }
     }
 }

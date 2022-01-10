@@ -31,8 +31,6 @@ public class UnitMovement : MonoBehaviour
     // For moving
     //float collisionCheckDistance = 3;
     Vector3 agentDestination;
-
-    List<Unit> selectedUnits;
     UIProcessing uip;
     float rClickFrameCount;
     TerrainCollider tcol;
@@ -44,8 +42,6 @@ public class UnitMovement : MonoBehaviour
     void Start()
     {
         rClickFrameCount = 0;
-
-        selectedUnits = GetComponent<SelectedUnitProcessing>().selectedUnits;
         uip = FindObjectOfType<UIProcessing>();
         tcol = Terrain.activeTerrain.GetComponent<TerrainCollider>();
         cm = FindObjectOfType<CursorManager>();
@@ -74,7 +70,7 @@ public class UnitMovement : MonoBehaviour
 
     void CheckForMoveUnit()
     {
-        if (!IsPointerOverUIElement() && selectedUnits.Count > 0)
+        if (!IsPointerOverUIElement() && uip.selectedUnits.Count > 0)
         {
             if (Input.GetKeyUp(KeyCode.Mouse1) && rClickFrameCount >= 0 && rClickFrameCount <= 1)
             {
@@ -92,7 +88,7 @@ public class UnitMovement : MonoBehaviour
                 // Checking if unable to move
                 foreach (RaycastHit hit in hits)
                 {
-                    if (hit.transform.gameObject.CompareTag("Building") || hit.transform.gameObject.CompareTag("Unit"))
+                    if (hit.transform.gameObject.CompareTag("CompletedBuilding") || hit.transform.gameObject.CompareTag("Unit"))
                     {
                         canMove = false;
                     }
@@ -112,7 +108,7 @@ public class UnitMovement : MonoBehaviour
                 // Checking if any resource/build in progress is clicked
                 foreach (RaycastHit hit in hits)
                 {
-                    if (IfVillager(selectedUnits[0]))
+                    if (IfVillager(uip.selectedUnits[0]))
                     {
                         if (hit.transform.gameObject.CompareTag("Resource"))
                         {
@@ -138,7 +134,7 @@ public class UnitMovement : MonoBehaviour
                             {
                                 buildInProg = hit.transform.parent.GetComponent<BuildInProgress>();
                             }
-                            stopRadius = buildInProg.building.interactionBounds;
+                            stopRadius = 1; // change later
                         }
                     } else
                     {
@@ -154,7 +150,7 @@ public class UnitMovement : MonoBehaviour
                         // check if should be able to gather
                         bool canGather = false;
 
-                        foreach (Unit unit in selectedUnits)
+                        foreach (Unit unit in uip.selectedUnits)
                         {
                             if (IfVillager(unit) && chosenResource.resourceType == ResourceTypes.WOOD && 
                                 (((VillagerUnit)unit).villagerClass == villagerClasses.VILLAGER || 
@@ -189,7 +185,7 @@ public class UnitMovement : MonoBehaviour
                             // Show UX feedback cursor animation
                             MoveTargetAnim(GetWorldPosition());
 
-                            foreach (Unit unit in selectedUnits)
+                            foreach (Unit unit in uip.selectedUnits)
                             {
                                 ProcessMoveUnit(unit, GetWorldPosition());
                             }
@@ -199,7 +195,7 @@ public class UnitMovement : MonoBehaviour
                         // check if should be able to gather
                         bool canBuild = false;
 
-                        foreach (Unit unit in selectedUnits)
+                        foreach (Unit unit in uip.selectedUnits)
                         {
                             if (((VillagerUnit)unit).villagerClass == villagerClasses.VILLAGER ||
                                 ((VillagerUnit)unit).villagerClass == villagerClasses.BUILDER)
@@ -217,7 +213,7 @@ public class UnitMovement : MonoBehaviour
                             // Show UX feedback cursor animation
                             MoveTargetAnim(GetWorldPosition());
 
-                            foreach (Unit unit in selectedUnits)
+                            foreach (Unit unit in uip.selectedUnits)
                             {
                                 ProcessMoveUnit(unit, GetWorldPosition());
                             }
@@ -228,7 +224,7 @@ public class UnitMovement : MonoBehaviour
                         // Show UX feedback cursor animation
                         MoveTargetAnim(GetWorldPosition());
 
-                        foreach (Unit unit in selectedUnits)
+                        foreach (Unit unit in uip.selectedUnits)
                         {
                             ProcessMoveUnit(unit, GetWorldPosition());
                         }
@@ -251,7 +247,7 @@ public class UnitMovement : MonoBehaviour
         if (resource.GetComponent<Outline>())
             StartCoroutine(uip.HighlightConfirmedResource(resource.GetComponent<Outline>()));
 
-        foreach (Unit unit in selectedUnits)
+        foreach (Unit unit in uip.selectedUnits)
         {
             switch (resource.resourceType)
             {
@@ -280,12 +276,12 @@ public class UnitMovement : MonoBehaviour
         unit.agent.speed = GetMoveSpeed(unit);
 
         // Set stopping distance for any resource clicked (or if multiple units, they will stop a bit further away to avoid bumping into eachother)
-        if (selectedUnits.Count == 1)
+        if (uip.selectedUnits.Count == 1)
         {
             unit.agent.stoppingDistance = stopRadius;
         } else
         {
-            unit.agent.stoppingDistance = stopRadius + (selectedUnits.Count * resourceBumpFactor);
+            unit.agent.stoppingDistance = stopRadius + (uip.selectedUnits.Count * resourceBumpFactor);
         }        
 
         // Stop any current navigation
@@ -318,7 +314,7 @@ public class UnitMovement : MonoBehaviour
         if (bip.GetComponent<Outline>())
             StartCoroutine(uip.HighlightConfirmedResource(bip.GetComponent<Outline>()));
 
-        foreach (Unit unit in selectedUnits)
+        foreach (Unit unit in uip.selectedUnits)
         {
             PrepareUnitForBuild(unit, bip);
         }
@@ -330,13 +326,13 @@ public class UnitMovement : MonoBehaviour
         unit.agent.speed = GetMoveSpeed(unit);
 
         // Set stopping distance for any resource clicked (or if multiple units, they will stop a bit further away to avoid bumping into eachother)
-        if (selectedUnits.Count == 1)
+        if (uip.selectedUnits.Count == 1)
         {
             unit.agent.stoppingDistance = stopRadius;
         }
         else
         {
-            unit.agent.stoppingDistance = stopRadius + (selectedUnits.Count * resourceBumpFactor);
+            unit.agent.stoppingDistance = stopRadius + (uip.selectedUnits.Count * resourceBumpFactor);
         }
 
         // Stop any current navigation
@@ -362,9 +358,9 @@ public class UnitMovement : MonoBehaviour
         unit.agent.speed = GetMoveSpeed(unit);
 
         // Set stopping distance if multiple units, so they will stop a bit further away to avoid bumping into eachother
-        if (selectedUnits.Count > 1)
+        if (uip.selectedUnits.Count > 1)
         {
-            unit.agent.stoppingDistance = selectedUnits.Count * moveBumpFactor;
+            unit.agent.stoppingDistance = uip.selectedUnits.Count * moveBumpFactor;
         }        
 
         // Stop any current navigation
@@ -395,7 +391,7 @@ public class UnitMovement : MonoBehaviour
         // Set stopping distance for any resource clicked
         if (toDepot)
         {
-            unit.agent.stoppingDistance = depot.interactionBounds;
+            unit.agent.stoppingDistance = 1; // change later
         } else
         {
             unit.agent.stoppingDistance = resource.interactionBounds;
@@ -425,7 +421,7 @@ public class UnitMovement : MonoBehaviour
         unit.agent.speed = GetMoveSpeed(unit);
 
         // Set stopping distance for the building clicked
-        unit.agent.stoppingDistance = bip.building.interactionBounds;
+        unit.agent.stoppingDistance = 1; // change later
 
         // Move to the build
         agentDestination = bip.transform.position;
@@ -437,7 +433,7 @@ public class UnitMovement : MonoBehaviour
 
     Vector3 GetWorldPosition()
     {
-        if (!IsPointerOverUIElement() && selectedUnits.Count > 0)
+        if (!IsPointerOverUIElement() && uip.selectedUnits.Count > 0)
         {
             if (Input.GetKeyUp(KeyCode.Mouse1) && rClickFrameCount >= 0 && rClickFrameCount <= 1)
             {

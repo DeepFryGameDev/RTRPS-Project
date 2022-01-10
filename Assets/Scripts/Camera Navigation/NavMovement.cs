@@ -48,16 +48,14 @@ public class NavMovement : MonoBehaviour
     // for cursor management
     CursorManager cm;
 
-    // for focusing on unit
-    SelectedUnitProcessing sup;
-    Unit unitToFocus;
-    bool focusUnit;
+    // for focusing on selection
+    GameObject objToFocus;
+    bool focusObj;
 
     void Start()
     {
         uip = GameObject.Find("UI").GetComponent<UIProcessing>();
         cm = FindObjectOfType<CursorManager>();
-        sup = FindObjectOfType<SelectedUnitProcessing>();
 
         Cursor.lockState = CursorLockMode.Confined;
 
@@ -90,34 +88,34 @@ public class NavMovement : MonoBehaviour
 
             KeepCameraInBounds();
 
-            if (focusUnit)
+            if (focusObj)
             {
-                FocusCameraOnUnit();
+                FocusCameraOnSelection();
             }
         }      
     }
 
     public void DisableCamFocus()
     {
-        if (focusUnit)
+        if (focusObj)
         {
-            focusUnit = false;
+            focusObj = false;
 
             focusCam.Follow = null;
             focusCam.enabled = false;
         }
     }
 
-    private void FocusCameraOnUnit()
+    private void FocusCameraOnSelection()
     {
-        focusCam.Follow = unitToFocus.transform;
+        focusCam.Follow = objToFocus.transform;
         focusCam.enabled = true;
     }
 
-    public void FocusUnit(Unit unit)
+    public void FocusSelection(GameObject obj)
     {
-        unitToFocus = unit;
-        focusUnit = true;
+        objToFocus = obj;
+        focusObj = true;
     }
 
     void KeepCameraInBounds()

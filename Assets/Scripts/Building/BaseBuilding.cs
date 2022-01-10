@@ -2,6 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum depotResources
+{
+    NA,
+    WOOD,
+    ORE,
+    FOOD,
+    ALL
+}
+
 [System.Serializable]
 public class BaseBuilding
 {
@@ -17,7 +26,11 @@ public class BaseBuilding
     public int goldRequired;
     public int maxDurability;
     public int maxUnitsInteracting;
-    public float interactionBounds;
+
+    public depotResources depotResource;
+
+    public List<BaseAction> actions;
 
     [HideInInspector] public int currentDurability;
+    [HideInInspector] public int level;
 }

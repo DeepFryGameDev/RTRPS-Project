@@ -2,23 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum depotTypes
+public class Depot : CompletedBuilding
 {
-    ALL,
-    WOOD,
-    ORE,
-    FOOD
-}
-public class Depot : MonoBehaviour
-{
-    public float interactionBounds;
-    public depotTypes depotType;
-
-    [HideInInspector] public BaseBuilding building;
+    public int buildingID;
 
     // Start is called before the first frame update
     void Start()
     {
+        building = FindObjectOfType<BuildManager>().buildings[buildingID];
+
+        building.level = 1;
         building.currentDurability = building.maxDurability;
     }
 
@@ -26,11 +19,5 @@ public class Depot : MonoBehaviour
     void Update()
     {
         
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.white;
-        Gizmos.DrawWireSphere(transform.position, interactionBounds);
     }
 }

@@ -8,7 +8,7 @@ public class MultiUnitsSelectionButton : MonoBehaviour
 
     UIProcessing uip;
     UnitProcessing up;
-    SelectedUnitProcessing sup;
+    SelectionProcessing sp;
 
     bool isClicked = false, doubleClicked = false;
     int frameCount;
@@ -18,7 +18,7 @@ public class MultiUnitsSelectionButton : MonoBehaviour
     {
         uip = FindObjectOfType<UIProcessing>();
         up = FindObjectOfType<UnitProcessing>();
-        sup = FindObjectOfType<SelectedUnitProcessing>();
+        sp = FindObjectOfType<SelectionProcessing>();
         
         frameCount = 0;
     }
@@ -68,6 +68,6 @@ public class MultiUnitsSelectionButton : MonoBehaviour
 
     void FocusUnit()
     {
-        sup.FocusCameraOnUnit(unit);
+        sp.FocusCameraOnSelection(unit.gameObject);
     }
 }

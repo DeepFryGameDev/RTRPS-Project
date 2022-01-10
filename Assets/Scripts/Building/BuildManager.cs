@@ -115,12 +115,14 @@ public class BuildManager : MonoBehaviour
 
     public void StartBuildingProcess(GameObject newBuild)
     {
+        Debug.Log("Starting build process");
         foreach (Unit unit in uip.selectedUnits)
         {
             if (uip.GetVillagerUnit(unit) && 
                 (uip.GetVillagerUnit(unit).villagerClass == villagerClasses.VILLAGER || uip.GetVillagerUnit(unit).villagerClass == villagerClasses.BUILDER)
                 )
             {
+                Debug.Log(uip.GetVillagerUnit(unit).gameObject.name + " is starting build");
                 uip.GetVillagerUnit(unit).PrepareBuilding(newBuild);
             }
         }
@@ -128,15 +130,21 @@ public class BuildManager : MonoBehaviour
 
     public void FinishBuildingProcess(BuildInProgress bip)
     {
-        Debug.Log("Building process complete, finalizing bip and instantiating completed building...");
+        if (!bip.destroyed)
+        {
+            Debug.Log("Building process complete, finalizing bip and instantiating completed building...");
 
-        // show UX feedback for completion
+            // set to destroyed
+            bip.destroyed = true;
 
-        // Instantiate bip.building.completed building
-        Instantiate(bip.building.completePrefab, bip.transform.position, bip.transform.rotation, transform);
+            // show UX feedback for completion
 
-        // Destroy bip gameobject
-        Destroy(bip.gameObject);
+            // Instantiate bip.building.completed building
+            Instantiate(bip.building.completePrefab, bip.transform.position, bip.transform.rotation, transform);
+
+            // Destroy bip gameobject
+            Destroy(bip.gameObject);
+        }
     }
 
     void ShowBuildPanel(bool show)
@@ -156,10 +164,14 @@ public class BuildManager : MonoBehaviour
             rt.sizeDelta = new Vector2(rt.rect.width, adjHeight);
 
             alpha = 1;
+            buildCanvas.GetComponent<CanvasGroup>().blocksRaycasts = true;
+            buildCanvas.GetComponent<CanvasGroup>().interactable = true;
             panelShown = true;
         } else
         {
             alpha = 0;
+            buildCanvas.GetComponent<CanvasGroup>().blocksRaycasts = false;
+            buildCanvas.GetComponent<CanvasGroup>().interactable = false;
             panelShown = false;
         }
 
@@ -206,5 +218,8 @@ public class BuildManager : MonoBehaviour
 
         //for now, just add the test building
         availableBuildings.Add(buildings[0]);
+        availableBuildings.Add(buildings[1]);
+        availableBuildings.Add(buildings[2]);
+        availableBuildings.Add(buildings[3]);
     }
 }

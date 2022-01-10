@@ -11,6 +11,8 @@ public enum ResourceTypes
 
 public class Resource : MonoBehaviour
 {
+    public new string name;
+    public Sprite icon;
     public bool canShrink;
     public float interactionBounds;
     public ResourceTypes resourceType;
