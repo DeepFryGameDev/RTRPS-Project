@@ -93,7 +93,7 @@ public class UnitMovement : MonoBehaviour
                         canMove = false;
                     }
 
-                    if (hit.transform.gameObject.CompareTag("BiomeTile"))
+                    /*if (hit.transform.gameObject.CompareTag("BiomeTile"))
                     {
                         BiomeTile tileHit = hit.transform.GetComponent<BiomeTile>();
                         if (tileHit.biomeType == BiomeTypes.MOUNTAIN ||
@@ -102,7 +102,7 @@ public class UnitMovement : MonoBehaviour
                             tileHit.biomeType == BiomeTypes.LAKE
                             ) 
                         canMove = false;
-                    }
+                    }*/
                 }
 
                 // Checking if any resource/build in progress is clicked
@@ -120,8 +120,8 @@ public class UnitMovement : MonoBehaviour
                             } else
                             {
                                 chosenResource = hit.transform.parent.GetComponent<Resource>();
-                            }                            
-                            stopRadius = chosenResource.interactionBounds;                            
+                            }
+                            stopRadius = 1; // change later
                         } else if (hit.transform.CompareTag("BuildingInProgress") || hit.transform.CompareTag("BuildingInProgressChild")) // if any building in progress is clicked
                         {                            
                             buildingInProgressClicked = true;
@@ -295,6 +295,7 @@ public class UnitMovement : MonoBehaviour
             {
                 unit.GetComponent<VillagerUnit>().gatherTaskIsActive = false;
                 unit.GetComponent<VillagerUnit>().StopGathering();
+                unit.GetComponent<VillagerUnit>().CompleteGatheringTask();
             }
         }
 
@@ -346,7 +347,15 @@ public class UnitMovement : MonoBehaviour
             {
                 unit.GetComponent<VillagerUnit>().gatherTaskIsActive = false;
                 unit.GetComponent<VillagerUnit>().StopGathering();
+                unit.GetComponent<VillagerUnit>().CompleteGatheringTask();
             }
+        }
+
+        if (unit.GetComponent<VillagerUnit>().buildTaskIsActive)
+        {
+            unit.GetComponent<VillagerUnit>().buildTaskIsActive = false;
+            unit.GetComponent<VillagerUnit>().StopBuilding();
+            unit.GetComponent<VillagerUnit>().CompleteBuildTask();
         }
 
         unit.GetComponent<VillagerUnit>().PrepareBuilding(bip.gameObject);
@@ -374,6 +383,14 @@ public class UnitMovement : MonoBehaviour
             {
                 unit.GetComponent<VillagerUnit>().gatherTaskIsActive = false;
                 unit.GetComponent<VillagerUnit>().StopGathering();
+                unit.GetComponent<VillagerUnit>().CompleteGatheringTask();
+            }
+
+            if (unit.GetComponent<VillagerUnit>().buildTaskIsActive)
+            {
+                unit.GetComponent<VillagerUnit>().buildTaskIsActive = false;
+                unit.GetComponent<VillagerUnit>().StopBuilding();
+                unit.GetComponent<VillagerUnit>().CompleteBuildTask();
             }
         }
 
@@ -394,7 +411,7 @@ public class UnitMovement : MonoBehaviour
             unit.agent.stoppingDistance = 1; // change later
         } else
         {
-            unit.agent.stoppingDistance = resource.interactionBounds;
+            unit.agent.stoppingDistance = 1; // change later
         }        
 
         // Move to the depot or resource

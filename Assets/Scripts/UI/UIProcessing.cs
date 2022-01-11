@@ -90,12 +90,14 @@ public class UIProcessing : MonoBehaviour
     GathererActions gathererActions;
     BuilderActions builderActions;
 
-
+    BiomeTile biomeTile;
 
     // Start is called before the first frame update
     void Start()
     {
         selectedUnits = FindObjectOfType<SelectionProcessing>().selectedUnits;
+
+        biomeTile = new BiomeTile();
 
         transform.Find("MainCanvas/TopBar/ResourceSpacer/Lumber/Icon").GetComponent<Image>().sprite = woodResourceIcon;
         transform.Find("MainCanvas/TopBar/ResourceSpacer/Ore/Icon").GetComponent<Image>().sprite = oreResourceIcon;
@@ -166,16 +168,23 @@ public class UIProcessing : MonoBehaviour
                     break;
 
                 case UIModes.BUILDINGINPROG:
-                    ShowUnitPanels(false);
-                    ShowMultipleUnitsPanel(false);
-                    ShowResourcePanels(false);
-                    ShowBuildingActionPanels(false);
+                    if (currentBip == null) // eventually it would be nice to make this auto focus the completed building
+                    {
+                        resetUI = true;
+                        uiMode = UIModes.IDLE;
+                    } else
+                    {
+                        ShowUnitPanels(false);
+                        ShowMultipleUnitsPanel(false);
+                        ShowResourcePanels(false);
+                        ShowBuildingActionPanels(false);
 
-                    // set graphic panel details
-                    SetBuildingGraphicPanel(true);
+                        // set graphic panel details
+                        SetBuildingGraphicPanel(true);
 
-                    // show panel
-                    ShowBuildingPanels(true);
+                        // show panel
+                        ShowBuildingPanels(true);
+                    }                    
 
                     break;
 
@@ -227,8 +236,16 @@ public class UIProcessing : MonoBehaviour
                 break;
 
             case UIModes.BUILDINGINPROG:
-                // set stat panel details
-                SetBuildingStatsPanel(true);
+                if (currentBip == null) // eventually it would be nice to make this auto focus the completed building
+                {
+                    resetUI = true;
+                    uiMode = UIModes.IDLE;
+                }
+                else
+                {
+                    // set stat panel details
+                    SetBuildingStatsPanel(true);
+                }
 
                 break;
 
@@ -279,10 +296,9 @@ public class UIProcessing : MonoBehaviour
         }
     }
 
-
     private void SetBuildingStatsPanel(bool isBiP)
     {
-        if (isBiP) // build in progress
+        if (isBiP && currentBip != null) // build in progress
         {
             buildingStatsPanel.transform.Find("DurabilitySlider").gameObject.SetActive(false);
             buildingStatsPanel.transform.Find("DurabilityText").gameObject.SetActive(false);
@@ -317,7 +333,9 @@ public class UIProcessing : MonoBehaviour
             }
 
             // biome
-            // nothing yet, going to be revamped
+            biomeTile.SetBiomeID(currentBip.transform.position);
+
+            GetTextComp(buildingStatsPanel.transform.Find("BiomeText")).text = UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
         }
         else // completed building
         {
@@ -354,7 +372,9 @@ public class UIProcessing : MonoBehaviour
             }
 
             // biome
-            // nothing yet, going to be revamped
+            biomeTile.SetBiomeID(currentBuilding.transform.position);
+
+            GetTextComp(buildingStatsPanel.transform.Find("BiomeText")).text = UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
         }
     }
 
@@ -492,16 +512,9 @@ public class UIProcessing : MonoBehaviour
             GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Movement/MovementText")).text = currentUnit.GetMovement().ToString();
 
             // Biome
-            currentUnit.GetCurrentBiomeTile();
+            biomeTile.SetBiomeID(currentUnit.transform.position);
 
-            if (currentUnit.GetBiome())
-            {
-                GetTextComp(unitStatsPanel.transform.Find("BiomeText")).text = UppercaseFirstAndAfterSpaces(currentUnit.GetBiome().biomeType.ToString());
-            }
-            else
-            {
-                GetTextComp(unitStatsPanel.transform.Find("BiomeText")).text = string.Empty;
-            }
+            GetTextComp(unitStatsPanel.transform.Find("BiomeText")).text = UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
         }
         else
         {
@@ -716,7 +729,10 @@ public class UIProcessing : MonoBehaviour
                 break;
         }
 
-        // set biome
+        // biome
+        biomeTile.SetBiomeID(currentResource.transform.position);
+
+        GetTextComp(resourceStatsPanel.transform.Find("BiomeText")).text = UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
     }
 
     void UpdateResourceRemainingDetails()

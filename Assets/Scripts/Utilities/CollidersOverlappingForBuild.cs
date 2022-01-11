@@ -58,7 +58,7 @@ public class CollidersOverlappingForBuild : MonoBehaviour
             isTouchingUnit = true;
         }
         
-        if (other.CompareTag("Building"))
+        if (other.CompareTag("BlueprintBuilding"))
         {
             isTouchingBuilding = true;
         }
@@ -76,7 +76,7 @@ public class CollidersOverlappingForBuild : MonoBehaviour
             isTouchingUnit = false;
         }
 
-        if (other.CompareTag("Building"))
+        if (other.CompareTag("BlueprintBuilding"))
         {
             isTouchingBuilding = false;
         }

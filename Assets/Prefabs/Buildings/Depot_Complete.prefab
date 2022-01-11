@@ -13,9 +13,10 @@ GameObject:
   - component: {fileID: 5642798738179698514}
   - component: {fileID: 4887945103979652242}
   - component: {fileID: 3745890192684539875}
+  - component: {fileID: 3223449513711287467}
   m_Layer: 0
   m_Name: Interaction
-  m_TagString: BuildingInteraction
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -113,6 +114,19 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &3223449513711287467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2148293707544293135}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7582d556341aed94eb7c5ac909917992, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isAtDest: 0
 --- !u!1 &2439226165544727522
 GameObject:
   m_ObjectHideFlags: 0

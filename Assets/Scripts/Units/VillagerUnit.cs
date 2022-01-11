@@ -26,8 +26,10 @@ public class VillagerUnit : Unit
     [HideInInspector] public float buildTimeElapsed, gatherTimeElapsed;
 
     [HideInInspector] public GatherTask activeGatherTask = new GatherTask();
-    //[HideInInspector] public BuildTask activeBuildTask = new BuildTask();
     [HideInInspector] public Coroutine gatherTaskCoroutine;
+    [HideInInspector] public Coroutine gatherSimTimeCoroutine;
+    [HideInInspector] public Coroutine buildTaskCoroutine;
+    [HideInInspector] public Coroutine buildSimTimeCoroutine;
 
     GatherManager gm;
     GatherPhases gatherPhase;
@@ -182,7 +184,6 @@ public class VillagerUnit : Unit
 
                     break;
             case GatherPhases.GATHERING:
-
                     if (resourcesHolding < GetCarryLimit() && (activeGatherTask.resource == null || activeGatherTask.resource.resourcesRemaining == 0)) // if resources on this are gone and can carry more
                     {
                         // set mode back to SEEKINGRESOURCE
@@ -196,7 +197,7 @@ public class VillagerUnit : Unit
                     {
                         // gather once
                         //yield return new WaitForSeconds(GetGatherTime()); //simulates time gathering
-                        yield return StartCoroutine(SimGatherTime()); //simulates time gathering
+                        yield return gatherSimTimeCoroutine = StartCoroutine(SimGatherTime()); //simulates time gathering
                         AddResourcetoUnit(); // adds resource to unit
                         StartCoroutine(gm.ShowResourceGatherUX(this.gameObject, activeGatherTask.resource.resourceType, 1, true)); // show UX feedback
 
@@ -257,6 +258,17 @@ public class VillagerUnit : Unit
             //yield return new WaitForEndOfFrame();
             yield return null;
         }
+
+        CompleteGatheringTask();
+    }
+
+    public void CompleteGatheringTask()
+    {
+        isAtDest = false;
+        if (gatherSimTimeCoroutine != null)
+        {
+            StopCoroutine(gatherSimTimeCoroutine);
+        }        
     }
 
     IEnumerator SimGatherTime()
@@ -402,7 +414,7 @@ public class VillagerUnit : Unit
         buildPhase = BuildPhases.MOVETOBUILDING;
 
         // Start building
-        StartCoroutine(BuildBuilding(building.GetComponent<BuildInProgress>()));
+        buildTaskCoroutine = StartCoroutine(BuildBuilding(building.GetComponent<BuildInProgress>()));
     }
 
     IEnumerator BuildBuilding(BuildInProgress bip)
@@ -455,7 +467,7 @@ public class VillagerUnit : Unit
                     if (bip.progress < 100)
                     {
                         //yield return new WaitForSeconds(GetBuildTime()); // simulates building time
-                        yield return StartCoroutine(SimBuildTime(bip));
+                        yield return buildSimTimeCoroutine = StartCoroutine(SimBuildTime(bip));
 
                         if (bip.progress < 100)
                             ContributeToBuild(bip);
@@ -471,7 +483,24 @@ public class VillagerUnit : Unit
                     break;
             }
             yield return null;
-        }                    
+        }
+
+        CompleteBuildTask();
+    }
+
+    public void CompleteBuildTask()
+    {
+        isAtDest = false;
+        personalBuildProgress = 0;
+        if (buildSimTimeCoroutine != null)
+        {
+            StopCoroutine(buildSimTimeCoroutine);
+        }        
+    }
+
+    public void StopBuilding()
+    {
+        StopCoroutine(buildTaskCoroutine);
     }
 
     IEnumerator SimBuildTime(BuildInProgress bip)

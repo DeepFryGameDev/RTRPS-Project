@@ -13,7 +13,7 @@ TagManager:
   - BuildingInProgress
   - BuildingInProgressChild
   - CompletedBuilding
-  - BuildingInteraction
+  - BlueprintBuilding
   layers:
   - Default
   - TransparentFX

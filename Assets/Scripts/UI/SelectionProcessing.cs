@@ -159,6 +159,13 @@ public class SelectionProcessing : MonoBehaviour
             // set new selection
             if (Input.GetKeyDown(KeyCode.Mouse0))
             {
+                inClick = true;
+
+                lastMouseY = Input.mousePosition.y; // To help determine if mouse is dragging for multi-select
+                lastMouseX = Input.mousePosition.x; // To help determine if mouse is dragging for multi-select
+
+                startPos = Input.mousePosition;
+
                 RaycastHit[] hits;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 hits = Physics.RaycastAll(ray, 1000);
@@ -327,6 +334,7 @@ public class SelectionProcessing : MonoBehaviour
         {
             uip.SetCurrentUnit(selectedUnits[0]);
             uip.resetUI = true;
+            uip.uiMode = UIModes.UNIT;
         }    
     }
 

@@ -17,9 +17,12 @@ public class TooltipProcessing : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        biomeHovered = new BiomeTile();
         ShowTooltip(BiomeTooltip, false);
 
         camTransform = Camera.main.transform;
+
+        ShowTooltip(BiomeTooltip, true);
     }
 
     // Update is called once per frame
@@ -27,41 +30,29 @@ public class TooltipProcessing : MonoBehaviour
     {
         SetBiomeTooltip();
 
-        BiomeTooltipProcessing();
+        BiomeTooltipProcessing();        
     }
 
     void SetBiomeTooltip()
     {
-        RaycastHit[] hits;
-        Ray ray = new Ray(camTransform.position, camTransform.forward);
-        hits = Physics.RaycastAll(ray, 1000);
-
-        bool biomeFound = false;
-
-        foreach (RaycastHit hit in hits)
-        {
-            if (hit.transform.gameObject.CompareTag("BiomeTile"))
-            {
-                biomeFound = true;
-                biomeHovered = hit.transform.GetComponent<BiomeTile>();
-            }
-        }
-
-        if (!biomeFound)
-        {
-            biomeHovered = null;
-            ShowTooltip(BiomeTooltip, false);
-        }
+        biomeHovered.SetBiomeID(GetCameraTerrainIntersectionPosition());
     }
 
     private void BiomeTooltipProcessing()
+    {        
+        BiomeTooltip.transform.Find("Name").GetComponent<TMP_Text>().text = UppercaseFirstAndAfterSpaces(biomeHovered.name);
+        BiomeTooltip.transform.Find("Type").GetComponent<TMP_Text>().text = UppercaseFirstAndAfterSpaces(biomeHovered.primaryBiomeType.ToString());
+    }
+
+    Vector3 GetCameraTerrainIntersectionPosition()
     {
-        if (biomeHovered != null)
+        RaycastHit hitInfo;
+        if (Physics.Raycast(camTransform.position, camTransform.forward, out hitInfo, 1000.0f))
         {
-            ShowTooltip(BiomeTooltip, true);
-            BiomeTooltip.transform.Find("Name").GetComponent<TMP_Text>().text = biomeHovered.biomeName;
-            BiomeTooltip.transform.Find("Type").GetComponent<TMP_Text>().text = getPrimaryBiomeType(biomeHovered.biomeType);
+            return hitInfo.point;
         }
+
+        return new Vector3(0, 0, 0);
     }
 
     void ShowTooltip(GameObject tooltip, bool show)
@@ -69,20 +60,32 @@ public class TooltipProcessing : MonoBehaviour
         tooltip.SetActive(show);
     }
 
-    string getPrimaryBiomeType(BiomeTypes biomeType)
+    string UppercaseFirstAndAfterSpaces(string s)
     {
-        switch (biomeType)
+        char tempChar = '\0';
+
+        if (string.IsNullOrEmpty(s))
         {
-            case BiomeTypes.PLAINS:
-                return "Plains";
-            case BiomeTypes.PLAINSHILL:
-                return "Plains";
-            case BiomeTypes.OCEAN:
-                return "Ocean";
-            case BiomeTypes.BEACH:
-                return "Beach";
-            default:
-                return string.Empty;
-        }        
+            return string.Empty;
+        }
+
+        char[] a = s.ToCharArray();
+        for (int i = 0; i < a.Length; i++)
+        {
+            a[i] = char.ToLower(a[i]);
+
+            if (i != 0)
+            {
+                if (tempChar != '\0' && tempChar == ' ')
+                {
+                    a[i] = char.ToUpper(a[i]);
+                }
+
+                tempChar = a[i];
+            }
+        }
+
+        a[0] = char.ToUpper(a[0]);
+        return new string(a);
     }
 }

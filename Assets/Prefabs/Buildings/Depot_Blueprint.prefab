@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 1219662808064020966}
   m_Layer: 0
   m_Name: Hangar Base
-  m_TagString: Building
+  m_TagString: BlueprintBuilding
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -199,6 +199,10 @@ MonoBehaviour:
     oreRequired: 0
     foodRequired: 0
     goldRequired: 0
+    maxDurability: 0
     maxUnitsInteracting: 0
-    interactionBounds: 0
+    depotResource: 0
+    actions: []
+    currentDurability: 0
+    level: 0
   listOfChildren: []

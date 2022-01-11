@@ -2,6 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+/* icon attribution 
+ * Rock icon: Icons made by "https://www.flaticon.com/authors/icongeek26" - Icongeek26 from "https://www.flaticon.com/" 
+ * Tree icon: Icons made by "https://www.freepik.com" - Freepik from "https://www.flaticon.com/"
+ * Farm icon: Icons made by "https://www.flaticon.com/authors/photo3idea-studio" - photo3idea_studio from "https://www.flaticon.com/"
+ */
+
 public enum ResourceTypes
 {
     WOOD,
@@ -14,7 +21,6 @@ public class Resource : MonoBehaviour
     public new string name;
     public Sprite icon;
     public bool canShrink;
-    public float interactionBounds;
     public ResourceTypes resourceType;
     public int totalResources;
     [Tooltip("How many units can be gathering from this resource")]
@@ -50,11 +56,5 @@ public class Resource : MonoBehaviour
                 Destroy(gameObject);
             }
         }
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.white;
-        Gizmos.DrawWireSphere(transform.position, interactionBounds);
     }
 }

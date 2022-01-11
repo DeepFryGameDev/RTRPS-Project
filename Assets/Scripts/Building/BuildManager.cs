@@ -218,8 +218,8 @@ public class BuildManager : MonoBehaviour
 
         //for now, just add the test building
         availableBuildings.Add(buildings[0]);
-        availableBuildings.Add(buildings[1]);
-        availableBuildings.Add(buildings[2]);
-        availableBuildings.Add(buildings[3]);
+        //availableBuildings.Add(buildings[1]);
+        //availableBuildings.Add(buildings[2]);
+        //availableBuildings.Add(buildings[3]);
     }
 }
