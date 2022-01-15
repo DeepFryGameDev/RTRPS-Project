@@ -1,14 +1,13 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+// This script handles the processing when a unit in the multi-selection panel has been clicked
 public class MultiUnitsSelectionButton : MonoBehaviour
 {
     public Unit unit;
 
     UIProcessing uip;
-    UnitProcessing up;
-    SelectionProcessing sp;
+    NavMovement nm;
 
     bool isClicked = false, doubleClicked = false;
     int frameCount;
@@ -17,24 +16,9 @@ public class MultiUnitsSelectionButton : MonoBehaviour
     void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
-        up = FindObjectOfType<UnitProcessing>();
-        sp = FindObjectOfType<SelectionProcessing>();
+        nm = FindObjectOfType<NavMovement>();
         
         frameCount = 0;
-    }
-
-    IEnumerator CheckForDoubleClick()
-    {
-        doubleClicked = false;
-
-        while (frameCount < uip.selectedUnitDoubleClickFrameBuffer && !doubleClicked)
-        {
-            frameCount++;
-            yield return new WaitForEndOfFrame();
-        }
-
-        frameCount = 0;
-        isClicked = false;
     }
 
     public void OnCursorEnter()
@@ -43,20 +27,31 @@ public class MultiUnitsSelectionButton : MonoBehaviour
     }
 
     public void OnCursorExit()
-    {
-        unit.GetComponent<Outline>().OutlineWidth = up.highlightWidth;
+    {        
+        if (uip.selectedUnit != unit)
+        {
+            unit.GetComponent<Outline>().OutlineWidth = uip.defaultOutlineWidth;
+        }
     }
 
-    public void OnCursorClick()
-    {
-        // update UI based on this unit
+    public void OnCursorClick() // update UI based on this unit
+    {      
+        // make all other selected units have default outline
+        foreach (Unit unit in uip.selectedUnits)
+        {
+            unit.GetComponent<Outline>().OutlineWidth = uip.defaultOutlineWidth;
+        }
+
+        // set this one to hoveredUnitsOutlineWidth
+        unit.GetComponent<Outline>().OutlineWidth = uip.hoveredUnitsOutlineWidth;
+
         uip.SetCurrentUnit(unit);
         uip.resetUI = true;
 
-        if (frameCount < uip.selectedUnitDoubleClickFrameBuffer && isClicked)
+        if (frameCount < uip.selectedObjectDoubleClickFrameBuffer && isClicked)
         {
             doubleClicked = true;
-            FocusUnit();
+            nm.FocusSelection(unit.gameObject);
         }
 
         if (!isClicked)
@@ -66,8 +61,17 @@ public class MultiUnitsSelectionButton : MonoBehaviour
         }
     }
 
-    void FocusUnit()
+    IEnumerator CheckForDoubleClick()
     {
-        sp.FocusCameraOnSelection(unit.gameObject);
+        doubleClicked = false;
+
+        while (frameCount <= uip.selectedObjectDoubleClickFrameBuffer && !doubleClicked)
+        {
+            frameCount++;
+            yield return new WaitForEndOfFrame();
+        }
+
+        frameCount = 0;
+        isClicked = false;
     }
 }

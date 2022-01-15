@@ -1,10 +1,10 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// used by VillagerUnit to process phases of working on the build
 public enum BuildPhases
 {
     MOVETOBUILDING,
@@ -13,116 +13,98 @@ public enum BuildPhases
 
 public class BuildManager : MonoBehaviour
 {
+    [Tooltip("Minimum amount of time (in seconds) that a unit will spend increasing their personal progress to the build.")]
     public float minBuildTime;
-    public float maxBuildTime;    
+    [Tooltip("Maximum amount of time (in seconds) that a unit will spend increasing their personal progress to the build.")]
+    public float maxBuildTime;
+    [Tooltip("Personal progress build time is impacted by the unit's agility * this value (+ Intelligence and Willpower factors)")]
     public float buildTimeAgilityFactor;
+    [Tooltip("Personal progress build time is impacted by the unit's intelligence * this value (+ Agility and Willpower factors)")]
     public float buildTimeIntelligenceFactor;
+    [Tooltip("Personal progress build time is impacted by the unit's willpower * this value (+ Intelligence and Agility factors)")]
     public float buildTimeWillpowerFactor;
 
+    [Tooltip("Minimum amount a unit's personal progress can be increased by")]
     public float minBuildPerProg;
+    [Tooltip("Maximum amount a unit's personal progress can be increased by")]
     public float maxBuildPerProg;
+    [Tooltip("Below personal progress calculations are added and then multiplied by this factor to determine personal progress")]
     public float buildPerProgFactor;
+    [Tooltip("Personal progress build value is impacted by the unit's strength * this value (+ Intelligence factor) and then multiplied by buildPerProgFactor")]
     public float buildPerProgStrengthFactor;
+    [Tooltip("Personal progress build value is impacted by the unit's intelligence * this value (+ Strength factor) and then multiplied by buildPerProgFactor")]
     public float buildPerProgIntelligenceFactor;
 
+    [Tooltip("Minimum amount a building's total progress can be increased by one unit")]
     public float minBuildTotProg;
+    [Tooltip("Maximum amount a building's total progress can be increased by one unit")]
     public float maxBuildTotProg;
+    [Tooltip("Below total progress calculations are added and then multiplied by this factor to determine personal progress")]
     public float buildTotProgFactor;
+    [Tooltip("Total progress build value is impacted by the unit's willpower * this value (+ Stamina factor) and then multiplied by buildTotProgFactor")]
     public float buildTotProgWillpowerFactor;
+    [Tooltip("Total progress build value is impacted by the unit's stamina * this value (+ Willpower factor) and then multiplied by buildTotProgFactor")]
     public float buildTotProgStaminaFactor;
 
-    public GameObject buildCanvas;
-    public GameObject buildingButtonPrefab;
-    public float buildingCanvasButtonAdjustment;
-    public Material bluePrintCanBuildMat;
-    public Material bluePrintCannotBuildMat;
-
+    [Tooltip("List of all buildings that can be built in the game")]
     public List<BaseBuilding> buildings = new List<BaseBuilding>();
 
-    UIProcessing uip;
-    UnitMovement um;
-    List<BaseBuilding> availableBuildings = new List<BaseBuilding>();
-    GameObject actionSpacer;
+    [HideInInspector] public BaseBuilding chosenBuilding; // used by buildingAction to process action for building chosen by player
+    [HideInInspector] public bool blueprintOpen, blueprintClosed; // used when blueprint is still on the field or when it has been cancelled/placed
+    [HideInInspector] public bool buildActionClicked; // used when 'build' action has been chosen (before building action)
+    [HideInInspector] public bool buildingActionClicked; // used when 'building' action has been chosen (after 'build' action)
 
-    float defaultCanvasHeight;
-    bool panelShown;
+    UIProcessing uip; // used to get selected units as well as check if build action has been clicked and change actionButtonClicked
+    UIPrefabManager uipm; // used to get various UI components to be adjusted
+    List<BaseBuilding> availableBuildings = new List<BaseBuilding>(); // list of available buildings that can be built
+    GameObject actionSpacer; // Grid Layout Group for the action buttons to be placed
 
-    [HideInInspector] public BaseBuilding chosenBuilding;
-    [HideInInspector] public bool blueprintOpen, blueprintClosed;
+    float defaultCanvasHeight; // set to the default height of the build action panel
+    bool panelShown; // used to determine when build panel is available
 
     private void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
-        um = FindObjectOfType<UnitMovement>();
+        uipm = FindObjectOfType<UIPrefabManager>();
 
-        actionSpacer = buildCanvas.transform.Find("BuildActionPanel/BuildSpacer").gameObject;
+        actionSpacer = uipm.buildActionCanvas.transform.Find("BuildActionPanel/BuildSpacer").gameObject; // sets Grid Layout Group for action buttons to be placed
 
-        defaultCanvasHeight = buildCanvas.transform.Find("BuildActionPanel").GetComponent<RectTransform>().rect.height;
+        defaultCanvasHeight = uipm.buildActionCanvas.transform.Find("BuildActionPanel").GetComponent<RectTransform>().rect.height; // sets default canvas height based on canvas height when game is started
 
         ShowBuildPanel(false);
     }
 
     private void Update()
     {      
-        if (uip.buildActionClicked)
+        if (buildActionClicked)
         {
-            ProcessActionClicked();
+            ProcessActionClicked(); // process actions if a build action has been chosen
         }
 
-        CheckIfActionNoLongerClicked();
-    }
-
-    void ProcessActionClicked()
-    {
-        if (!panelShown)
-        {
-            ShowBuildPanel(true);
-        }
-
-        if (uip.buildingActionClicked && blueprintClosed)
-        {
-            blueprintClosed = false;
-            blueprintOpen = false;
-            uip.buildingActionClicked = false;
-            uip.buildActionClicked = false;
-
-            uip.actionButtonClicked = false;
-
-            ShowBuildPanel(false);
-        }
-
-        if (uip.buildingActionClicked && !blueprintOpen)
-        {
-            blueprintOpen = true;
-            GameObject blueprint = Instantiate(chosenBuilding.blueprintPrefab, transform);
-            blueprint.GetComponent<Blueprint>().building = chosenBuilding;
-        }
-    }
-
-    private void CheckIfActionNoLongerClicked()
-    {
-        if (uip.buildingActionClicked && Input.GetKeyDown(KeyCode.Escape))
-        {
-            uip.buildingActionClicked = false;
-
-        } else if (uip.buildActionClicked && Input.GetKeyDown(KeyCode.Escape))
-        {
-            uip.buildActionClicked = false;
-            panelShown = false;
-            ShowBuildPanel(false);
-        }
+        CheckIfActionNoLongerClicked(); // process cancel actions if player cancels them
     }
 
     public void StartBuildingProcess(GameObject newBuild)
     {
-        Debug.Log("Starting build process");
         foreach (Unit unit in uip.selectedUnits)
         {
-            if (uip.GetVillagerUnit(unit) && 
-                (uip.GetVillagerUnit(unit).villagerClass == villagerClasses.VILLAGER || uip.GetVillagerUnit(unit).villagerClass == villagerClasses.BUILDER)
+            if (uip.GetVillagerUnit(unit) &&
+                (uip.GetVillagerUnit(unit).villagerClass == VillagerClasses.VILLAGER || uip.GetVillagerUnit(unit).villagerClass == VillagerClasses.BUILDER)
                 )
             {
-                Debug.Log(uip.GetVillagerUnit(unit).gameObject.name + " is starting build");
+                if (uip.GetVillagerUnit(unit).gatherTaskIsActive)
+                {
+                    uip.GetVillagerUnit(unit).gatherTaskIsActive = false;
+                    uip.GetVillagerUnit(unit).StopGathering();
+                    uip.GetVillagerUnit(unit).CompleteGatheringTask();
+                }
+                if (uip.GetVillagerUnit(unit).buildTaskIsActive)
+                {
+                    uip.GetVillagerUnit(unit).buildTaskIsActive = false;
+                    uip.GetVillagerUnit(unit).StopBuilding();
+                    uip.GetVillagerUnit(unit).CompleteBuildTask();
+                }
+
                 uip.GetVillagerUnit(unit).PrepareBuilding(newBuild);
             }
         }
@@ -132,54 +114,89 @@ public class BuildManager : MonoBehaviour
     {
         if (!bip.destroyed)
         {
-            Debug.Log("Building process complete, finalizing bip and instantiating completed building...");
-
             // set to destroyed
             bip.destroyed = true;
 
-            // show UX feedback for completion
-
             // Instantiate bip.building.completed building
-            Instantiate(bip.building.completePrefab, bip.transform.position, bip.transform.rotation, transform);
+            GameObject newBuilding = Instantiate(bip.building.completePrefab, bip.transform.position, bip.transform.rotation, transform);
+
+            // show UX feedback for completion
+            ShowBuildProgressUX(newBuilding, false, 100);
 
             // Destroy bip gameobject
             Destroy(bip.gameObject);
         }
     }
 
+    void ProcessActionClicked()
+    {
+        if (!panelShown)
+        {
+            ShowBuildPanel(true); // shows build panel with available buildings to select
+        }
+
+        if (buildingActionClicked && blueprintClosed) // if a building action has been selected and blueprint has been closed or cancelled
+        {
+            blueprintClosed = false;
+            blueprintOpen = false;
+            buildingActionClicked = false;
+            buildActionClicked = false;
+
+            uip.actionButtonClicked = false;
+
+            ShowBuildPanel(false);
+        }
+
+        if (buildingActionClicked && !blueprintOpen) // if a building action has been selected and blueprint is not yet on the field
+        {
+            blueprintOpen = true;
+            GameObject blueprint = Instantiate(chosenBuilding.blueprintPrefab, transform);
+            blueprint.GetComponent<Blueprint>().building = chosenBuilding;
+        }
+    }
+
+    void CheckIfActionNoLongerClicked()
+    {
+        if (buildingActionClicked && Input.GetKeyDown(KeyCode.Escape)) // cancels from placing a building (in blueprint mode)
+        {
+            buildingActionClicked = false;
+
+        } else if (buildActionClicked && Input.GetKeyDown(KeyCode.Escape)) // cancels building action selection
+        {
+            uip.actionButtonClicked = false;
+            //buildActionClicked = false;
+            panelShown = false;
+            ShowBuildPanel(false);
+        }
+    }
+
     void ShowBuildPanel(bool show)
     {
-       float alpha;
        if (show)
         {
-            SetAvailableBuildings();
+            SetAvailableBuildings(); // generate list of available buildings to place
 
-            SetActionButtons();
+            SetActionButtons(); // set the action buttons for each available building
 
             // adjust height of panel based on available buildings
             int canvasHeightFactor = Mathf.FloorToInt(availableBuildings.Count / 3);
-            float adjHeight = defaultCanvasHeight + (buildingCanvasButtonAdjustment * (float)canvasHeightFactor);
+            float adjHeight = defaultCanvasHeight + (uip.buildingCanvasButtonAdjustment * (float)canvasHeightFactor);
 
-            RectTransform rt = buildCanvas.transform.Find("BuildActionPanel").GetComponent<RectTransform>();
+            RectTransform rt = uipm.buildActionCanvas.transform.Find("BuildActionPanel").GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(rt.rect.width, adjHeight);
 
-            alpha = 1;
-            buildCanvas.GetComponent<CanvasGroup>().blocksRaycasts = true;
-            buildCanvas.GetComponent<CanvasGroup>().interactable = true;
             panelShown = true;
         } else
         {
-            alpha = 0;
-            buildCanvas.GetComponent<CanvasGroup>().blocksRaycasts = false;
-            buildCanvas.GetComponent<CanvasGroup>().interactable = false;
             panelShown = false;
         }
 
-        buildCanvas.GetComponent<CanvasGroup>().alpha = alpha;
+        uipm.ShowUIObject(uipm.buildActionCanvas, show); // display/hide the canvas
     }
 
-    private void SetActionButtons()
+    void SetActionButtons()
     {
+        // clear any old action buttons
         foreach (Transform child in actionSpacer.transform)
         {
             Destroy(child.gameObject);
@@ -188,7 +205,7 @@ public class BuildManager : MonoBehaviour
         foreach (BaseBuilding building in availableBuildings)
         {
             // prepare action button
-            GameObject buildActionGO = GameObject.Instantiate(buildingButtonPrefab) as GameObject;
+            GameObject buildActionGO = GameObject.Instantiate(uipm.actionButton) as GameObject;
             buildActionGO.transform.SetParent(actionSpacer.transform, false);
 
             // Set Icon
@@ -204,14 +221,12 @@ public class BuildManager : MonoBehaviour
             BuildingAction ba = buildActionGO.AddComponent(typeof(BuildingAction)) as BuildingAction;
             ba.building = building;
 
-            // Set BuildingAction CheckResources
-            //ba.CheckResources();
-
             // Set Unit
             ba.unit = uip.selectedUnits[0];
         }
     }
 
+    // set buildings to be used in action panel - this will be updated to accomodate the chosen building and building level
     void SetAvailableBuildings()
     {
         availableBuildings.Clear();
@@ -221,5 +236,25 @@ public class BuildManager : MonoBehaviour
         //availableBuildings.Add(buildings[1]);
         //availableBuildings.Add(buildings[2]);
         //availableBuildings.Add(buildings[3]);
+    }
+
+    // Displays user feedback when personal or total progress to the building has been made - progress icon will be displayed above the object (unit/building) and slowly moves upward along y position and fades out
+    public void ShowBuildProgressUX(GameObject source, bool personalProgress, float progress)
+    {
+        // prepare buildUX
+        GameObject buildUX = uipm.gatherBuildUX;
+
+        if (personalProgress)
+        {
+            buildUX.transform.Find("UXIcon").GetComponent<Image>().sprite = uipm.personalProgressIcon;
+        } else
+        {
+            progress = Mathf.RoundToInt(progress);
+            buildUX.transform.Find("UXIcon").GetComponent<Image>().sprite = uipm.totalProgressIcon;
+        }
+
+        buildUX.transform.Find("UXText").GetComponent<TMP_Text>().text = progress.ToString() + "%";
+
+        StartCoroutine(uip.DisplayUX(source, buildUX, true));
     }
 }

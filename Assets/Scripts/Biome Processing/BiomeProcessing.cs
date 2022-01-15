@@ -1,7 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+// used to determine different stat adjustments and bonuses for buildings/units being on different biomes
 public enum BiomeTypes
 {
     PLAINS,
@@ -21,15 +20,5 @@ public enum BiomeTypes
 
 public class BiomeProcessing : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    // This script will contain how th handle stat adjustments and bonuses depending on biome type
 }

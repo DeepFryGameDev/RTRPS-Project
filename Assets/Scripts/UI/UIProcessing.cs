@@ -1,10 +1,10 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// Different states that the UI can be in at any given time.  IDLE will display nothing, while the other states will display correspondingly
 public enum UIModes {
     IDLE,
     UNIT,
@@ -12,104 +12,92 @@ public enum UIModes {
     BUILDING,
     RESOURCE
 }
+
+// This script handles all interface processing when clicking on an object in the world
 public class UIProcessing : MonoBehaviour
 {
     [Tooltip("Set this to value for UI Layer - default is 5")]
     public int UILayer;
 
+    [Tooltip("Number of maximum amount of units that can be selected at once")]
     public int selectedUnitsMax = 20;
+    [Tooltip("Space between each selected unit in multiselect UI")]
     public float selectedUnitsUIEdgeSpace = 10;
-    [Range(1, 10)] public float hoveredUnitsOutlineWidth = 8;
-    [Range(1, 50)] public int selectedUnitDoubleClickFrameBuffer = 10;
 
-    [Tooltip("Set to unit canvas in UI")]
-    [SerializeField] GameObject unitCanvas;
-    [Tooltip("Set to resource canvas in UI")]
-    [SerializeField] GameObject resourceCanvas;
-    [Tooltip("Set to building canvas in UI")]
-    [SerializeField] GameObject buildingCanvas;
-    [Tooltip("Set to unit graphic panel in UI")]
-    [SerializeField] GameObject unitGraphicPanel;
-    [Tooltip("Set to unit stats panel in UI")]
-    [SerializeField] GameObject unitStatsPanel;
-    [Tooltip("Set to unit action panel in UI")]
-    [SerializeField] GameObject unitActionPanel;
-    [Tooltip("Set to resource graphic panel in UI")]
-    [SerializeField] GameObject resourceGraphicPanel;
-    [Tooltip("Set to resource stats panel in UI")]
-    [SerializeField] GameObject resourceStatsPanel;
-    [Tooltip("Set to building graphic panel in UI")]
-    [SerializeField] GameObject buildingGraphicPanel;
-    [Tooltip("Set to building stats panel in UI")]
-    [SerializeField] GameObject buildingStatsPanel;
-    [Tooltip("Set to building action panel in UI")]
-    [SerializeField] GameObject buildingActionPanel;
-    [Tooltip("Set to multiple units panel in UI")]
-    [SerializeField] GameObject multiUnitsPanel;
-    [Tooltip("Set to multiple units 'button' prefab")]
-    [SerializeField] GameObject multiUnitsButton;
-    [Tooltip("Set to action action skill spacer")]
-    [SerializeField] GameObject actionSpacer;
-    [Tooltip("Set to action button prefab")]
-    [SerializeField] GameObject actionButton;
+    [Tooltip("Default outline width for highlighting objects")]
+    [Range(1, 10)] public float defaultOutlineWidth = 5;
+    [Tooltip("Width of outline for hovered units in multiselect UI")]
+    [Range(1, 10)] public float hoveredUnitsOutlineWidth = 8;
+
+    [Tooltip("Range of frames that mouse clicks need to be within to be considered a double click")]
+    [Range(1, 50)] public int selectedObjectDoubleClickFrameBuffer = 10;
+
     [Tooltip("Speed of action button fade in/out when clicked")]
     public float actionButtonFadeSpeed;
     [Tooltip("How far to fade out when action button is clicked")]
     [Range(0, 255)] public float actionButtonFadeMin;
-    [Tooltip("Duration in seconds of outline when clicking a resource")]
+    [Tooltip("Duration in seconds of outline when starting a task")]
     [SerializeField] float taskConfirmationOutlineDuration;
-    [Tooltip("Width of outline when clicking a resource")]
+    [Tooltip("Width of outline when clicking a task")]
     [SerializeField] [Range(1, 10)] float taskConfirmationOutlineWidth;
 
-    [Tooltip("Set to icon used for wood resource in UI")]
-    public Sprite woodResourceIcon;
-    [Tooltip("Set to icon used for ore resource in UI")]
-    public Sprite oreResourceIcon;
-    [Tooltip("Set to icon used for food resource in UI")]
-    public Sprite foodResourceIcon;
-    [Tooltip("Set to icon used for all resources in UI")]
-    public Sprite allResourceIcon;
-    [Tooltip("Set to icon used for gold resource in UI")]
-    public Sprite goldResourceIcon;
+    [Tooltip("Distance of pixels above unit that UX will appear")]
+    public float gatherBuildUXYDistance;
+    [Tooltip("Default Scale of UX Feedback")]
+    public float gatherBuildUXBaseScale;
+    [Tooltip("Speed of UX feedback on screen moving upwards along y position")]
+    public float gatherBuildUXSpeed;
+    [Tooltip("How quickly the UX Feedback fades")]
+    public float gatherBuildUXFadeFactor;
+    [Tooltip("How fast the UX Feedback for personal build progress spins")]
+    public float personalBuildUXSpinRate;
+    [Tooltip("How fast the UX Feedback for total build progress spins")]
+    public float totalBuildUXSpinRate;
+    [Tooltip("Base Spin Factor for build progress UX feedback")]
+    public float buildUXSpinFactor;
 
-    [ReadOnly] public UIModes uiMode;
+    [Tooltip("Canvas height is changed based on how many rows of actions are available, multiplied by this value.  This should be set to the action button's prefab height with some additional space above and below.  30 is default.")]
+    public float buildingCanvasButtonAdjustment = 30;
 
-    [ReadOnly] public bool actionButtonClicked, gatherActionClicked, buildActionClicked, buildingActionClicked, actionButtonFadeBreak;
+    [Tooltip("Color for action icons when player does not have available resources to perform it")]
+    public Color resourcesUnavailableForActionColor;
 
-    [HideInInspector] public bool resetUI;
+    [HideInInspector] public UIModes uiMode; // current state of UI
 
-    [HideInInspector] public List<Unit> selectedUnits;
-    Unit currentUnit;
-    float multiUnitsPanelSpacing;
+    [HideInInspector] public bool actionButtonClicked; // To know when an action button has been clicked
+    bool multipleUnitButtonsGenerated; // To know when to reset multiple unit buttons on panel
 
-    [HideInInspector] public BuildInProgress currentBip;
-    [HideInInspector] public CompletedBuilding currentBuilding;
+    [HideInInspector] public bool resetUI; // used to determine when new object has been clicked so UI can be refreshed
 
-    [HideInInspector] public Resource currentResource;
+    [HideInInspector] public List<Unit> selectedUnits; // List of units selected by player with multiselect
+    [HideInInspector] public BuildInProgress selectedBIP; // BuildInProgress selected by player
+    [HideInInspector] public CompletedBuilding selectedCompletedBuilding; // Completed Building selected by player
+    [HideInInspector] public Resource selectedResource; // Resource selected by player
+    [HideInInspector] public Unit selectedUnit; // Current unit to be displayed in the UI
 
-    GathererActions gathererActions;
-    BuilderActions builderActions;
+    BuildManager bm; // used to check if build action has been selected
+    GatherManager gm; // used to check if gather action has been selected
+    GathererActions gathererActions; // used to retrieve the full list of potential gatherer actions
+    BuilderActions builderActions; // used to retrieve the full list of potential builder actions
+    BiomeTile biomeTile; // used to get biome information for selected object
+    UIPrefabManager uipm; // used to retrieve UI elements in hierarchy
 
-    BiomeTile biomeTile;
-
-    // Start is called before the first frame update
     void Start()
     {
+        bm = FindObjectOfType<BuildManager>();
+        gm = FindObjectOfType<GatherManager>();
+        uipm = transform.GetComponent<UIPrefabManager>();
         selectedUnits = FindObjectOfType<SelectionProcessing>().selectedUnits;
-
-        biomeTile = new BiomeTile();
-
-        transform.Find("MainCanvas/TopBar/ResourceSpacer/Lumber/Icon").GetComponent<Image>().sprite = woodResourceIcon;
-        transform.Find("MainCanvas/TopBar/ResourceSpacer/Ore/Icon").GetComponent<Image>().sprite = oreResourceIcon;
-        transform.Find("MainCanvas/TopBar/ResourceSpacer/Food/Icon").GetComponent<Image>().sprite = foodResourceIcon;
-        transform.Find("MainCanvas/TopBar/ResourceSpacer/Gold/Icon").GetComponent<Image>().sprite = goldResourceIcon;
-
-        HorizontalLayoutGroup horizontalLayoutGroup = multiUnitsPanel.transform.Find("MultiUnitsSpacer").GetComponent<HorizontalLayoutGroup>();
-
         gathererActions = FindObjectOfType<GathererActions>();
         builderActions = FindObjectOfType<BuilderActions>();
 
-        multiUnitsPanelSpacing = horizontalLayoutGroup.spacing;
+        biomeTile = new BiomeTile();
+
+        //initialize top bar UI icons
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Lumber/Icon").GetComponent<Image>().sprite = uipm.woodResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Ore/Icon").GetComponent<Image>().sprite = uipm.oreResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Food/Icon").GetComponent<Image>().sprite = uipm.foodResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Gold/Icon").GetComponent<Image>().sprite = uipm.goldResourceIcon;
 
         uiMode = UIModes.IDLE;
     }
@@ -119,6 +107,7 @@ public class UIProcessing : MonoBehaviour
         UpdateUI();
     }
 
+    // Processes the UI elements to display chosen object's details based on which type of object was clicked
     void UpdateUI()
     {
         if (resetUI) // for things to run once
@@ -128,92 +117,27 @@ public class UIProcessing : MonoBehaviour
             switch (uiMode)
             {
                 case UIModes.IDLE:
-                    ShowUnitPanels(false);
-                    ShowMultipleUnitsPanel(false);
-                    ShowResourcePanels(false);
-                    ShowBuildingPanels(false);
-                    ShowBuildingActionPanels(false);
+                    HideAllUIPanels(); // Keep all UI elements hidden
 
                     break;
 
                 case UIModes.UNIT:
-                    ShowResourcePanels(false);
-                    ShowBuildingPanels(false);
-                    ShowBuildingActionPanels(false);
-
-                    // set graphic panel details
-                    SetUnitGraphicPanel();
-
-                    // set action buttons
-                    SetUnitActionButtons();
-
-                    // show panel
-                    ShowUnitPanels(true);
-
-                    //Make sure multiple units panel is gone
-                    ShowMultipleUnitsPanel(false);
-
-                    if (selectedUnits.Count > 1)
-                    {
-                        // also show multiple units panel
-                        if (!multiUnitsPanel.activeInHierarchy)
-                        {
-                            GenerateMultipleUnitsPanel();
-
-                            // show panels
-                            ShowMultipleUnitsPanel(true);
-                        }
-                    }
+                    ShowUnitUI(); // Show Unit panels
 
                     break;
 
                 case UIModes.BUILDINGINPROG:
-                    if (currentBip == null) // eventually it would be nice to make this auto focus the completed building
-                    {
-                        resetUI = true;
-                        uiMode = UIModes.IDLE;
-                    } else
-                    {
-                        ShowUnitPanels(false);
-                        ShowMultipleUnitsPanel(false);
-                        ShowResourcePanels(false);
-                        ShowBuildingActionPanels(false);
-
-                        // set graphic panel details
-                        SetBuildingGraphicPanel(true);
-
-                        // show panel
-                        ShowBuildingPanels(true);
-                    }                    
+                    ShowBuildingInProgressUI(); // Show Building In Progress panels
 
                     break;
 
                 case UIModes.BUILDING:
-                    ShowUnitPanels(false);
-                    ShowMultipleUnitsPanel(false);
-                    ShowResourcePanels(false);
-                    ShowBuildingActionPanels(true);
-
-                    // set graphic panel details
-                    SetBuildingGraphicPanel(false);
-
-                    // show panel
-                    ShowBuildingPanels(true);
+                    ShowCompletedBuildingUI(); // Show Completed Building panels
 
                     break;
 
                 case UIModes.RESOURCE:
-                    ShowUnitPanels(false);
-                    ShowMultipleUnitsPanel(false);
-
-                    // set graphic panel details
-                    SetResourceGraphicPanel();
-
-                    // set stat panel details
-                    SetResourceStatsPanel();
-
-                    // show panel
-                    ShowResourcePanels(true);
+                    SetResourceUI(); // Show Resource panels
 
                     break;
             }
@@ -223,197 +147,89 @@ public class UIProcessing : MonoBehaviour
         switch (uiMode)
         {
             case UIModes.IDLE:
-
+                // nothing happens every frame during Idle state
                 break;
 
             case UIModes.UNIT:
-                // set stat panel details
-                SetUnitStatsPanel();
-
-                // set action panel details
-                SetUnitActionPanel();
+                ProcessUnitDetails(); // Show selected unit details
 
                 break;
 
             case UIModes.BUILDINGINPROG:
-                if (currentBip == null) // eventually it would be nice to make this auto focus the completed building
-                {
-                    resetUI = true;
-                    uiMode = UIModes.IDLE;
-                }
-                else
-                {
-                    // set stat panel details
-                    SetBuildingStatsPanel(true);
-                }
+                ProcessBuildingInProgressDetails(); // Show selected building in progress details
 
                 break;
 
             case UIModes.BUILDING:
-                // set action buttons
-                SetBuildingActionButtons();
-
-                // set stat panel details
-                SetBuildingStatsPanel(false);
+                ProcessCompletedBuildingDetails(); // Show completed building details
 
                 break;
 
             case UIModes.RESOURCE:
-                // update resources remaining in UI
-                UpdateResourceRemainingDetails();
+                ProcessResourcesDetails(); // Show resource details
                 break;
         }
     }
 
-    #region Buildings
+    #region Units
 
-    private void ShowBuildingPanels(bool show)
+    void ShowUnitUI() // Displays all relevant panels for unit selection
     {
-        buildingCanvas.SetActive(show);
-        buildingGraphicPanel.SetActive(show);
-        buildingStatsPanel.SetActive(show);
-    }
+        // Hide other panels
+        ShowResourcePanels(false);
+        ShowBuildingPanels(false);
+        ShowBuildingActionPanels(false);
 
-    void ShowBuildingActionPanels(bool show)
-    {
-        if (show && currentBuilding.building.actions.Count > 0)
+        // set graphic panel details
+        SetUnitGraphicPanel();
+
+        // set action buttons
+        SetUnitActionButtons();
+
+        // show panel
+        ShowUnitPanels(true);    
+
+        if (selectedUnits.Count > 1) // if multiple units
         {
-            buildingActionPanel.SetActive(true);
+            if (!uipm.multiUnitsPanel.activeInHierarchy) // show multiple units panel
+            {
+                // show panels
+                ShowMultipleUnitsPanel(true);
+            }
+
+            if (!multipleUnitButtonsGenerated) // generate multiple unit buttons if they haven't been
+            {
+                GenerateMultipleUnitsPanel();
+            }
+            
         } else
         {
-            buildingActionPanel.SetActive(false);
+            ShowMultipleUnitsPanel(false);
         }
     }
 
-    private void SetBuildingActionButtons()
+    void ProcessUnitDetails() // Keeps the appropriate panels updated - Stats panel will change if unit levels up or equips something, as well as any actions learned
     {
-        if (currentBuilding.building.actions.Count > 0)
-        {
-            foreach (BaseAction action in currentBuilding.building.actions)
-            {
-                // set action buttons in panel
-            }
-        }
+        // set stat panel details
+        SetUnitStatsPanel();
+
+        // set action panel details
+        SetUnitActionPanel();
     }
 
-    private void SetBuildingStatsPanel(bool isBiP)
-    {
-        if (isBiP && currentBip != null) // build in progress
-        {
-            buildingStatsPanel.transform.Find("DurabilitySlider").gameObject.SetActive(false);
-            buildingStatsPanel.transform.Find("DurabilityText").gameObject.SetActive(false);
-            buildingStatsPanel.transform.Find("ProgressSlider").gameObject.SetActive(true);
-            buildingStatsPanel.transform.Find("ProgressText").gameObject.SetActive(true);
-
-            // progress
-            GetTextComp(buildingStatsPanel.transform.Find("ProgressText")).text = Mathf.RoundToInt(currentBip.progress).ToString() + "%";
-            GetSlider(buildingStatsPanel.transform.Find("ProgressSlider")).fillAmount = currentBip.progress / 100.0f;
-
-            // level
-            GetTextComp(buildingStatsPanel.transform.Find("LevelText")).text = currentBip.building.level.ToString();
-
-            // depot icon
-            if (currentBip.building.depotResource != depotResources.NA)
-            {
-                switch (currentBip.building.depotResource)
-                {
-                    case depotResources.FOOD:
-                        buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = foodResourceIcon;
-                        break;
-                    case depotResources.ORE:
-                        buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = oreResourceIcon;
-                        break;
-                    case depotResources.WOOD:
-                        buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = woodResourceIcon;
-                        break;
-                    case depotResources.ALL:
-                        buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = allResourceIcon;
-                        break;
-                }
-            }
-
-            // biome
-            biomeTile.SetBiomeID(currentBip.transform.position);
-
-            GetTextComp(buildingStatsPanel.transform.Find("BiomeText")).text = UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
-        }
-        else // completed building
-        {
-            buildingStatsPanel.transform.Find("DurabilitySlider").gameObject.SetActive(true);
-            buildingStatsPanel.transform.Find("DurabilityText").gameObject.SetActive(true);
-            buildingStatsPanel.transform.Find("ProgressSlider").gameObject.SetActive(false);
-            buildingStatsPanel.transform.Find("ProgressText").gameObject.SetActive(false);
-
-            // durability
-            GetTextComp(buildingStatsPanel.transform.Find("DurabilityText")).text = currentBuilding.building.currentDurability.ToString() + "/" + currentBuilding.building.maxDurability.ToString();
-            GetSlider(buildingStatsPanel.transform.Find("DurabilitySlider")).fillAmount = currentBuilding.building.currentDurability / currentBuilding.building.maxDurability;
-            
-            // level
-            GetTextComp(buildingStatsPanel.transform.Find("LevelText")).text = currentBuilding.building.level.ToString();
-
-            // depot icon
-            if (currentBuilding.building.depotResource != depotResources.NA)
-            {
-                switch (currentBuilding.building.depotResource)
-                {
-                    case depotResources.FOOD:
-                        buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = foodResourceIcon;
-                        break;
-                    case depotResources.ORE:
-                        buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = oreResourceIcon;
-                        break;
-                    case depotResources.WOOD:
-                        buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = woodResourceIcon;
-                        break;
-                    case depotResources.ALL:
-                        buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = allResourceIcon;
-                        break;
-                }
-            }
-
-            // biome
-            biomeTile.SetBiomeID(currentBuilding.transform.position);
-
-            GetTextComp(buildingStatsPanel.transform.Find("BiomeText")).text = UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
-        }
-    }
-
-    private void SetBuildingGraphicPanel(bool isBiP)
-    {
-        if (isBiP) // build in progress
-        {
-            string name;
-            name = currentBip.building.name;
-            name = UppercaseFirstAndAfterSpaces(name);
-            GetTextComp(buildingGraphicPanel.transform.Find("Name")).text = name;
-
-            buildingGraphicPanel.transform.Find("Graphic").GetComponent<Image>().sprite = currentBip.building.icon;
-        } else // completed building
-        {
-            string name;
-            name = currentBuilding.building.name;
-            name = UppercaseFirstAndAfterSpaces(name);
-            GetTextComp(buildingGraphicPanel.transform.Find("Name")).text = name;
-
-            buildingGraphicPanel.transform.Find("Graphic").GetComponent<Image>().sprite = currentBuilding.building.icon;
-        }
-    }
-
-    #endregion
-
-    #region Units
-    void GenerateMultipleUnitsPanel()
+    void GenerateMultipleUnitsPanel() // Generates the buttons for multiple units when selected
     {
         int selectedUnitsCount = selectedUnits.Count;
-        float prefabWidth = multiUnitsButton.GetComponent<RectTransform>().rect.width;
+        float prefabWidth = uipm.multiUnitsButton.GetComponent<RectTransform>().rect.width;
 
-        Transform spacer = multiUnitsPanel.transform.Find("MultiUnitsSpacer");
+        Transform spacer = uipm.multiUnitsPanel.transform.Find("MultiUnitsSpacer");
 
         // set width of rect transform of multiUnitsPanel
         // edge space + (units spacing * unit count) + (count * prefab width)
-        float newWidth = (selectedUnitsUIEdgeSpace + (multiUnitsPanelSpacing * selectedUnitsCount) + (prefabWidth * selectedUnitsCount));
+        float multiUnitSpacing = uipm.multiUnitsPanel.transform.Find("MultiUnitsSpacer").GetComponent<HorizontalLayoutGroup>().spacing;
+        float newWidth = (selectedUnitsUIEdgeSpace + (multiUnitSpacing * selectedUnitsCount) + (prefabWidth * selectedUnitsCount));
 
-        RectTransform rt = multiUnitsPanel.GetComponent<RectTransform>();
+        RectTransform rt = uipm.multiUnitsPanel.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(newWidth, rt.rect.height);
 
         // clear old units in spacer
@@ -425,202 +241,209 @@ public class UIProcessing : MonoBehaviour
         // generate buttons and set them as children of spacer
         for (int i = 0; i < selectedUnits.Count; i++)
         {
-            GameObject newButton = Instantiate(multiUnitsButton, spacer);
+            GameObject newButton = Instantiate(uipm.multiUnitsButton, spacer);
             newButton.name = i + ") UnitMultiSelectButton";
-            newButton.GetComponent<Image>().sprite = selectedUnits[i].GetFaceGraphic();
+            newButton.GetComponent<Image>().sprite = selectedUnits[i].baseUnit.GetFaceGraphic();
             newButton.GetComponent<MultiUnitsSelectionButton>().unit = selectedUnits[i];
         }
+
+        multipleUnitButtonsGenerated = true;
     }
 
-    void SetUnitGraphicPanel()
+    void SetUnitGraphicPanel() // Displays unit name and face graphic to the UI
     {
         string name = string.Empty;
 
-        if (GetVillagerUnit(currentUnit))
+        if (GetVillagerUnit(selectedUnit))
         {
-            name = GetVillagerUnit(currentUnit).villagerClass.ToString();
-            name = UppercaseFirstAndAfterSpaces(name);
+            name = GetVillagerUnit(selectedUnit).villagerClass.ToString();
+            name = uipm.UppercaseFirstAndAfterSpaces(name);
         }
 
-        GetTextComp(unitGraphicPanel.transform.Find("Name")).text = name;
+        GetTextComp(uipm.unitGraphicPanel.transform.Find("Name")).text = name;
 
-        unitGraphicPanel.transform.Find("Graphic").GetComponent<Image>().sprite = currentUnit.GetFaceGraphic();
+        uipm.unitGraphicPanel.transform.Find("Graphic").GetComponent<Image>().sprite = selectedUnit.baseUnit.GetFaceGraphic();
     }
 
-    void SetUnitStatsPanel()
+    void SetUnitStatsPanel() // Displays selected unit's stats to the UI
     {
-        if (GetVillagerUnit(currentUnit))
+        if (GetVillagerUnit(selectedUnit))
         {
             // Level
-            GetTextComp(unitStatsPanel.transform.Find("LevelText")).text = currentUnit.GetLevel().ToString();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("LevelText")).text = selectedUnit.baseUnit.GetLevel().ToString();
 
             // exp
-            GetTextComp(unitStatsPanel.transform.Find("EXPText")).text = currentUnit.GetEXP() + "/" + currentUnit.GetExpToNextLevel();
-            GetSlider(unitStatsPanel.transform.Find("EXPSlider")).fillAmount = (float)currentUnit.GetEXP() / (float)currentUnit.GetExpToNextLevel();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("EXPText")).text = selectedUnit.baseUnit.GetEXP() + "/" + selectedUnit.baseUnit.GetExpToNextLevel();
+            GetSlider(uipm.unitStatsPanel.transform.Find("EXPSlider")).fillAmount = (float)selectedUnit.baseUnit.GetEXP() / (float)selectedUnit.baseUnit.GetExpToNextLevel();
 
             // HP
-            GetTextComp(unitStatsPanel.transform.Find("HPText")).text = currentUnit.GetHP() + "/" + currentUnit.GetMaxHP();
-            GetSlider(unitStatsPanel.transform.Find("HPSlider")).fillAmount = (float)currentUnit.GetHP() / (float)currentUnit.GetMaxHP();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("HPText")).text = selectedUnit.baseUnit.GetHP() + "/" + selectedUnit.baseUnit.GetMaxHP();
+            GetSlider(uipm.unitStatsPanel.transform.Find("HPSlider")).fillAmount = (float)selectedUnit.baseUnit.GetHP() / (float)selectedUnit.baseUnit.GetMaxHP();
 
             // MP
-            if (currentUnit.usesEnergy)
+            if (selectedUnit.baseUnit.usesEnergy)
             {
-                unitStatsPanel.transform.Find("MPIconFrame").gameObject.SetActive(false);
-                unitStatsPanel.transform.Find("MPSlider").gameObject.SetActive(false);
-                unitStatsPanel.transform.Find("MPText").gameObject.SetActive(false);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("MPIconFrame").gameObject, false);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("MPSlider").gameObject, false);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("MPText").gameObject, false);
 
-                unitStatsPanel.transform.Find("EnergyIconFrame").gameObject.SetActive(true);
-                unitStatsPanel.transform.Find("EnergySlider").gameObject.SetActive(true);
-                unitStatsPanel.transform.Find("EnergyText").gameObject.SetActive(true);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("EnergyIconFrame").gameObject, true);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("EnergySlider").gameObject, true);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("EnergyText").gameObject, true);
 
-                GetTextComp(unitStatsPanel.transform.Find("EnergyText")).text = currentUnit.GetMP() + "/" + currentUnit.GetMaxMP();
-                GetSlider(unitStatsPanel.transform.Find("EnergySlider")).fillAmount = (float)currentUnit.GetMP() / (float)currentUnit.GetMaxMP();
+                GetTextComp(uipm.unitStatsPanel.transform.Find("EnergyText")).text = selectedUnit.baseUnit.GetMP() + "/" + selectedUnit.baseUnit.GetMaxMP();
+                GetSlider(uipm.unitStatsPanel.transform.Find("EnergySlider")).fillAmount = (float)selectedUnit.baseUnit.GetMP() / (float)selectedUnit.baseUnit.GetMaxMP();
             }
             else
             {
-                unitStatsPanel.transform.Find("MPIconFrame").gameObject.SetActive(true);
-                unitStatsPanel.transform.Find("MPSlider").gameObject.SetActive(true);
-                unitStatsPanel.transform.Find("MPText").gameObject.SetActive(true);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("MPIconFrame").gameObject, true);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("MPSlider").gameObject, true);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("MPText").gameObject, true);
 
-                unitStatsPanel.transform.Find("EnergyIconFrame").gameObject.SetActive(false);
-                unitStatsPanel.transform.Find("EnergySlider").gameObject.SetActive(false);
-                unitStatsPanel.transform.Find("EnergyText").gameObject.SetActive(false);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("EnergyIconFrame").gameObject, false);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("EnergySlider").gameObject, false);
+                uipm.ShowUIObject(uipm.unitStatsPanel.transform.Find("EnergyText").gameObject, false);
 
-                GetTextComp(unitStatsPanel.transform.Find("MPText")).text = currentUnit.GetMP() + "/" + currentUnit.GetMaxMP();
-                GetSlider(unitStatsPanel.transform.Find("MPSlider")).fillAmount = (float)currentUnit.GetMP() / (float)currentUnit.GetMaxMP();
+                GetTextComp(uipm.unitStatsPanel.transform.Find("MPText")).text = selectedUnit.baseUnit.GetMP() + "/" + selectedUnit.baseUnit.GetMaxMP();
+                GetSlider(uipm.unitStatsPanel.transform.Find("MPSlider")).fillAmount = (float)selectedUnit.baseUnit.GetMP() / (float)selectedUnit.baseUnit.GetMaxMP();
             }
 
             // Strength
-            GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Strength/StrengthText")).text = currentUnit.GetStrength().ToString();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("StatIconSpacer/Strength/StrengthText")).text = selectedUnit.baseUnit.GetStrength().ToString();
 
             // Stamina
-            GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Stamina/StaminaText")).text = currentUnit.GetStamina().ToString();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("StatIconSpacer/Stamina/StaminaText")).text = selectedUnit.baseUnit.GetStamina().ToString();
 
             // Agility
-            GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Agility/AgilityText")).text = currentUnit.GetAgility().ToString();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("StatIconSpacer/Agility/AgilityText")).text = selectedUnit.baseUnit.GetAgility().ToString();
 
             // Luck
-            GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Luck/LuckText")).text = currentUnit.GetLuck().ToString();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("StatIconSpacer/Luck/LuckText")).text = selectedUnit.baseUnit.GetLuck().ToString();
 
             // Intelligence
-            GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Intelligence/IntelligenceText")).text = currentUnit.GetIntelligence().ToString();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("StatIconSpacer/Intelligence/IntelligenceText")).text = selectedUnit.baseUnit.GetIntelligence().ToString();
 
             // Willpower
-            GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Willpower/WillpowerText")).text = currentUnit.GetWillpower().ToString();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("StatIconSpacer/Willpower/WillpowerText")).text = selectedUnit.baseUnit.GetWillpower().ToString();
 
             // Movement
-            GetTextComp(unitStatsPanel.transform.Find("StatIconSpacer/Movement/MovementText")).text = currentUnit.GetMovement().ToString();
+            GetTextComp(uipm.unitStatsPanel.transform.Find("StatIconSpacer/Movement/MovementText")).text = selectedUnit.baseUnit.GetMovement().ToString();
 
             // Biome
-            biomeTile.SetBiomeID(currentUnit.transform.position);
+            biomeTile.SetBiomeID(selectedUnit.transform.position);
 
-            GetTextComp(unitStatsPanel.transform.Find("BiomeText")).text = UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
+            GetTextComp(uipm.unitStatsPanel.transform.Find("BiomeText")).text = uipm.UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
         }
         else
         {
-            Debug.LogError(currentUnit.gameObject.name + " is not a villager unit!");
+            Debug.LogError(selectedUnit.gameObject.name + " is not a villager unit!");
         }
     }
 
-    void SetUnitActionPanel()
+    void SetUnitActionPanel() // Displays the various components of the action panel
     {
-        if (GetVillagerUnit(currentUnit))
+        if (GetVillagerUnit(selectedUnit))
         {
-            if ((GetVillagerUnit(currentUnit).villagerClass == villagerClasses.FARMER ||
-                GetVillagerUnit(currentUnit).villagerClass == villagerClasses.LUMBERJACK ||
-                GetVillagerUnit(currentUnit).villagerClass == villagerClasses.MINER ||
-                GetVillagerUnit(currentUnit).villagerClass == villagerClasses.VILLAGER) &&
-                !GetVillagerUnit(currentUnit).buildTaskIsActive)
+            if ((GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.FARMER ||
+                GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.LUMBERJACK ||
+                GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.MINER ||
+                GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.VILLAGER) &&
+                !GetVillagerUnit(selectedUnit).buildTaskIsActive)
             {
-                // Update gathering bar if gathering class
-                if ((GetVillagerUnit(currentUnit).gatherTaskIsActive || GetVillagerUnit(currentUnit).resourcesHolding > 0) && !GetVillagerUnit(currentUnit).buildTaskIsActive)
-                {
-                    GetTextComp(unitActionPanel.transform.Find("ActionText")).text = GetVillagerUnit(currentUnit).resourcesHolding + "/" + GetVillagerUnit(currentUnit).GetCarryLimit();
-
-                    GetSlider(unitActionPanel.transform.Find("ActionSlider")).fillAmount = (float)GetVillagerUnit(currentUnit).resourcesHolding / GetVillagerUnit(currentUnit).GetCarryLimit();
-                    GetSlider(unitActionPanel.transform.Find("ActionTimeSlider")).fillAmount = (float)GetVillagerUnit(currentUnit).gatherTimeElapsed / GetVillagerUnit(currentUnit).GetGatherTime();
-
-                    if (!unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
-                    {
-                        unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(true);
-                        unitActionPanel.transform.Find("ActionText").gameObject.SetActive(true);
-                    }
-                    if (!unitActionPanel.transform.Find("ActionTimeSlider").gameObject.activeInHierarchy)
-                    {
-                        unitActionPanel.transform.Find("ActionTimeSlider").gameObject.SetActive(true);
-                    }
-                }
-                else
-                {
-                    if (unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
-                    {
-                        unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(false);
-                        unitActionPanel.transform.Find("ActionText").gameObject.SetActive(false);
-                        unitActionPanel.transform.Find("ActionTimeSlider").gameObject.SetActive(false);
-                    }
-                }
+                SetActionPanelForGatherer();
             }
 
-            if ((GetVillagerUnit(currentUnit).villagerClass == villagerClasses.BUILDER ||
-                      GetVillagerUnit(currentUnit).villagerClass == villagerClasses.VILLAGER) &&
-                      !GetVillagerUnit(currentUnit).gatherTaskIsActive)
+            if ((GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.BUILDER ||
+                      GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.VILLAGER) &&
+                      !GetVillagerUnit(selectedUnit).gatherTaskIsActive)
             {
-                if (GetVillagerUnit(currentUnit).buildTaskIsActive)
+                if (GetVillagerUnit(selectedUnit).buildTaskIsActive)
                 {
-                    GetTextComp(unitActionPanel.transform.Find("ActionText")).text = GetVillagerUnit(currentUnit).personalBuildProgress + "%";
+                    GetTextComp(uipm.unitActionPanel.transform.Find("ActionText")).text = GetVillagerUnit(selectedUnit).personalBuildProgress + "%";
 
-                    GetSlider(unitActionPanel.transform.Find("ActionSlider")).fillAmount = GetVillagerUnit(currentUnit).personalBuildProgress / 100;
-                    GetSlider(unitActionPanel.transform.Find("ActionTimeSlider")).fillAmount = GetVillagerUnit(currentUnit).buildTimeElapsed / GetVillagerUnit(currentUnit).GetBuildTime();
+                    GetSlider(uipm.unitActionPanel.transform.Find("ActionSlider")).fillAmount = GetVillagerUnit(selectedUnit).personalBuildProgress / 100;
+                    GetSlider(uipm.unitActionPanel.transform.Find("ActionTimeSlider")).fillAmount = GetVillagerUnit(selectedUnit).buildTimeElapsed / GetVillagerUnit(selectedUnit).GetBuildTime();
 
-                    if (!unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
+                    if (!uipm.unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
                     {
-                        unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(true);
-                        unitActionPanel.transform.Find("ActionText").gameObject.SetActive(true);
+                        uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionSlider").gameObject, true);
+                        uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionText").gameObject, true);
                     }
-                    if (!unitActionPanel.transform.Find("ActionTimeSlider").gameObject.activeInHierarchy)
+                    if (!uipm.unitActionPanel.transform.Find("ActionTimeSlider").gameObject.activeInHierarchy)
                     {
-                        unitActionPanel.transform.Find("ActionTimeSlider").gameObject.SetActive(true);
+                        uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionTimeSlider").gameObject, true);
                     }
                 }
                 else
                 {
-                    if (unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
+                    if (uipm.unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
                     {
-                        unitActionPanel.transform.Find("ActionSlider").gameObject.SetActive(false);
-                        unitActionPanel.transform.Find("ActionText").gameObject.SetActive(false);
-                        unitActionPanel.transform.Find("ActionTimeSlider").gameObject.SetActive(false);
+                        uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionSlider").gameObject, false);
+                        uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionText").gameObject, false);
+                        uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionTimeSlider").gameObject, false);
                     }
                 }
             }
         }
         else
         {
-            Debug.LogError(currentUnit.gameObject.name + " is not a villager unit!");
+            Debug.LogError(selectedUnit.gameObject.name + " is not a villager unit!");
         }
     }
 
-    private void SetUnitActionButtons()
+    void SetActionPanelForGatherer() // If villager unit is selected and it is a gatherer, update the UI with appropriate details
     {
-        foreach (Transform child in actionSpacer.transform)
+        // Update gathering bar if gathering class
+        if ((GetVillagerUnit(selectedUnit).gatherTaskIsActive || GetVillagerUnit(selectedUnit).resourcesHolding > 0) && !GetVillagerUnit(selectedUnit).buildTaskIsActive)
+        {
+            GetTextComp(uipm.unitActionPanel.transform.Find("ActionText")).text = GetVillagerUnit(selectedUnit).resourcesHolding + "/" + GetVillagerUnit(selectedUnit).GetCarryLimit();
+
+            GetSlider(uipm.unitActionPanel.transform.Find("ActionSlider")).fillAmount = (float)GetVillagerUnit(selectedUnit).resourcesHolding / GetVillagerUnit(selectedUnit).GetCarryLimit();
+            GetSlider(uipm.unitActionPanel.transform.Find("ActionTimeSlider")).fillAmount = (float)GetVillagerUnit(selectedUnit).gatherTimeElapsed / GetVillagerUnit(selectedUnit).GetGatherTime();
+
+            if (!uipm.unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
+            {
+                uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionSlider").gameObject, true);
+                uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionText").gameObject, true);
+            }
+            if (!uipm.unitActionPanel.transform.Find("ActionTimeSlider").gameObject.activeInHierarchy)
+            {
+                uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionTimeSlider").gameObject, true);
+            }
+        }
+        else
+        {
+            if (uipm.unitActionPanel.transform.Find("ActionSlider").gameObject.activeInHierarchy)
+            {
+                uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionSlider").gameObject, false);
+                uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionText").gameObject, false);
+                uipm.ShowUIObject(uipm.unitActionPanel.transform.Find("ActionTimeSlider").gameObject, false);
+            }
+        }
+    }
+
+    void SetUnitActionButtons() // Generates actions in the form of buttons that unit can perform to the UI
+    {
+        foreach (Transform child in uipm.actionSpacer.transform)
         {
             Destroy(child.gameObject);
         }
-        if (GetVillagerUnit(currentUnit))
+        if (GetVillagerUnit(selectedUnit))
         {
-            if (GetVillagerUnit(currentUnit).villagerClass == villagerClasses.BUILDER ||
-                GetVillagerUnit(currentUnit).villagerClass == villagerClasses.VILLAGER)
+            if (GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.BUILDER ||
+                GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.VILLAGER)
             {
                 // for each builder action in BuilderActions
 
                 foreach (BaseAction action in builderActions.builderActions)
                 {
-                    if (currentUnit.GetLevel() >= action.levelRequired)
+                    if (selectedUnit.baseUnit.GetLevel() >= action.levelRequired)
                     {
                         // Add action button for 'Build'
 
                         // prepare action button
-                        GameObject buildActionGO = GameObject.Instantiate(actionButton) as GameObject;
-                        buildActionGO.transform.SetParent(actionSpacer.transform, false);
+                        GameObject buildActionGO = GameObject.Instantiate(uipm.actionButton) as GameObject;
+                        buildActionGO.transform.SetParent(uipm.actionSpacer.transform, false);
 
                         // Set Icon
                         buildActionGO.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>().sprite = action.icon;
@@ -636,27 +459,27 @@ public class UIProcessing : MonoBehaviour
                         ba.action = action;
 
                         // Set Unit
-                        ba.unit = currentUnit;
+                        ba.unit = selectedUnit;
                     }
                 }
             }
 
-            if (GetVillagerUnit(currentUnit).villagerClass == villagerClasses.FARMER ||
-                    GetVillagerUnit(currentUnit).villagerClass == villagerClasses.LUMBERJACK ||
-                    GetVillagerUnit(currentUnit).villagerClass == villagerClasses.MINER ||
-                    GetVillagerUnit(currentUnit).villagerClass == villagerClasses.VILLAGER)
+            if (GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.FARMER ||
+                    GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.LUMBERJACK ||
+                    GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.MINER ||
+                    GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.VILLAGER)
             {
 
                 // for each gatherer action in GathererActions
                 foreach (BaseAction action in gathererActions.gathererActions)
                 {
-                    if (currentUnit.GetLevel() >= action.levelRequired)
+                    if (selectedUnit.baseUnit.GetLevel() >= action.levelRequired)
                     {
                         // Add action button for 'Gather'
 
                         // prepare action button
-                        GameObject gatherActionGO = GameObject.Instantiate(actionButton) as GameObject;
-                        gatherActionGO.transform.SetParent(actionSpacer.transform, false);
+                        GameObject gatherActionGO = GameObject.Instantiate(uipm.actionButton) as GameObject;
+                        gatherActionGO.transform.SetParent(uipm.actionSpacer.transform, false);
 
                         // Set Icon
                         gatherActionGO.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>().sprite = action.icon;
@@ -672,7 +495,7 @@ public class UIProcessing : MonoBehaviour
                         ga.action = action;
 
                         // Set Unit
-                        ga.unit = currentUnit;
+                        ga.unit = selectedUnit;
                     }
                 }
 
@@ -680,105 +503,342 @@ public class UIProcessing : MonoBehaviour
         }
     }
 
-    public void SetCurrentUnit(Unit unitToSet)
+    public void SetCurrentUnit(Unit unitToSet) // Simply updates the selectedUnit to the parameter unitToSet
     {
-        currentUnit = unitToSet;
+        selectedUnit = unitToSet;
     }
 
-    public Unit GetUnitSelected(int ID)
+    public void ShowUnitPanels(bool show) // Shows/hides the unit panels in UI
     {
-        Debug.Log("returning unit: " + selectedUnits[ID].gameObject.name);
-        return selectedUnits[ID];
+        uipm.ShowUIObject(uipm.unitCanvas.gameObject, show);
+        uipm.ShowUIObject(uipm.unitGraphicPanel, show);
+        uipm.ShowUIObject(uipm.unitActionPanel, show);
+        uipm.ShowUIObject(uipm.unitStatsPanel, show);
     }
 
-    public void ShowUnitPanels(bool show)
+    public void ShowMultipleUnitsPanel(bool show) // Shows/hides multiple units panel
     {
-        unitCanvas.SetActive(show);
-        unitGraphicPanel.SetActive(show);
-        unitActionPanel.SetActive(show);
-        unitStatsPanel.SetActive(show);
+        uipm.ShowUIObject(uipm.multiUnitsPanel, show);
+
+        if (!show)
+        {
+            multipleUnitButtonsGenerated = false;
+        }
     }
 
-    public void ShowMultipleUnitsPanel(bool show)
+    #endregion
+
+    #region Buildings
+
+    void ShowBuildingPanels(bool show) // Shows/hides the panels relevant to building parameters
     {
-        multiUnitsPanel.SetActive(show);
+        uipm.ShowUIObject(uipm.buildingCanvas, show);
+        uipm.ShowUIObject(uipm.buildingGraphicPanel, show);
+        uipm.ShowUIObject(uipm.buildingStatsPanel, show);
     }
+
+    void ShowBuildingActionPanels(bool show) // Shows/hides panel which houses the action buttons that the building can perform (ie creating a new unit)
+    {
+        if (show && selectedCompletedBuilding.building.actions.Count > 0)
+        {
+            uipm.ShowUIObject(uipm.buildingActionPanel, true);
+
+        } else
+        {
+            uipm.ShowUIObject(uipm.buildingActionPanel, false);
+        }
+    }
+
+    void SetBuildingActionButtons() // Sets the actions that a building can perform - there are none yet.
+    {
+        if (selectedCompletedBuilding.building.actions.Count > 0)
+        {
+            foreach (BaseAction action in selectedCompletedBuilding.building.actions)
+            {
+                // set action buttons in panel
+            }
+        }
+    }
+
+    void SetBuildingStatsPanel(bool isBiP) // Shows the selected buildings stat and attribute parameters
+    {
+        if (isBiP && selectedBIP != null) // build in progress
+        {
+            DisplayAndSetBuildingInProgressToStatsPanel(); // if building in progress is selected, display the progress, level, depot resource icon, and biome of the building
+        }
+        else // completed building
+        {
+            DisplayAndSetCompletedBuildingToStatsPanel(); // if completed building is selected, display the durability, level, depot resource icon, and biome of the building
+        }
+    }
+
+    void DisplayAndSetCompletedBuildingToStatsPanel()
+    {
+        // Hide progress elements and show durability elements
+        uipm.ShowUIObject(uipm.buildingStatsPanel.transform.Find("DurabilitySlider").gameObject, true);
+        uipm.ShowUIObject(uipm.buildingStatsPanel.transform.Find("DurabilityText").gameObject, true);
+        uipm.ShowUIObject(uipm.buildingStatsPanel.transform.Find("ProgressSlider").gameObject, false);
+        uipm.ShowUIObject(uipm.buildingStatsPanel.transform.Find("ProgressText").gameObject, false);
+
+        // durability
+        GetTextComp(uipm.buildingStatsPanel.transform.Find("DurabilityText")).text = selectedCompletedBuilding.building.currentDurability.ToString() + "/" + selectedCompletedBuilding.building.maxDurability.ToString();
+        GetSlider(uipm.buildingStatsPanel.transform.Find("DurabilitySlider")).fillAmount = selectedCompletedBuilding.building.currentDurability / selectedCompletedBuilding.building.maxDurability;
+
+        // level
+        GetTextComp(uipm.buildingStatsPanel.transform.Find("LevelText")).text = selectedCompletedBuilding.building.level.ToString();
+
+        // depot icon
+        if (selectedCompletedBuilding.building.depotResource != depotResources.NA)
+        {
+            switch (selectedCompletedBuilding.building.depotResource)
+            {
+                case depotResources.FOOD:
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.foodResourceIcon;
+                    break;
+                case depotResources.ORE:
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.oreResourceIcon;
+                    break;
+                case depotResources.WOOD:
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.woodResourceIcon;
+                    break;
+                case depotResources.ALL:
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.allResourceIcon;
+                    break;
+            }
+        }
+
+        // biome
+        biomeTile.SetBiomeID(selectedCompletedBuilding.transform.position);
+
+        GetTextComp(uipm.buildingStatsPanel.transform.Find("BiomeText")).text = uipm.UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
+    }
+
+    void DisplayAndSetBuildingInProgressToStatsPanel()
+    {
+        // Hide durability elements and show progress elements
+        uipm.ShowUIObject(uipm.buildingStatsPanel.transform.Find("DurabilitySlider").gameObject, false);
+        uipm.ShowUIObject(uipm.buildingStatsPanel.transform.Find("DurabilityText").gameObject, false);
+        uipm.ShowUIObject(uipm.buildingStatsPanel.transform.Find("ProgressSlider").gameObject, true);
+        uipm.ShowUIObject(uipm.buildingStatsPanel.transform.Find("ProgressText").gameObject, true);
+
+        // progress
+        GetTextComp(uipm.buildingStatsPanel.transform.Find("ProgressText")).text = Mathf.RoundToInt(selectedBIP.progress).ToString() + "%";
+        GetSlider(uipm.buildingStatsPanel.transform.Find("ProgressSlider")).fillAmount = selectedBIP.progress / 100.0f;
+
+        // level
+        GetTextComp(uipm.buildingStatsPanel.transform.Find("LevelText")).text = selectedBIP.building.level.ToString();
+
+        // depot icon
+        if (selectedBIP.building.depotResource != depotResources.NA)
+        {
+            switch (selectedBIP.building.depotResource)
+            {
+                case depotResources.FOOD:
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.foodResourceIcon;
+                    break;
+                case depotResources.ORE:
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.oreResourceIcon;
+                    break;
+                case depotResources.WOOD:
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.woodResourceIcon;
+                    break;
+                case depotResources.ALL:
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.allResourceIcon;
+                    break;
+            }
+        }
+
+        // biome
+        biomeTile.SetBiomeID(selectedBIP.transform.position);
+
+        GetTextComp(uipm.buildingStatsPanel.transform.Find("BiomeText")).text = uipm.UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
+    }
+
+    void SetBuildingGraphicPanel(bool isBiP) // Sets the graphic panel details - name and icon
+    {
+        if (isBiP) // build in progress
+        {
+            string name;
+            name = selectedBIP.building.name;
+            name = uipm.UppercaseFirstAndAfterSpaces(name);
+            GetTextComp(uipm.buildingGraphicPanel.transform.Find("Name")).text = name;
+
+            uipm.buildingGraphicPanel.transform.Find("Graphic").GetComponent<Image>().sprite = selectedBIP.building.icon;
+        } else // completed building
+        {
+            string name;
+            name = selectedCompletedBuilding.building.name;
+            name = uipm.UppercaseFirstAndAfterSpaces(name);
+            GetTextComp(uipm.buildingGraphicPanel.transform.Find("Name")).text = name;
+
+            uipm.buildingGraphicPanel.transform.Find("Graphic").GetComponent<Image>().sprite = selectedCompletedBuilding.building.icon;
+        }
+    }
+
+    #endregion
+
+    #region CompletedBuilding
+
+    void ShowCompletedBuildingUI() // Displays elements required for the selected completed building
+    {
+        // Hide other panels
+        ShowUnitPanels(false);
+        ShowMultipleUnitsPanel(false);
+        ShowResourcePanels(false);
+        ShowBuildingActionPanels(true);
+
+        // set graphic panel details
+        SetBuildingGraphicPanel(false);
+
+        // show panel
+        ShowBuildingPanels(true);
+    }
+
+    void ProcessCompletedBuildingDetails() // Displays the elements needed to be updated every frame for the completed building (ie stats in the event of a level up, as well as action buttons)
+    {
+        // set action buttons
+        SetBuildingActionButtons();
+
+        // set stat panel details
+        SetBuildingStatsPanel(false);
+    }
+
+    #endregion
+
+    #region BuildInProgress
+
+    void ShowBuildingInProgressUI() // Displays elements needed for building in progress when selected
+    {
+        if (selectedBIP == null) // eventually it would be nice to make this auto focus the completed building - this is being run when the building in progress is selected, but is then completed
+        {
+            resetUI = true;
+            uiMode = UIModes.IDLE;
+        }
+        else
+        {
+            // Hide other panels
+            ShowUnitPanels(false);
+            ShowMultipleUnitsPanel(false);
+            ShowResourcePanels(false);
+            ShowBuildingActionPanels(false);
+
+            // set graphic panel details
+            SetBuildingGraphicPanel(true);
+
+            // show panel
+            ShowBuildingPanels(true);
+        }
+    }
+
+    void ProcessBuildingInProgressDetails() // Displays elements needed for stat panel to be updated every frame (primarily keeping progress updated)
+    {
+        if (selectedBIP == null) // eventually it would be nice to make this auto focus the completed building - this is being run when the building in progress is selected, but is then completed
+        {
+            resetUI = true;
+            uiMode = UIModes.IDLE;
+        }
+        else
+        {
+            // set stat panel details
+            SetBuildingStatsPanel(true);
+        }
+    }
+
     #endregion
 
     #region Resources
 
-    void SetResourceGraphicPanel()
+    void ShowResourcePanels(bool show) // Shows/hides resource panels for UI
     {
-        GetTextComp(resourceGraphicPanel.transform.Find("Name")).text = currentResource.name;
-
-        resourceGraphicPanel.transform.Find("Graphic").GetComponent<Image>().sprite = currentResource.icon;
+        uipm.ShowUIObject(uipm.resourceCanvas, show);
+        uipm.ShowUIObject(uipm.resourceGraphicPanel, show);
+        uipm.ShowUIObject(uipm.resourceStatsPanel, show);
     }
 
-    void SetResourceStatsPanel()
+    void SetResourceUI() // Sets required elements for resource panels
     {
-        switch (currentResource.resourceType)
+        ShowUnitPanels(false);
+        ShowMultipleUnitsPanel(false);
+
+        // set graphic panel details
+        SetResourceGraphicPanel();
+
+        // set stat panel details
+        SetResourceStatsPanel();
+
+        // show panel
+        ShowResourcePanels(true);
+    }
+
+    void SetResourceGraphicPanel() // Sets name and icon to resource graphic panel
+    {
+        GetTextComp(uipm.resourceGraphicPanel.transform.Find("Name")).text = selectedResource.name;
+
+        uipm.resourceGraphicPanel.transform.Find("Graphic").GetComponent<Image>().sprite = selectedResource.icon;
+    }
+
+    void SetResourceStatsPanel() // Sets resource type and biome to resource stats panel
+    {
+        switch (selectedResource.resourceType)
         {
             case ResourceTypes.WOOD:
-                resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = woodResourceIcon;
+                uipm.resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = uipm.woodResourceIcon;
                 break;
             case ResourceTypes.ORE:
-                resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = oreResourceIcon;
+                uipm.resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = uipm.oreResourceIcon;
                 break;
             case ResourceTypes.FOOD:
-                resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = foodResourceIcon;
+                uipm.resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = uipm.foodResourceIcon;
                 break;
         }
 
         // biome
-        biomeTile.SetBiomeID(currentResource.transform.position);
+        biomeTile.SetBiomeID(selectedResource.transform.position);
 
-        GetTextComp(resourceStatsPanel.transform.Find("BiomeText")).text = UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
+        GetTextComp(uipm.resourceStatsPanel.transform.Find("BiomeText")).text = uipm.UppercaseFirstAndAfterSpaces(biomeTile.primaryBiomeType.ToString());
     }
 
-    void UpdateResourceRemainingDetails()
+    void ProcessResourcesDetails() // Keeps UI updated with amount of resources remaining for selected resource
     {
-        GetTextComp(resourceStatsPanel.transform.Find("RemainingResourcesText")).text = currentResource.resourcesRemaining + "/" + currentResource.totalResources;
-        GetSlider(resourceStatsPanel.transform.Find("RemainingResourcesSlider")).fillAmount = (float)currentResource.resourcesRemaining / (float)currentResource.totalResources;
-    }
-
-    public void ShowResourcePanels(bool show)
-    {
-        resourceCanvas.SetActive(show);
-        resourceGraphicPanel.SetActive(show);
-        resourceStatsPanel.SetActive(show);
+        GetTextComp(uipm.resourceStatsPanel.transform.Find("RemainingResourcesText")).text = selectedResource.resourcesRemaining + "/" + selectedResource.totalResources;
+        GetSlider(uipm.resourceStatsPanel.transform.Find("RemainingResourcesSlider")).fillAmount = (float)selectedResource.resourcesRemaining / (float)selectedResource.totalResources;
     }
 
     #endregion
 
-    public void ButtonUIProcessing(GameObject ab)
+    #region UX
+
+    public void ButtonUIProcessing(GameObject ab) // public method used to trigger the fade PingPong effect on the chosen action
     {
         StartCoroutine(ActionIconFade(ab));
     }
 
-    IEnumerator ActionIconFade(GameObject actionButton)
+    IEnumerator ActionIconFade(GameObject actionButton) // Determines which type of action was clicked to determine when it is no longer active (ie, user cancels the action)
     {
         Image icon = actionButton.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>();
         Color originColor = icon.color;
 
         if (actionButton.GetComponent<BuildAction>())
         {
-            while (buildActionClicked)
+            while (bm.buildActionClicked)
             {
                 ProcessFade(icon);
 
                 yield return null;
             }
-        } else if (actionButton.GetComponent<BuildingAction>())
+        }
+        else if (actionButton.GetComponent<BuildingAction>())
         {
-            while (buildingActionClicked)
+            while (bm.buildingActionClicked)
             {
                 ProcessFade(icon);
 
                 yield return null;
             }
-        } else if (actionButton.GetComponent<GatherAction>())
+        }
+        else if (actionButton.GetComponent<GatherAction>())
         {
-            while (gatherActionClicked)
+            while (gm.gatherActionClicked)
             {
                 ProcessFade(icon);
 
@@ -788,8 +848,78 @@ public class UIProcessing : MonoBehaviour
 
         ResetIconAlpha(originColor, icon);
     }
+    
+    public void SetToCanvasSpace(GameObject source, RectTransform prefab) // sets the user feedback of choosing a resource to the canvas space so it is viewed from the same angle, regardless of camera rotation
+    {
+        Vector2 ViewportPosition = Camera.main.WorldToViewportPoint(source.transform.position);
+        Vector2 unitObj_ScreenPosition = new Vector2(
+        ((ViewportPosition.x * uipm.UXCanvas.sizeDelta.x) - (uipm.UXCanvas.sizeDelta.x * 0.5f)),
+        ((ViewportPosition.y * uipm.UXCanvas.sizeDelta.y) - (uipm.UXCanvas.sizeDelta.y * 0.5f) + gatherBuildUXYDistance));
 
-    private void ProcessFade(Image icon)
+        prefab.anchoredPosition = unitObj_ScreenPosition;
+    }
+
+    public IEnumerator DisplayUX(GameObject source, GameObject UXPrefab, bool build) // Shows UX above designated object to show resource gathered/build progress
+    {
+        bool feedbackHidden = false;
+
+        Vector3 pos = source.transform.position;
+        pos = new Vector3(pos.x, pos.y + gatherBuildUXYDistance, pos.z);
+
+        UXPrefab = Instantiate(UXPrefab, pos, Quaternion.identity, uipm.UXCanvas);
+
+        SetToCanvasSpace(source, UXPrefab.GetComponent<RectTransform>());
+
+        UXPrefab.transform.localScale = new Vector3(gatherBuildUXBaseScale, gatherBuildUXBaseScale, gatherBuildUXBaseScale);
+        CanvasGroup cg = UXPrefab.GetComponent<CanvasGroup>();
+
+        RectTransform iconRT;
+        if (build)
+        {
+            iconRT = UXPrefab.transform.Find("UXIcon").GetComponent<RectTransform>();
+            if (source.CompareTag("Unit"))
+            {
+                // Icon is a little too big, so shrinking that slightly
+                iconRT.localScale = new Vector3(iconRT.localScale.x - .075f, iconRT.localScale.y - .075f);
+            }
+        } else
+        {
+            iconRT = null;
+        }
+            while (!feedbackHidden)
+            {
+                float fade = gatherBuildUXFadeFactor * Time.deltaTime;
+                float floatSpeed = gatherBuildUXSpeed * Time.deltaTime;
+
+                Vector3 newPos = new Vector3(UXPrefab.GetComponent<RectTransform>().position.x, UXPrefab.GetComponent<RectTransform>().position.y + floatSpeed, UXPrefab.GetComponent<RectTransform>().position.z);
+
+                cg.alpha -= fade;
+                UXPrefab.GetComponent<RectTransform>().position = newPos;
+
+                if (build && source != null)
+                {
+                    if (source.CompareTag("Unit")) // personal build progress
+                    {
+                        iconRT.Rotate(new Vector3(0, 0, -(personalBuildUXSpinRate * buildUXSpinFactor)));
+
+                    }
+                    else if (source.CompareTag("BuildingInProgress")) // total build progress
+                    {
+                        iconRT.Rotate(new Vector3(0, 0, -(totalBuildUXSpinRate * buildUXSpinFactor)));
+                    }
+                }
+
+                if (cg.alpha == 0.0f)
+                {
+                    Destroy(UXPrefab);
+                    feedbackHidden = true;
+                }
+
+                yield return new WaitForEndOfFrame();
+            }      
+    }
+
+    private void ProcessFade(Image icon) // Processes PingPong fade effect on the given image
     {
         float newAlpha = Mathf.Lerp(actionButtonFadeMin, 255, Mathf.PingPong((Time.time * actionButtonFadeSpeed), 1));
         Color newColor = icon.color;
@@ -797,7 +927,7 @@ public class UIProcessing : MonoBehaviour
         icon.color = newColor;
     }
 
-    public IEnumerator HighlightConfirmedResource(Outline outline)
+    public IEnumerator HighlightConfirmedResourceOrBIP(Outline outline) // Shows UX for when a resource/bip is chosen to be worked on by a unit
     {
         outline.OutlineWidth = taskConfirmationOutlineWidth;
         outline.enabled = true;
@@ -805,84 +935,41 @@ public class UIProcessing : MonoBehaviour
         outline.enabled = false;
     }
 
-    public void HighlightResource(Outline outline, bool highlight)
+    public void HighlightResourceOrBuilding(Outline outline, bool highlight) // Shows UX for when a resource, CompletedBuilding, or Build In Progress is selected in the UI
     {
         outline.OutlineWidth = taskConfirmationOutlineWidth;
         outline.enabled = highlight;
     }
 
-    /*IEnumerator ActionIconFade(GameObject actionButton)
-    {
-        Image icon = actionButton.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>();
-        Color originColor = icon.color;
-
-        while (actionButtonClicked)
-        {
-            if (!actionButtonFadeBreak)
-            {
-                float newAlpha = Mathf.Lerp(actionButtonFadeMin, 255, Mathf.PingPong((Time.time * actionButtonFadeSpeed), 1));
-                Color newColor = icon.color;
-                newColor.a = (newAlpha / 255.0f);
-                icon.color = newColor;
-            } else
-            {
-                break;
-            }
-
-            yield return null;
-        }
-
-        actionButtonFadeBreak = false;
-        ResetIconAlpha(originColor, icon);
-    }*/
-
-    void ResetIconAlpha(Color originColor, Image icon)
+    void ResetIconAlpha(Color originColor, Image icon) // Sets the icon's color back to it's default color before fade PingPong effect
     {
         icon.color = originColor;
     }
 
-    public VillagerUnit GetVillagerUnit(Unit unit)
+    #endregion
+
+    void HideAllUIPanels() // Simply hides all UI panels if nothing is selected
+    {
+        ShowUnitPanels(false);
+        ShowMultipleUnitsPanel(false);
+        ShowResourcePanels(false);
+        ShowBuildingPanels(false);
+        ShowBuildingActionPanels(false);
+    }
+
+    public VillagerUnit GetVillagerUnit(Unit unit) // Returns Villager Unit from given Unit
     {
         VillagerUnit tryVillager = unit as VillagerUnit;
 
         return tryVillager;
     }
 
-    string UppercaseFirstAndAfterSpaces(string s)
-    {
-        char tempChar = '\0';
-
-        if (string.IsNullOrEmpty(s))
-        {
-            return string.Empty;
-        }
-
-        char[] a = s.ToCharArray();
-        for (int i = 0; i < a.Length; i++)
-        {
-            a[i] = char.ToLower(a[i]);
-
-            if (i != 0)
-            {
-                if (tempChar != '\0' && tempChar == ' ')
-                {
-                    a[i] = char.ToUpper(a[i]);
-                }
-
-                tempChar = a[i];
-            }
-        }
-
-        a[0] = char.ToUpper(a[0]);
-        return new string(a);
-    }
-
-    TMP_Text GetTextComp (Transform transform)
+    TMP_Text GetTextComp (Transform transform) // Returns TextMeshPro_Text component from given transform
     {
         return transform.GetComponent<TMP_Text>();
     }
 
-    Image GetSlider(Transform transform)
+    Image GetSlider(Transform transform) // Returns Image component from given transform
     {
         return transform.Find("Fill Area/Fill").GetComponent<Image>();
     }

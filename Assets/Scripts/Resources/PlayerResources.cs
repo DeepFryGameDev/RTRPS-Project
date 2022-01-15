@@ -1,8 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
+// This script houses the total number of resources for the player
 public class PlayerResources : MonoBehaviour
 {
     public int wood;
@@ -10,25 +9,23 @@ public class PlayerResources : MonoBehaviour
     public int food;
     public int gold;
 
-    GameObject resourceUIParent;
+    UIPrefabManager uipm; // used to manipulate the player's resource count in the top bar UI panel
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
-        resourceUIParent = GameObject.Find("MainCanvas/TopBar/ResourceSpacer");
+        uipm = FindObjectOfType<UIPrefabManager>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         ShowResourceCount();
     }
 
-    private void ShowResourceCount()
+    void ShowResourceCount() // shows total resource count in top bar UI panel
     {
-        resourceUIParent.transform.Find("Lumber/Count").GetComponent<TMP_Text>().text = wood.ToString();
-        resourceUIParent.transform.Find("Ore/Count").GetComponent<TMP_Text>().text = ore.ToString();
-        resourceUIParent.transform.Find("Food/Count").GetComponent<TMP_Text>().text = food.ToString();
-        resourceUIParent.transform.Find("Gold/Count").GetComponent<TMP_Text>().text = gold.ToString();
+        uipm.resourceUISpacer.transform.Find("Lumber/Count").GetComponent<TMP_Text>().text = wood.ToString();
+        uipm.resourceUISpacer.transform.Find("Ore/Count").GetComponent<TMP_Text>().text = ore.ToString();
+        uipm.resourceUISpacer.transform.Find("Food/Count").GetComponent<TMP_Text>().text = food.ToString();
+        uipm.resourceUISpacer.transform.Find("Gold/Count").GetComponent<TMP_Text>().text = gold.ToString();
     }
 }

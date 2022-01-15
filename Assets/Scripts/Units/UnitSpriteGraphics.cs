@@ -1,7 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+// Contains face graphics to be set in inspector for units to use
 public class UnitSpriteGraphics : MonoBehaviour
 {
     public Sprite VillagerFace;

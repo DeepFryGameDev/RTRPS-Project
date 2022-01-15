@@ -1,6 +1,9 @@
+/*#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
+// This script simply allows users to be given [ReadOnly] property, which makes them visible in the editor, but unable to be edited.
 public class ReadOnlyAttribute : PropertyAttribute
 {
 
@@ -23,4 +26,4 @@ public class ReadOnlyDrawer : PropertyDrawer
         EditorGUI.PropertyField(position, property, label, true);
         GUI.enabled = true;
     }
-}
+}*/

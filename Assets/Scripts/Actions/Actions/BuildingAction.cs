@@ -1,58 +1,61 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+// This script is added as a component onto generated building action buttons
+
 public class BuildingAction : MonoBehaviour
-{
-    [ReadOnly] public Unit unit;
-    [ReadOnly] public BaseBuilding building;
+{    
+    [HideInInspector] public Unit unit; // unit that is performing the action
+    [HideInInspector] public BaseBuilding building; // building that is related to the action being performed
 
-    UIProcessing uip;
-    BuildManager bm;
-    PlayerResources pr;
+    UIProcessing uip; // used for updating UI to show when action has been chosen
+    BuildManager bm; // used to set the appropriate building to the buildManager
+    PlayerResources pr; // used to check if player has enough resources to process the build action
 
-    bool resourcesAvailable;
-    Color resourcesAvailableColor;
-    Color resourcesUnavailableColor = Color.red;
-    Image icon;
+    bool resourcesAvailable; // set to true when player has enough resources available to process the building action, otherwise it is false
+    Color resourcesAvailableColor; // set on Awake() to the icon's default color to be used if player has enough resources available to process the build action
+    Image icon; // set on Start() to the action's icon so that color can be modified upon resource availability
 
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
-        SetAction();
         uip = FindObjectOfType<UIProcessing>();
-        bm = FindObjectOfType<BuildManager>();  
-    }
-
-    private void Awake()
-    {
+        bm = FindObjectOfType<BuildManager>();
         pr = FindObjectOfType<PlayerResources>();
+
         icon = transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>();
         resourcesAvailableColor = icon.color;
+
+        SetAction(); // sets the button's action on PointerClick to ActionButtonPressed()
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(building.shortcutKey))
+        if (Input.GetKeyDown(building.shortcutKey)) // the same action that is set to PointerClick event in Start() is also performed when pressing the shortcut key
         {
-            StartBuilding();
+            ActionButtonPressed();
         }
 
-        CheckResources();
+        CheckResources(); // verifies the player has enough resources to perform the action
     }
 
-    public void CheckResources()
+    void ActionButtonPressed() // sets BuildManager's chosenBuilding to this building, and updates UI Processing to know that the building action has been requested
     {
-        /*if (pr == null)
+        if (resourcesAvailable)
         {
-            pr = FindObjectOfType<PlayerResources>();
-            icon = transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>();
-            resourcesAvailableColor = icon.color;
-        }*/
+            //Show glow on cursor and keep action button highlighted
+            if (!bm.buildingActionClicked)
+            {
+                bm.chosenBuilding = building;
 
+                bm.buildingActionClicked = true;
+                uip.ButtonUIProcessing(this.gameObject);
+            }
+        }
+    }
+
+    void CheckResources() // changes icon color and sets resourcesAvailable if player has enough resources for the action's requirements
+    {
         if (pr.gold >= building.goldRequired &&
             pr.food >= building.foodRequired &&
             pr.ore >= building.oreRequired &&
@@ -61,46 +64,29 @@ public class BuildingAction : MonoBehaviour
             // able to use
             icon.color = resourcesAvailableColor;
             resourcesAvailable = true;
-        } else
+        }
+        else
         {
             // unable to use
-            icon.color = resourcesUnavailableColor;
+            icon.color = uip.resourcesUnavailableForActionColor;
             resourcesAvailable = false;
         }
     }
 
-    public void SetAction()
+    void ActionButtonPressed(PointerEventData data) // used for setting PointerClick event
+    {
+        ActionButtonPressed();
+    }
+
+    void SetAction() // sets PointerClick event system for the button in UI to perform this action when clicked
     {
         EventTrigger trigger = GetComponent<EventTrigger>();
 
         EventTrigger.Entry entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.PointerClick;
 
-        if (building.name.Equals("Test Depot"))
-        {
-            entry.callback.AddListener((data) => { StartBuilding((PointerEventData)data); });
-        }
+        entry.callback.AddListener((data) => { ActionButtonPressed((PointerEventData)data); });
 
         trigger.triggers.Add(entry);
-    }
-
-    void StartBuilding(PointerEventData data)
-    {
-        StartBuilding();
-    }
-
-    void StartBuilding()
-    {
-        if (resourcesAvailable)
-        {
-            //Show glow on cursor and keep action button highlighted
-            if (!uip.buildingActionClicked)
-            {
-                bm.chosenBuilding = building;
-
-                uip.buildingActionClicked = true;
-                uip.ButtonUIProcessing(this.gameObject);
-            }
-        }
     }
 }

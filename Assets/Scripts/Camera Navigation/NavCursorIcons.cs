@@ -1,7 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+// This script holds the cursor icons for camera navigation, hovering over resources, and processing animations at the mouse cursor when moving to a task
 public class NavCursorIcons : MonoBehaviour
 {
     [Tooltip("Default cursor graphic")]
@@ -33,6 +32,9 @@ public class NavCursorIcons : MonoBehaviour
     public Texture2D oreResource;
     [Tooltip("Cursor graphic for hovering over a food resource")]
     public Texture2D foodResource;
+
+    [Tooltip("Cursor graphic for hovering over a buildable object")]
+    public Texture2D buildBuilding;
 
     [Tooltip("Cursor animation for moving to a task")]
     public GameObject taskTargetPrefab;

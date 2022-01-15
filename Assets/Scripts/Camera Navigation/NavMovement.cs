@@ -1,10 +1,9 @@
 using Cinemachine;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+// this script handles the camera's movement around the world
 public class NavMovement : MonoBehaviour
 {
     [Tooltip("How close the cursor is to the edge of the screen to pan the camera.")]
@@ -17,10 +16,10 @@ public class NavMovement : MonoBehaviour
     [SerializeField] [Range(1f, 100f)] float panSpeedOnKeyPress;
     [Tooltip("How fast the camera pans when using movement keys and holding sprint button (Left Shift).")]
     [SerializeField] [Range(1f, 100f)] float panSpeedOnSprintPress;
-    [Tooltip("Multiplied by the scrollFactor to determine how quickly to zoom using middle mouse button.")]
-    [SerializeField] [Range(1f, 100f)] float scrollSpeed;
-    [Tooltip("Multiplied by the scrollSpeed to determine how quickly to zoom using middle mouse button.")]
-    [SerializeField] [Range(1f, 100f)] float scrollFactor;
+    [Tooltip("Multiplied by the scrollFactor to determine how quickly to zoom using scroll wheel on mouse.")]
+    [SerializeField] [Range(1f, 10f)] float scrollSpeed;
+    [Tooltip("Multiplied by the scrollSpeed to determine how quickly to zoom using scroll wheel on mouse.")]
+    [SerializeField] [Range(1f, 5f)] float scrollFactor;
     [Tooltip("A larger value represents a larger jump to world position from where the right mouse button was originally clicked.")]
     [SerializeField] [Range(0.1f, 1.0f)] float dragFactor;
     [Tooltip("How fast to move the camera when dragging after holding right mouse button.")]
@@ -31,153 +30,97 @@ public class NavMovement : MonoBehaviour
     [SerializeField] [Range(10f, 50f)] float maxScroll;
     [Tooltip("How quickly the camera rotates when holding down the scroll wheel.")]
     [SerializeField] [Range(1f, 20f)] float rotateSpeed;
+    [Tooltip("How far the camera can zoom in.")]
+    [SerializeField] [Range(0, 50f)] float minFOV;
+    [Tooltip("How far the camera can zoom out.")]
+    [SerializeField] [Range(50f, 100f)] float maxFOV;
 
-    public CinemachineVirtualCamera focusCam;
+    // for focusing on selection - focus will center the camera to that object and follow it
+    public CinemachineVirtualCamera focusCam; // Camera to be used for focusing on object
+    GameObject objToFocus; // the object to focus
+    bool focusObj; // if object should be focused
 
-    Terrain terrainMap;
-    Transform camTransform;
+    CursorManager cm; // used to update cursor mode depending on action being taken
+    BuildManager bm; // for checking if build action has been clicked.  This allows for WASD keys to be used as building shortcut keys and will not move the camera when build action is clicked
+
+    Terrain terrainMap; // set as the active terrain
+    Transform camTransform; // set as the main camera's transform
 
     // for drag movement
-    bool rightClickDrag, overUI;
-    UIProcessing uip;
-    float lastMouseX, lastMouseY;
+    UIProcessing uip; // used to gather the UI layer
+    bool rightClickDrag; // used to check if the mouse cursor has moved while being right clicked
+    bool overUI; // returns true if the mouse cursor is over any UI objects
+    float lastMouseX, lastMouseY; // sets mouse position upon right click down
 
-    // for keeping camera above terrain
-    float scrollDist, minScrollClamp, maxScrollClamp;
-
-    // for cursor management
-    CursorManager cm;
-
-    // for focusing on selection
-    GameObject objToFocus;
-    bool focusObj;
+    // To keep camera above terrain
+    float terrainDist;
 
     void Start()
     {
-        uip = GameObject.Find("UI").GetComponent<UIProcessing>();
+        uip = FindObjectOfType<UIProcessing>();
         cm = FindObjectOfType<CursorManager>();
-
-        Cursor.lockState = CursorLockMode.Confined;
-
-        cm.cursorMode = cursorModes.IDLE;
-        cm.SetCursor();
+        bm = FindObjectOfType<BuildManager>();
 
         camTransform = Camera.main.transform;
-        scrollDist = camTransform.position.y;
+        terrainDist = camTransform.position.y;
 
         terrainMap = Terrain.activeTerrain;
+
+        Cursor.lockState = CursorLockMode.Confined; // Keeps mouse cursor from leaving the game window
+
+        cm.cursorMode = cursorModes.IDLE; // Starts the game in IDLE mode
+        cm.SetCursor(); // Sets the cursor to default due to IDLE mode
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (IsMouseOverGameWindow)
+        if (IsMouseOverGameWindow) // ensures mouse is over the game window when trying to perform actions
         {
-            ZoomCamera();
+            ZoomCamera(); // Handles zoom functionality with scroll wheel
 
-            if (!rightClickDrag)
+            if (!rightClickDrag) // if the right mouse button is not being held down
             {
-                PanCamera();
+                PanCamera(); // Handles moving the camera if cursor touches the border of the game window or WASD is pressed. 
             }
 
-            DragCamera();
+            DragCamera(); // Handles moving camera based on the direct mouse position if right mouse button is being held
 
-            RotateCamera();
+            RotateCamera(); // Handles rotating camera around point where mouse scroll wheel is clicked
 
-            KeepCameraAtTerrainHeight();
+            KeepCameraAtTerrainHeight(); // Keeps camera at consistant distance above terrain
 
-            KeepCameraInBounds();
+            KeepCameraInBounds(); // Keeps camera from being able to leave the terrain view
 
-            if (focusObj)
+            if (focusObj) // If camera should be focusing an object
             {
-                FocusCameraOnSelection();
+                FocusCameraOnSelection(); // Handles focusing camera on object
             }
         }      
     }
 
-    public void DisableCamFocus()
-    {
-        if (focusObj)
-        {
-            focusObj = false;
+    #region Camera Zoom
 
-            focusCam.Follow = null;
-            focusCam.enabled = false;
+    void ZoomCamera() // Moves camera up and down Y axis based on scroll value (scrollDist)
+    {
+        if (Input.GetAxis("Mouse ScrollWheel") != 0)
+        {       
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            float newFOV = camTransform.GetComponent<Camera>().fieldOfView;
+            float adjFOV = scroll * (scrollSpeed * scrollFactor);                       
+
+            newFOV -= adjFOV;
+
+            camTransform.GetComponent<Camera>().fieldOfView = Mathf.Clamp(newFOV, minFOV, maxFOV);
+
         }
     }
 
-    private void FocusCameraOnSelection()
-    {
-        focusCam.Follow = objToFocus.transform;
-        focusCam.enabled = true;
-    }
+    #endregion
 
-    public void FocusSelection(GameObject obj)
-    {
-        objToFocus = obj;
-        focusObj = true;
-    }
+    #region Camera Pan
 
-    void KeepCameraInBounds()
-    {
-        if (camTransform.position.x < -(terrainMap.terrainData.size.x / 2))
-        {
-            camTransform.position = new Vector3(-(terrainMap.terrainData.size.x / 2), camTransform.position.y, camTransform.position.z);
-        }
-
-        if (camTransform.position.x > (terrainMap.terrainData.size.x / 2))
-        {
-            camTransform.position = new Vector3((terrainMap.terrainData.size.x / 2), camTransform.position.y, camTransform.position.z);
-        }
-
-        if (camTransform.position.z < -(terrainMap.terrainData.size.z / 2))
-        {
-            camTransform.position = new Vector3(camTransform.position.x, camTransform.position.y, -(terrainMap.terrainData.size.z / 2));
-        }
-
-        if (camTransform.position.z > (terrainMap.terrainData.size.z / 2))
-        {
-            camTransform.position = new Vector3(camTransform.position.x, camTransform.position.y, (terrainMap.terrainData.size.z / 2));
-        }
-    }
-
-    void RotateCamera()
-    {
-        if (Input.GetKeyDown(KeyCode.Mouse2))
-        {
-            cm.cursorRotate = true;
-        }
-
-        if (Input.GetKey(KeyCode.Mouse2))
-        {
-            Vector3 rotatePoint = new Vector3(camTransform.position.x, Terrain.activeTerrain.SampleHeight(camTransform.position), camTransform.position.z);
-
-            camTransform.RotateAround(rotatePoint, transform.up, -Input.GetAxis("Mouse X") * rotateSpeed);
-        }
-
-        if (Input.GetKeyUp(KeyCode.Mouse2))
-        {
-            cm.cursorRotate = false;
-        }
-    }
-
-    void KeepCameraAtTerrainHeight()
-    {
-        float setHeight = Terrain.activeTerrain.SampleHeight(camTransform.position);
-
-        if (GetComponent<NavInterface>().terrainHeight > setHeight)
-        {
-            setHeight = GetComponent<NavInterface>().terrainHeight;
-        }
-
-        float newHeight = (setHeight + scrollDist) - GetComponent<NavInterface>().terrainHeight;
-
-        camTransform.position = new Vector3(camTransform.position.x, newHeight, camTransform.position.z);
-        minScrollClamp = setHeight + minScroll;
-        maxScrollClamp = setHeight + maxScroll;
-    }
-
-    void PanCamera()
+    void PanCamera() // If mouse moves to border or WASD is pressed, the camera is moved.  Border thickness and move speed is adjusted with public vars in editor
     {
         Vector3 pos = camTransform.position;
         bool movingZU = false, movingZD = false, movingXL = false, movingXR = false;
@@ -189,7 +132,7 @@ public class NavMovement : MonoBehaviour
 
         float keyPanSpeed;
 
-        if (Input.GetKey(KeyCode.LeftShift) && !uip.buildActionClicked)
+        if (Input.GetKey(KeyCode.LeftShift) && !bm.buildActionClicked)
         {
             keyPanSpeed = panSpeedOnSprintPress;
         }
@@ -199,7 +142,7 @@ public class NavMovement : MonoBehaviour
         }
 
         //up
-        if (Input.GetAxis("Vertical") > 0 && !uip.buildActionClicked)
+        if (Input.GetAxis("Vertical") > 0 && !bm.buildActionClicked)
         {
             camTransform.Translate(Vector3.forward * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
             
@@ -219,7 +162,7 @@ public class NavMovement : MonoBehaviour
         }
 
         //down
-        if (Input.GetAxis("Vertical") < 0 && !uip.buildActionClicked)
+        if (Input.GetAxis("Vertical") < 0 && !bm.buildActionClicked)
         {
             camTransform.Translate(Vector3.back * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
 
@@ -239,7 +182,7 @@ public class NavMovement : MonoBehaviour
         }
 
         //right
-        if (Input.GetAxis("Horizontal") > 0 && !uip.buildActionClicked)
+        if (Input.GetAxis("Horizontal") > 0 && !bm.buildActionClicked)
         {
             camTransform.Translate(Vector3.right * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
 
@@ -259,7 +202,7 @@ public class NavMovement : MonoBehaviour
         }
 
         //left
-        if (Input.GetAxis("Horizontal") < 0 && !uip.buildActionClicked)
+        if (Input.GetAxis("Horizontal") < 0 && !bm.buildActionClicked)
         {
             camTransform.Translate(Vector3.left * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
 
@@ -295,26 +238,11 @@ public class NavMovement : MonoBehaviour
             cm.cursorMode = cursorModes.PANDIAGDL;
         }
     }
+    #endregion
 
-    void ZoomCamera()
-    {
-        if (Input.GetAxis("Mouse ScrollWheel") != 0)
-        {
-            Vector3 pos = camTransform.position;
+    #region Camera Drag
 
-            float temp = pos.y;
-
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
-            pos.y -= scroll * (scrollSpeed * scrollFactor) * Time.deltaTime;
-
-            pos.y = Mathf.Clamp(pos.y, minScrollClamp, maxScrollClamp);
-
-            scrollDist += (pos.y - temp);
-
-            camTransform.position = pos;
-        }
-    }
-
+    // Drags camera when right mouse button is clicked - this will move the camera in accordance with the position of the mouse cursor
     void DragCamera() // Credit to Grimshad - https://answers.unity.com/questions/827834/click-and-drag-camera.html
     {
         if (Input.GetMouseButtonDown(1))
@@ -369,7 +297,103 @@ public class NavMovement : MonoBehaviour
         }
     }
 
-    //Gets all event system raycast results of current mouse or touch position. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)
+    #endregion
+
+    #region Camera Rotation
+
+    void RotateCamera() // If mouse scroll wheel is clicked, rotates camera around based on mouse position
+    {
+        if (Input.GetKeyDown(KeyCode.Mouse2))
+        {
+            cm.cursorRotate = true;
+        }
+
+        if (Input.GetKey(KeyCode.Mouse2))
+        {
+            Vector3 rotatePoint = new Vector3(camTransform.position.x, Terrain.activeTerrain.SampleHeight(camTransform.position), camTransform.position.z);
+
+            camTransform.RotateAround(rotatePoint, transform.up, -Input.GetAxis("Mouse X") * rotateSpeed);
+        }
+
+        if (Input.GetKeyUp(KeyCode.Mouse2))
+        {
+            cm.cursorRotate = false;
+        }
+    }
+
+    #endregion
+
+    #region Camera Consistency
+
+    void KeepCameraInBounds() // Keeps camera from being able to leave the boundary of the terrain
+    {
+        if (camTransform.position.x < -(terrainMap.terrainData.size.x / 2))
+        {
+            camTransform.position = new Vector3(-(terrainMap.terrainData.size.x / 2), camTransform.position.y, camTransform.position.z);
+        }
+
+        if (camTransform.position.x > (terrainMap.terrainData.size.x / 2))
+        {
+            camTransform.position = new Vector3((terrainMap.terrainData.size.x / 2), camTransform.position.y, camTransform.position.z);
+        }
+
+        if (camTransform.position.z < -(terrainMap.terrainData.size.z / 2))
+        {
+            camTransform.position = new Vector3(camTransform.position.x, camTransform.position.y, -(terrainMap.terrainData.size.z / 2));
+        }
+
+        if (camTransform.position.z > (terrainMap.terrainData.size.z / 2))
+        {
+            camTransform.position = new Vector3(camTransform.position.x, camTransform.position.y, (terrainMap.terrainData.size.z / 2));
+        }
+    }
+
+    void KeepCameraAtTerrainHeight() // Keeps camera at consistent distance above terrain
+    {
+        float setHeight = Terrain.activeTerrain.SampleHeight(camTransform.position);
+
+        if (GetComponent<NavInterface>().terrainHeight > setHeight)
+        {
+            setHeight = GetComponent<NavInterface>().terrainHeight;
+        }
+
+        float newHeight = (setHeight + terrainDist) - GetComponent<NavInterface>().terrainHeight;
+
+        camTransform.position = new Vector3(camTransform.position.x, newHeight, camTransform.position.z);
+    }
+
+    #endregion
+
+    #region Camera Focus
+
+    public void DisableCamFocus() // Turns camera focus off
+    {
+        if (focusObj)
+        {
+            focusObj = false;
+
+            focusCam.Follow = null;
+            focusCam.enabled = false;
+        }
+    }
+
+    public void FocusSelection(GameObject obj) // Turns camera focus on
+    {
+        objToFocus = obj;
+        focusObj = true;
+    }
+
+    void FocusCameraOnSelection() // Sets camera to follow object
+    {
+        focusCam.m_Lens.FieldOfView = camTransform.GetComponent<Camera>().fieldOfView;
+
+        focusCam.Follow = objToFocus.transform;
+        focusCam.enabled = true;
+    }
+
+    #endregion
+
+    // Gets all event system raycast results of current mouse or touch position. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)
     static List<RaycastResult> GetEventSystemRaycastResults()
     {
         PointerEventData eventData = new PointerEventData(EventSystem.current);
@@ -379,8 +403,8 @@ public class NavMovement : MonoBehaviour
         return raysastResults;
     }
 
-    //Returns 'true' if we touched or hovering on Unity UI element. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)
-    private bool IsPointerOverUIElement(List<RaycastResult> eventSystemRaysastResults)
+    // Returns 'true' if we touched or hovering on Unity UI element. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)
+    bool IsPointerOverUIElement(List<RaycastResult> eventSystemRaysastResults)
     {
         for (int index = 0; index < eventSystemRaysastResults.Count; index++)
         {
@@ -391,11 +415,12 @@ public class NavMovement : MonoBehaviour
         return false;
     }
 
-    //Returns 'true' if we touched or hovering on Unity UI element. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)
-    public bool IsPointerOverUIElement()
+    // Returns 'true' if we touched or hovering on Unity UI element. - Credit to daveMennenoh (https://forum.unity.com/threads/how-to-detect-if-mouse-is-over-ui.1025533/)
+    bool IsPointerOverUIElement()
     {
         return IsPointerOverUIElement(GetEventSystemRaycastResults());
     }
 
+    // Returns 'true' if the mouse cursor is over the game window
     bool IsMouseOverGameWindow { get { return !(0 > Input.mousePosition.x || 0 > Input.mousePosition.y || Screen.width < Input.mousePosition.x || Screen.height < Input.mousePosition.y); } }
 }

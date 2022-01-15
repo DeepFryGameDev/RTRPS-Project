@@ -1,10 +1,9 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 
-public enum villagerClasses
+// Types of villager class
+public enum VillagerClasses
 {
     VILLAGER,
     BUILDER,
@@ -15,106 +14,163 @@ public enum villagerClasses
     VENDOR
 }
 
+// This script houses all processes specific to villager units
 public class VillagerUnit : Unit
 {
-    public villagerClasses villagerClass;
+    public VillagerClasses villagerClass; // Each villager unit must have 1 villager class assigned
 
-    [ReadOnly] public bool gatherTaskIsActive, buildTaskIsActive;
-    [ReadOnly] public int resourcesHolding = 0;
-    [ReadOnly] public float personalBuildProgress;
+    [HideInInspector] public bool gatherTaskIsActive; // Set to true as long as villager is in gather task.
+    [HideInInspector] public int resourcesHolding = 0; // How many resources the unit is holding during gather phase
+    [HideInInspector] public float gatherTimeElapsed; // Unit's time that has elapsed for current gather on the resource
 
-    [HideInInspector] public float buildTimeElapsed, gatherTimeElapsed;
+    [HideInInspector] public bool buildTaskIsActive; // Set to true as long as villager is in build task
+    [HideInInspector] public float personalBuildProgress; // Unit's personal build progress toward the completed build
+    [HideInInspector] public float buildTimeElapsed; // Unit's time that has elapsed for current personal build progress
 
-    [HideInInspector] public GatherTask activeGatherTask = new GatherTask();
-    [HideInInspector] public Coroutine gatherTaskCoroutine;
-    [HideInInspector] public Coroutine gatherSimTimeCoroutine;
-    [HideInInspector] public Coroutine buildTaskCoroutine;
-    [HideInInspector] public Coroutine buildSimTimeCoroutine;
+    [HideInInspector] public GatherTask activeGatherTask = new GatherTask(); // Holds the depot and resource for the active gather task for the unit
+    [HideInInspector] public Coroutine gatherTaskCoroutine; // The gather task loop is set in a coroutine var so it can be stopped easily at any point
+    [HideInInspector] public Coroutine gatherSimTimeCoroutine; // The simulation time for gathering is set in a coroutine var so it can be stopped easily at any point
+    [HideInInspector] public Coroutine buildTaskCoroutine; // The build task loop is set in a coroutine var so it can be stopped easily at any point
+    [HideInInspector] public Coroutine buildSimTimeCoroutine; // The simulation time for building is set in a coroutine var so it can be stopped easily at any point
+    [HideInInspector] public BaseBuilding chosenBuilding; // Set to the building object that is being built
 
-    GatherManager gm;
-    GatherPhases gatherPhase;
-    ResourceTypes originalResourceType;
+    GatherManager gm; // Used for showing Gather UX and retrieving variables for gather time/volume calculation
+    PlayerResources pr; // Used for updating the count of player's held resources
+    BuildManager bm; // Used for finishing the building process and retrieving variables for build time/progress calculation
+    ResourceTypes originalResourceType; // Original resource type chosen so a new one can be chosen if the chosen resource is destroyed
 
-    BuildManager bm;
-    BuildPhases buildPhase;
-    [HideInInspector] public BaseBuilding chosenBuilding;
+    GatherPhases gatherPhase; // Used to keep track of the current phase of gathering task
+    BuildPhases buildPhase;   // Used to keep track of the current phase of build task
 
-    InteractionCollision destInteractionCollision;
-    [ReadOnly] public bool isAtDest;
+    bool isMoving; // Used to track if unit is moving so destination is only set once
 
-    List<GameObject> listOfChildren = new List<GameObject>();
-
-    void SetBaseAttributes()
-    {
-        usesEnergy = true;
-
-        if (villagerClass.Equals(villagerClasses.VILLAGER))
-        {
-            SetStrength(1);
-            SetStamina(1);
-            SetAgility(1);
-            SetLuck(1);
-            SetIntelligence(1);
-            SetWillpower(1);
-            SetMovement(1);
-        }
-        else if (villagerClass.Equals(villagerClasses.BUILDER))
-        {
-            SetStrength(3);
-            SetStamina(2);
-            SetAgility(1);
-            SetLuck(2);
-            SetIntelligence(1);
-            SetWillpower(2);
-            SetMovement(2);
-        }
-        else if (villagerClass.Equals(villagerClasses.LUMBERJACK))
-        {
-            SetStrength(4);
-            SetStamina(2);
-            SetAgility(1);
-            SetLuck(1);
-            SetIntelligence(2);
-            SetWillpower(1);
-            SetMovement(2);
-        }
-        else if (villagerClass.Equals(villagerClasses.MINER))
-        {
-            SetStrength(2);
-            SetStamina(4);
-            SetAgility(1);
-            SetLuck(1);
-            SetIntelligence(1);
-            SetWillpower(2);
-            SetMovement(2);
-        }
-        else if (villagerClass.Equals(villagerClasses.FARMER))
-        {
-            SetStrength(1);
-            SetStamina(2);
-            SetAgility(1);
-            SetLuck(1);
-            SetIntelligence(4);
-            SetWillpower(2);
-            SetMovement(2);
-        }
-    }
+    List<GameObject> listOfRecursiveChildren = new List<GameObject>(); // Used to check child gameObjects recursively to the interaction collision
 
     private void Awake()
     {
         up = FindObjectOfType<UnitProcessing>();
+        uip = FindObjectOfType<UIProcessing>();
         um = FindObjectOfType<UnitMovement>();
         gm = FindObjectOfType<GatherManager>();
         bm = FindObjectOfType<BuildManager>();
+        pr = FindObjectOfType<PlayerResources>();
 
         SetUnitProcessingVars();
 
         UnitAwake();
     }
 
+    #region Villager Class Stats and Actions
+
+    void SetBaseAttributes() // Used to set base stats for villager units
+    {
+        baseUnit.usesEnergy = true;
+
+        if (villagerClass.Equals(VillagerClasses.VILLAGER))
+        {
+            baseUnit.SetStrength(1);
+            baseUnit.SetStamina(1);
+            baseUnit.SetAgility(1);
+            baseUnit.SetLuck(1);
+            baseUnit.SetIntelligence(1);
+            baseUnit.SetWillpower(1);
+            baseUnit.SetMovement(1);
+        }
+        else if (villagerClass.Equals(VillagerClasses.BUILDER))
+        {
+            baseUnit.SetStrength(3);
+            baseUnit.SetStamina(2);
+            baseUnit.SetAgility(1);
+            baseUnit.SetLuck(2);
+            baseUnit.SetIntelligence(1);
+            baseUnit.SetWillpower(2);
+            baseUnit.SetMovement(2);
+        }
+        else if (villagerClass.Equals(VillagerClasses.LUMBERJACK))
+        {
+            baseUnit.SetStrength(4);
+            baseUnit.SetStamina(2);
+            baseUnit.SetAgility(1);
+            baseUnit.SetLuck(1);
+            baseUnit.SetIntelligence(2);
+            baseUnit.SetWillpower(1);
+            baseUnit.SetMovement(2);
+        }
+        else if (villagerClass.Equals(VillagerClasses.MINER))
+        {
+            baseUnit.SetStrength(2);
+            baseUnit.SetStamina(4);
+            baseUnit.SetAgility(1);
+            baseUnit.SetLuck(1);
+            baseUnit.SetIntelligence(1);
+            baseUnit.SetWillpower(2);
+            baseUnit.SetMovement(2);
+        }
+        else if (villagerClass.Equals(VillagerClasses.FARMER))
+        {
+            baseUnit.SetStrength(1);
+            baseUnit.SetStamina(2);
+            baseUnit.SetAgility(1);
+            baseUnit.SetLuck(1);
+            baseUnit.SetIntelligence(4);
+            baseUnit.SetWillpower(2);
+            baseUnit.SetMovement(2);
+        }
+    }
+
+    protected override void SetUnitProcessingVars() // Initializes required default variables for the villager units
+    {
+        base.SetUnitProcessingVars();
+
+        SetBaseAttributes();
+
+        SetMaxHP();
+        baseUnit.SetHP(baseUnit.GetMaxHP());
+        SetMaxEnergy();
+        baseUnit.SetMP(baseUnit.GetMaxMP());
+
+        SetGraphic();
+    }
+
+    void SetMaxHP() // Sets unit's max HP based on Stamina and Willpower
+    {
+        baseUnit.SetMaxHP(Mathf.RoundToInt((baseUnit.GetStamina() * up.vilHPFromStaminaFactor) + baseUnit.GetWillpower() * up.vilHPFromWillpowerFactor));
+    }
+
+    void SetMaxEnergy() // Sets unit's max Energy based on Stamina
+    {
+        baseUnit.SetMaxMP(Mathf.RoundToInt(baseUnit.GetStamina() * up.vilEnergyFromStaminaFactor));
+    }
+
+    void SetGraphic() // Sets unit's face graphic
+    {
+        UnitSpriteGraphics usg = up.GetComponent<UnitSpriteGraphics>();
+
+        switch (villagerClass)
+        {
+            case VillagerClasses.VILLAGER:
+                baseUnit.SetFaceGraphic(usg.VillagerFace);
+                break;
+            case VillagerClasses.FARMER:
+                baseUnit.SetFaceGraphic(usg.FarmerFace);
+                break;
+            case VillagerClasses.LUMBERJACK:
+                baseUnit.SetFaceGraphic(usg.LumberjackFace);
+                break;
+            case VillagerClasses.MINER:
+                baseUnit.SetFaceGraphic(usg.MinerFace);
+                break;
+            case VillagerClasses.BUILDER:
+                baseUnit.SetFaceGraphic(usg.BuilderFace);
+                break;
+        }
+    }
+
+    #endregion
+
     #region Gathering
 
-    public void PrepareGather(Resource resource)
+    public void PrepareGather(Resource resource) // Sets required variables for gathering task to be created and started
     {
         gatherTimeElapsed = 0;
 
@@ -132,14 +188,13 @@ public class VillagerUnit : Unit
         gatherTaskCoroutine = StartCoroutine(GatherResource());
     }    
 
-    IEnumerator GatherResource()
+    IEnumerator GatherResource() // The loop to be run while gather task is active - this holds the actual process of gathering resources and dropping them off at the closest applicable depot
     {
         while (gatherTaskIsActive)
         {
             switch (gatherPhase)
             {
                 case GatherPhases.SEEKINGRESOURCE:
-                    bool changedResource = false;
 
                     if (resourcesHolding == GetCarryLimit()) // if carryLimit has been reached
                     {
@@ -157,23 +212,23 @@ public class VillagerUnit : Unit
                         } else
                         {   // If at any point it is null during this phase, but there are still resources available, the closest resource of same type should be set to new chosen resource
                             activeGatherTask.resource = GetClosestResource();
-                            changedResource = true;
                         }                        
                     }
 
                     if (activeGatherTask.resource.unitsInteracting.Count == activeGatherTask.resource.maxUnitsGathering) // If at any point there are x units already on the resource(GatherManager.maxUnitsGatheringFromOneResource.Count)
                     {
                         activeGatherTask.resource = GetClosestResource(); // set the closest resource of same type
-                        changedResource = true;
+                        isMoving = false; // reset move so below can be re-run
                     }
 
-                    if (resourcesHolding < GetCarryLimit() && (changedResource || agent.velocity == Vector3.zero)) // if carryLimit has not been reached
+                    if (resourcesHolding < GetCarryLimit() && !isMoving) // if carryLimit has not been reached
                     {
                         // move to chosen resource
                         um.ProcessMoveVillagerUnitInGatherTask(false, this, activeGatherTask.resource, null);
+                        isMoving = true;
                     }
 
-                    if (!agent.pathPending && IsAtDest(activeGatherTask.resource.transform)) // once in range of chosen resource
+                    if (!agent.pathPending && IsAtDest(GetInteractionCollision(activeGatherTask.resource.gameObject))) // once in range of chosen resource
                     {
                         StopAgentMovement(); // stop moving
 
@@ -184,6 +239,7 @@ public class VillagerUnit : Unit
 
                     break;
             case GatherPhases.GATHERING:
+
                     if (resourcesHolding < GetCarryLimit() && (activeGatherTask.resource == null || activeGatherTask.resource.resourcesRemaining == 0)) // if resources on this are gone and can carry more
                     {
                         // set mode back to SEEKINGRESOURCE
@@ -191,7 +247,7 @@ public class VillagerUnit : Unit
                         continue;
                     }
 
-                    transform.LookAt(activeGatherTask.resource.transform); // look at resource (in case it was moved between gathering)
+                    transform.LookAt(activeGatherTask.resource.transform); // look at resource (in case unit was moved between gathering)
 
                     if (resourcesHolding < GetCarryLimit() && activeGatherTask.resource.resourcesRemaining > 0) // while carry limit has not been reached
                     {
@@ -199,7 +255,7 @@ public class VillagerUnit : Unit
                         //yield return new WaitForSeconds(GetGatherTime()); //simulates time gathering
                         yield return gatherSimTimeCoroutine = StartCoroutine(SimGatherTime()); //simulates time gathering
                         AddResourcetoUnit(); // adds resource to unit
-                        StartCoroutine(gm.ShowResourceGatherUX(this.gameObject, activeGatherTask.resource.resourceType, 1, true)); // show UX feedback
+                        gm.ShowResourceGatherUX(this.gameObject, activeGatherTask.resource.resourceType, 1, true); // show UX feedback
 
                         //Debug.Log(gameObject.name + " carrying " + activeGatherTask.resource.resourceType + " - " + resourcesHolding + "/" + GetCarryLimit());
                     }
@@ -217,9 +273,9 @@ public class VillagerUnit : Unit
             case GatherPhases.MOVETODEPOT:
                     bool changedDepot = false;
 
-                    if (activeGatherTask.depot != GetClosestDepot(activeGatherTask.resource)) // If at any point during this phase the depot is null (player or enemy destroyed it)
+                    if (activeGatherTask.depot != GetClosestDepot()) // If at any point during this phase the depot is null (player or enemy destroyed it)
                     {
-                        activeGatherTask.depot = GetClosestDepot(activeGatherTask.resource); // Set closest depot
+                        activeGatherTask.depot = GetClosestDepot(); // Set closest depot
                         changedDepot = true;
                     }
 
@@ -229,7 +285,7 @@ public class VillagerUnit : Unit
                         um.ProcessMoveVillagerUnitInGatherTask(true, this, activeGatherTask.resource, activeGatherTask.depot);
                     }
 
-                    if (!agent.pathPending && IsAtDest(activeGatherTask.depot.transform)) // once in range of depot
+                    if (!agent.pathPending && IsAtDest(GetInteractionCollision(activeGatherTask.depot.gameObject))) // once in range of depot
                     {
                         StopAgentMovement(); // stop moving
 
@@ -262,16 +318,20 @@ public class VillagerUnit : Unit
         CompleteGatheringTask();
     }
 
-    public void CompleteGatheringTask()
+    public void CompleteGatheringTask() // Stops any gather time simulation if it is still in process and stops gathering
     {
-        isAtDest = false;
         if (gatherSimTimeCoroutine != null)
         {
             StopCoroutine(gatherSimTimeCoroutine);
-        }        
+        }
+
+        if (gatherTaskCoroutine != null)
+        {
+            StopGathering();
+        }
     }
 
-    IEnumerator SimGatherTime()
+    IEnumerator SimGatherTime() // Simulates the amount of time it takes to gather a resource
     {
         gatherTimeElapsed = 0;
 
@@ -283,64 +343,51 @@ public class VillagerUnit : Unit
         }
     }
 
-    void AddResourcetoUnit()
+    void AddResourcetoUnit() // Removes resource type from resource object and adds it to the unit's current count
     {
         activeGatherTask.resource.resourcesRemaining--;
         resourcesHolding++;
     }
 
-    void DropResourceOffAtDepot()
+    void DropResourceOffAtDepot() // Processes the depositing of a resource at the current task's depot
     {
-        if (activeGatherTask.resource.resourceType == ResourceTypes.WOOD)
+        switch (activeGatherTask.resource.resourceType)
         {
-            GameObject.FindObjectOfType<PlayerResources>().wood += resourcesHolding;
-        } else if (activeGatherTask.resource.resourceType == ResourceTypes.ORE)
-        {
-            GameObject.FindObjectOfType<PlayerResources>().ore += resourcesHolding;
-        } else if (activeGatherTask.resource.resourceType == ResourceTypes.FOOD)
-        {
-            GameObject.FindObjectOfType<PlayerResources>().food += resourcesHolding;
+            case ResourceTypes.WOOD:
+                pr.wood += resourcesHolding;
+                break;
+            case ResourceTypes.ORE:
+                pr.ore += resourcesHolding;
+                break;
+            case ResourceTypes.FOOD:
+                pr.food += resourcesHolding;
+                break;
         }
 
-        StartCoroutine(gm.ShowResourceGatherUX(activeGatherTask.depot.gameObject, activeGatherTask.resource.resourceType, resourcesHolding, true));
-        StartCoroutine(gm.ShowResourceGatherUX(this.gameObject, activeGatherTask.resource.resourceType, resourcesHolding, false));
+        gm.ShowResourceGatherUX(activeGatherTask.depot.gameObject, activeGatherTask.resource.resourceType, resourcesHolding, true);
+        gm.ShowResourceGatherUX(this.gameObject, activeGatherTask.resource.resourceType, resourcesHolding, false);
 
         resourcesHolding = 0;
     }
 
-    bool IsAtDest(Transform dest)
-    {
-        if (destInteractionCollision == null)
-        {
-            SetInteractionCollision(dest.gameObject);
-        }
-
-        if (destInteractionCollision.isAtDest && isAtDest)
-        {
-            destInteractionCollision = null;
-            return true;
-        } else
-        {
-            return false;
-        }
-    }
-
-    Depot GetClosestDepot(Resource resource)
+    Depot GetClosestDepot() // Returns the closest depot to the unit's position to deposit held resources
     {
         GameObject[] objs;
         objs = GameObject.FindGameObjectsWithTag("Depot");
 
         depotResources chosenDepotType = new depotResources();
 
-        if (activeGatherTask.resource.resourceType == ResourceTypes.FOOD)
+        switch (activeGatherTask.resource.resourceType)
         {
-            chosenDepotType = depotResources.FOOD;
-        } else if (activeGatherTask.resource.resourceType == ResourceTypes.ORE)
-        {
-            chosenDepotType = depotResources.ORE;
-        } else if (activeGatherTask.resource.resourceType == ResourceTypes.WOOD)
-        {
-            chosenDepotType = depotResources.WOOD;
+            case ResourceTypes.FOOD:
+                chosenDepotType = depotResources.FOOD;
+                break;
+            case ResourceTypes.ORE:
+                chosenDepotType = depotResources.ORE;
+                break;
+            case ResourceTypes.WOOD:
+                chosenDepotType = depotResources.WOOD;
+                break;
         }
 
         GameObject closest = null;
@@ -363,7 +410,7 @@ public class VillagerUnit : Unit
         return closest.GetComponent<Depot>();
     }
 
-    Resource GetClosestResource()
+    Resource GetClosestResource() // Returns the closest resource of original resource type to the unit's position
     {
         GameObject[] objs;
         objs = GameObject.FindGameObjectsWithTag("Resource");
@@ -395,19 +442,63 @@ public class VillagerUnit : Unit
                 }
             }
         }
+
         return closest;
     }
 
-    public void StopGathering()
+    public void StopGathering() // Immediately stops the gather task 
     {
+        isMoving = false;
         StopCoroutine(gatherTaskCoroutine);
+    }
+
+    public int GetCarryLimit() // Returns the carry limit based on resource type chosen and unit's stats
+    {
+        switch (activeGatherTask.resource.resourceType)
+        {
+            case ResourceTypes.WOOD:
+                return Mathf.RoundToInt(baseUnit.GetStrength() * up.vilWoodCarryLimitFromStrengthFactor);
+            case ResourceTypes.ORE:
+                return Mathf.RoundToInt(baseUnit.GetStamina() * up.vilOreCarryLimitFromStaminaFactor);
+            case ResourceTypes.FOOD:
+                return Mathf.RoundToInt(baseUnit.GetIntelligence() * up.vilFoodCarryLimitFromIntelligenceFactor);
+        }
+
+        return 0;
+    }
+
+    public float GetGatherTime() // Returns gather time based on resource type chosen and unit's stats
+    {
+        float tempRate;
+
+        switch (activeGatherTask.resource.resourceType)
+        {
+            case ResourceTypes.WOOD: // strength and willpower
+                tempRate = gm.maxGatherTime - ((baseUnit.GetStrength() * gm.gatherWoodTimeStrengthFactor) + (baseUnit.GetWillpower() * gm.gatherWoodTimeWillpowerFactor));
+                break;
+            case ResourceTypes.ORE: // strength and stamina
+                tempRate = gm.maxGatherTime - ((baseUnit.GetStrength() * gm.gatherOreTimeStrengthFactor) + (baseUnit.GetWillpower() * gm.gatherOreTimeStaminaFactor));
+                break;
+            case ResourceTypes.FOOD: // intelligence and willpower
+                tempRate = gm.maxGatherTime - ((baseUnit.GetIntelligence() * gm.gatherFoodTimeIntelligenceFactor) + (baseUnit.GetWillpower() * gm.gatherFoodTimeWillpowerFactor));
+                break;
+            default:
+                Debug.LogError("GetGatherTime - Invalid resource type");
+                tempRate = 0;
+                break;
+        }
+
+        if (tempRate < gm.minGatherTime)
+            return gm.minGatherTime;
+
+        return tempRate;
     }
 
     #endregion
 
     #region Building
 
-    public void PrepareBuilding(GameObject building)
+    public void PrepareBuilding(GameObject building) // Sets required variables for build task to be created and started
     {
         buildTimeElapsed = 0;
         buildTaskIsActive = true;
@@ -417,7 +508,7 @@ public class VillagerUnit : Unit
         buildTaskCoroutine = StartCoroutine(BuildBuilding(building.GetComponent<BuildInProgress>()));
     }
 
-    IEnumerator BuildBuilding(BuildInProgress bip)
+    IEnumerator BuildBuilding(BuildInProgress bip) // The states to be run while build task is active - this holds the actual process of moving to a building in progress and contributing to it
     {
         while (buildTaskIsActive)
         {
@@ -443,15 +534,18 @@ public class VillagerUnit : Unit
                         um.ProcessMoveVillagerUnitToBuildInProgress(this, bip); // this possibly needs to be updated
                     }
 
-                    if (agent.velocity != Vector3.zero && IsAtDest(bip.transform)) // once in range of chosen build
+                    if (agent.velocity != Vector3.zero && IsAtDest(GetInteractionCollision(bip.gameObject))) // once in range of chosen build
                     {
                         StopAgentMovement(); // stop moving
+
+                        transform.LookAt(bip.transform); // look at build
 
                         buildPhase = buildPhase = BuildPhases.PROCESSBUILD; // set buildPhase to PROCESSBUILD
                     }
 
                     break;
                 case BuildPhases.PROCESSBUILD:
+
                     // add to build in progress units interacting
                     if (!bip.unitsInteracting.Contains(this))
                     {
@@ -488,22 +582,21 @@ public class VillagerUnit : Unit
         CompleteBuildTask();
     }
 
-    public void CompleteBuildTask()
+    public void CompleteBuildTask() // Stops any build time simulation if it is still in process and stops building
     {
-        isAtDest = false;
         personalBuildProgress = 0;
         if (buildSimTimeCoroutine != null)
         {
             StopCoroutine(buildSimTimeCoroutine);
-        }        
+        }
+
+        if (buildTaskCoroutine != null)
+        {
+            StopBuilding();
+        }
     }
 
-    public void StopBuilding()
-    {
-        StopCoroutine(buildTaskCoroutine);
-    }
-
-    IEnumerator SimBuildTime(BuildInProgress bip)
+    IEnumerator SimBuildTime(BuildInProgress bip) // Simulates the amount of time it takes to contribute to a build
     {
         buildTimeElapsed = 0;
 
@@ -512,10 +605,15 @@ public class VillagerUnit : Unit
             buildTimeElapsed += Time.deltaTime;
 
             yield return new WaitForEndOfFrame();
-        }        
+        }
     }
 
-    private void ContributeToBuild(BuildInProgress bip)
+    public void StopBuilding() // Immediately stops the build task
+    {
+        StopCoroutine(buildTaskCoroutine);
+    }
+
+    void ContributeToBuild(BuildInProgress bip) // Increases the personal build progress, and when personal build progress reaches 100%, increases progress to the build in progress
     {
         if (personalBuildProgress == 100)
         {
@@ -525,9 +623,9 @@ public class VillagerUnit : Unit
         if (bip.progress < 100)
         {
             float adjBuildProgress = GetBuildPersonalProgress();
-            personalBuildProgress += adjBuildProgress; 
+            personalBuildProgress += adjBuildProgress;
 
-            // show UX feedback for this
+            bm.ShowBuildProgressUX(this.gameObject, true, personalBuildProgress);
         }
 
         if (personalBuildProgress >= 100)
@@ -536,7 +634,10 @@ public class VillagerUnit : Unit
             bip.IncreaseProgress(adjProgress); 
             personalBuildProgress = 100;
 
-            // show UX feedback for this
+            if (bip != null)
+            {
+                bm.ShowBuildProgressUX(bip.gameObject, false, bip.progress);
+            }            
         }
 
         if (bip.progress > 100)
@@ -545,44 +646,11 @@ public class VillagerUnit : Unit
         }
     }
 
-    #endregion
-
-    void StopAgentMovement()
-    {
-        agent.isStopped = true;
-        agent.enabled = false;
-        agent.enabled = true;
-    }
-
-    protected override void SetUnitProcessingVars()
-    {
-        base.SetUnitProcessingVars();
-
-        SetBaseAttributes();
-
-        SetMaxHP();
-        SetHP(GetMaxHP());
-        SetMaxMP();
-        SetMP(GetMaxMP());
-
-        SetGraphic();
-    }
-
-    void SetMaxHP()
-    {
-        this.SetMaxHP(Mathf.RoundToInt((GetStamina() * up.vilHPFromStaminaFactor) + GetWillpower() * up.vilHPFromWillpowerFactor));
-    }
-
-    void SetMaxMP()
-    {
-        this.SetMaxMP(Mathf.RoundToInt(GetStamina() * up.vilEnergyFromStaminaFactor));
-    }
-
-    public float GetBuildTime() // uses agility, intelligence, and willpower
+    public float GetBuildTime() // Returns amount of time to run personal build using unit's agility, intelligence, and willpower
     {
         float tempRate;
 
-        tempRate = bm.maxBuildTime - ((GetAgility() * bm.buildTimeAgilityFactor) + (GetIntelligence() * bm.buildTimeIntelligenceFactor) + (GetWillpower() * bm.buildTimeWillpowerFactor));
+        tempRate = bm.maxBuildTime - ((baseUnit.GetAgility() * bm.buildTimeAgilityFactor) + (baseUnit.GetIntelligence() * bm.buildTimeIntelligenceFactor) + (baseUnit.GetWillpower() * bm.buildTimeWillpowerFactor));
 
         if (tempRate < bm.minBuildTime)
             return bm.minBuildTime;
@@ -590,11 +658,11 @@ public class VillagerUnit : Unit
         return tempRate;
     }
 
-    float GetBuildPersonalProgress() // uses strength and intelligence
+    float GetBuildPersonalProgress() // Returns value to increase personal build progress using strength and intelligence
     {
         float tempPerProg;
 
-        tempPerProg = (bm.buildPerProgFactor * ((GetStrength() * bm.buildPerProgStrengthFactor) + GetIntelligence() * bm.buildPerProgIntelligenceFactor));
+        tempPerProg = (bm.buildPerProgFactor * ((baseUnit.GetStrength() * bm.buildPerProgStrengthFactor) + baseUnit.GetIntelligence() * bm.buildPerProgIntelligenceFactor));
 
         if (tempPerProg < bm.minBuildPerProg)
             return bm.minBuildPerProg;
@@ -605,11 +673,11 @@ public class VillagerUnit : Unit
         return tempPerProg;
     }
 
-    float GetBuildTotalProgress() // uses willpower and stamina
+    float GetBuildTotalProgress() // Returns value to increase total build's progress using willpower and stamina
     {
         float tempTotProg;
 
-        tempTotProg = (bm.buildTotProgFactor * ((GetWillpower() * bm.buildTotProgWillpowerFactor) + GetStamina() * bm.buildTotProgStaminaFactor));
+        tempTotProg = (bm.buildTotProgFactor * ((baseUnit.GetWillpower() * bm.buildTotProgWillpowerFactor) + baseUnit.GetStamina() * bm.buildTotProgStaminaFactor));
 
         if (tempTotProg < bm.minBuildTotProg)
             return bm.minBuildTotProg;
@@ -620,92 +688,48 @@ public class VillagerUnit : Unit
         return tempTotProg;
     }
 
-    public int GetCarryLimit()
+    #endregion
+
+    #region Utilities
+
+    bool IsAtDest(InteractionCollision destInteractionCollision) // Returns true if unit collides with destination's interaction collider
     {
-        if (activeGatherTask.resource.resourceType == ResourceTypes.WOOD)
+        if (destInteractionCollision.unitsInteracting.Contains(this))
         {
-            return Mathf.RoundToInt(GetStrength() * up.vilWoodCarryLimitFromStrengthFactor);
-        } else if (activeGatherTask.resource.resourceType == ResourceTypes.ORE)
-        {
-            return Mathf.RoundToInt(GetStamina() * up.vilOreCarryLimitFromStaminaFactor);
-        } else if (activeGatherTask.resource.resourceType == ResourceTypes.FOOD)
-        {
-            return Mathf.RoundToInt(GetIntelligence() * up.vilFoodCarryLimitFromIntelligenceFactor);
+            return true;
         }
-
-        return 0;
-    }
-
-    public float GetGatherTime() // uses variety of stats based on resource
-    {
-        float tempRate = 0;
-
-        switch (activeGatherTask.resource.resourceType)
+        else
         {
-            case ResourceTypes.WOOD: // strength and willpower
-                tempRate = gm.maxGatherTime - ((GetStrength() * gm.gatherWoodTimeStrengthFactor) + (GetWillpower() * gm.gatherWoodTimeWillpowerFactor));
-                break;
-            case ResourceTypes.ORE: // strength and stamina
-                tempRate = gm.maxGatherTime - ((GetStrength() * gm.gatherOreTimeStrengthFactor) + (GetWillpower() * gm.gatherOreTimeStaminaFactor));
-                break;
-            case ResourceTypes.FOOD: // intelligence and willpower
-                tempRate = gm.maxGatherTime - ((GetIntelligence() * gm.gatherFoodTimeIntelligenceFactor) + (GetWillpower() * gm.gatherFoodTimeWillpowerFactor));
-                break;
-            default:
-                Debug.LogError("GetGatherTime - Invalid resource type");
-                tempRate = 0;
-                break;
-        }        
-
-        if (tempRate < gm.minGatherTime)
-            return gm.minGatherTime;
-
-        return tempRate;
-    }
-
-    void SetGraphic()
-    {
-        UnitSpriteGraphics usg = up.GetComponent<UnitSpriteGraphics>();
-
-        switch (villagerClass)
-        {
-            case villagerClasses.VILLAGER:
-                SetFaceGraphic(usg.VillagerFace);
-                break;
-            case villagerClasses.FARMER:
-                SetFaceGraphic(usg.FarmerFace);
-                break;
-            case villagerClasses.LUMBERJACK:
-                SetFaceGraphic(usg.LumberjackFace);
-                break;
-            case villagerClasses.MINER:
-                SetFaceGraphic(usg.MinerFace);
-                break;
-            case villagerClasses.BUILDER:
-                SetFaceGraphic(usg.BuilderFace);
-                break;
+            return false;
         }
     }
 
-    void SetInteractionCollision(GameObject objToCheck)
+    void StopAgentMovement() // Stops agent from moving by setting isStopped to true and turning agent off and back on
     {
-        listOfChildren.Clear();
+        agent.isStopped = true;
+        agent.enabled = false;
+        agent.enabled = true;
+        isMoving = false;
+    }
 
-        destInteractionCollision = null;
+    InteractionCollision GetInteractionCollision(GameObject objToCheck) // Sets the destInteractionCollision to the target object's attached InteractionCollision
+    {
+        listOfRecursiveChildren.Clear();
 
         GetRecursiveChildren(objToCheck);
 
-        foreach (GameObject obj in listOfChildren)
+        foreach (GameObject obj in listOfRecursiveChildren)
         {
             if (obj.GetComponent<InteractionCollision>())
             {
-                destInteractionCollision = obj.GetComponent<InteractionCollision>();
-                break;
+                return obj.GetComponent<InteractionCollision>();
             }
         }
+
+        return null;
     }
 
-    private void GetRecursiveChildren(GameObject obj)
+    private void GetRecursiveChildren(GameObject obj) // Finds all children recursively attached to provided object to find the Interaction Collision attached to it
     {
         if (null == obj)
             return;
@@ -715,8 +739,10 @@ public class VillagerUnit : Unit
             if (null == child)
                 continue;
             //child.gameobject contains the current child you can do whatever you want like add it to an array
-            listOfChildren.Add(child.gameObject);
+            listOfRecursiveChildren.Add(child.gameObject);
             GetRecursiveChildren(child.gameObject);
         }
     }
+
+    #endregion
 }

@@ -1,71 +1,249 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+// This script handles the process of selecting objects with mouse input
 public class SelectionProcessing : MonoBehaviour
 {
-    [HideInInspector] public List<Unit> selectedUnits = new List<Unit>();
-    GameObject selectedGO;
-
-    // For multi-selection
-    RectTransform selectionBox;
-    Vector2 startPos;
-    List<Unit> unitsToSelect = new List<Unit>();
-    
+    [HideInInspector] public List<Unit> selectedUnits = new List<Unit>(); // list of units selected by player.  A single selected unit is represented by the first index of this list
 
     UIProcessing uip;
+    UIPrefabManager uipm;
     UnitProcessing up;
     NavMovement nm;
+    BuildManager bm;
     GatherManager gm;
 
-    // for multi select
-    bool leftClickDrag, inClick;
-    float lastMouseX, lastMouseY;
+    // For multi-selection
+    RectTransform selectionBox; // set to the selection box object in UI (contains an image with border and clear background to simulate a selection box effect)
+    Vector2 selectionOriginPos; // on mouse click down, starting position is set for selection box to be processed from the origin
+    List<Unit> unitsToSelect = new List<Unit>(); // temporary list of units to be selected/highlighted when selection box is over them
+    bool leftClickDrag; // used to determine if left click is being held and the cursor's position is different from it's origin on mouse click down
+    bool inClick; // used to determine if left click down has occurred, but not yet released
+    float lastMouseX, lastMouseY; // coordinates of last position of mouse X and Y position
 
     // for double click
-    bool isClicked = false, doubleClicked = false;
-    int frameCount;
+    bool isClicked = false; // set to true when left click has occurred outside of double click window (less frames than uip.selectedUnitDoubleClickFrameBuffer)
+    bool doubleClicked = false; // set to true when second click has been registered inside of double click window
+    int frameCount; // frame count tracker to check if double click has occurred
 
     private void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
+        uipm = FindObjectOfType<UIPrefabManager>();
         up = FindObjectOfType<UnitProcessing>();
         nm = FindObjectOfType<NavMovement>();
+        bm = FindObjectOfType<BuildManager>();
         gm = FindObjectOfType<GatherManager>();
 
-        selectionBox = uip.transform.Find("MultiSelectCanvas/SelectionBox").GetComponent<RectTransform>();
-        uip.ShowUnitPanels(false);
-        uip.ShowMultipleUnitsPanel(false);
+        selectionBox = uip.transform.Find("MultiSelectCanvas/SelectionBox").GetComponent<RectTransform>(); // initializes the selection box object
 
-        frameCount = 0;
+        frameCount = 0; // initializes frameCount to 0 for double click to be checked
     }
 
     private void Update()
     {
         SetSelection();
-        CheckForFocusSelection();
     }
 
-    private void CheckForFocusSelection()
+    void SetSelection() // clears previous selections and sets new one - UI is updated in UIProcessing using the values here 
     {
-        if (selectedUnits.Count == 1 && Input.GetKeyDown(KeyCode.F))
+        if (!IsPointerOverUIElement())
         {
-            FocusCameraOnSelection(selectedGO);
+            // clear prior selections on left mouse click or if escape key is pressed
+            ClearSelection();
+
+            // set new selection on left mouse click
+            SetNewSelection();
+
+            // check for multi-select
+            ProcessMultiSelect();
         }
     }
 
-    public void FocusCameraOnSelection(GameObject obj)
+    void ClearSelection() // handles clearing selection on left mouse click or escape key is pressed
     {
-        nm.FocusSelection(obj);
+        if ((Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Escape)))
+        {
+            switch (uip.uiMode)
+            {
+                case UIModes.IDLE:
+
+                    break;
+                case UIModes.UNIT:
+
+                    if (!uip.actionButtonClicked && !bm.buildActionClicked && !gm.gatherActionClicked && !gm.resourceClickedInAction) // Keeps from clearing the UI entirely if build/gather action is still active
+                    {
+                        foreach (Unit unit in selectedUnits)
+                        {
+                            unit.GetComponent<Outline>().OutlineWidth = uip.defaultOutlineWidth; // in case it wasn't properly set back during multi select
+                            HighlightSelection(unit.GetComponent<Outline>(), false);
+                        }
+
+                        selectedUnits.Clear();
+
+                        uip.resetUI = true;
+                        uip.uiMode = UIModes.IDLE;
+
+                        nm.DisableCamFocus();
+                    }
+
+                    if (!uip.actionButtonClicked && bm.buildActionClicked) // Allows for BuildManager to clear the building action if cancelled, without clearing the rest of the UI
+                    {
+                        bm.buildActionClicked = false;
+                    }
+
+                    if (!uip.actionButtonClicked && gm.gatherActionClicked)
+                    {
+                        gm.gatherActionClicked = false;
+                    }
+
+                    break;
+                case UIModes.RESOURCE:
+
+                    uip.selectedResource = null;
+
+                    Resource[] allResources = FindObjectsOfType<Resource>();
+                    foreach (Resource res in allResources)
+                    {
+                        if (res.GetComponent<Outline>() && res.GetComponent<Outline>().enabled == true)
+                        {
+                            HighlightSelection(res.GetComponent<Outline>(), false);
+                        }
+                    }
+
+                    uip.resetUI = true;
+                    uip.uiMode = UIModes.IDLE;
+
+                    nm.DisableCamFocus();
+
+                    break;
+
+                case UIModes.BUILDING:
+
+                    uip.HighlightResourceOrBuilding(uip.selectedCompletedBuilding.GetComponent<Outline>(), false);
+                    uip.selectedCompletedBuilding = null;
+
+                    uip.resetUI = true;
+                    uip.uiMode = UIModes.IDLE;
+
+                    nm.DisableCamFocus();
+                    break;
+
+                case UIModes.BUILDINGINPROG:
+
+                    if (uip.selectedBIP)
+                    {
+                        uip.HighlightResourceOrBuilding(uip.selectedBIP.GetComponent<Outline>(), false);
+                        uip.selectedBIP = null;
+                    }
+
+                    uip.resetUI = true;
+                    uip.uiMode = UIModes.IDLE;
+
+                    nm.DisableCamFocus();
+                    break;
+            }
+        }
     }
 
+    void SetNewSelection() // sets new selection of object based on left mouse click
+    {
+        if (Input.GetKeyDown(KeyCode.Mouse0) && !bm.blueprintOpen)
+        {
+            inClick = true;
+
+            lastMouseY = Input.mousePosition.y; // To help determine if mouse is dragging for multi-select
+            lastMouseX = Input.mousePosition.x; // To help determine if mouse is dragging for multi-select
+
+            selectionOriginPos = Input.mousePosition;
+
+            RaycastHit[] hits;
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            hits = Physics.RaycastAll(ray, 1000);
+
+            foreach (RaycastHit hit in hits)
+            {
+                if (hit.transform.CompareTag("Unit") || hit.transform.CompareTag("Resource") || hit.transform.CompareTag("CompletedBuilding") || hit.transform.CompareTag("BuildingInProgressChild"))
+                {
+                    ProcessDoubleClick(hit);
+                }
+
+                if (hit.transform.CompareTag("Unit"))
+                {
+                    selectedUnits.Add(hit.transform.GetComponent<Unit>());
+
+                    HighlightSelection(hit.transform.GetComponent<Outline>(), true);
+                    uip.SetCurrentUnit(hit.transform.GetComponent<Unit>());
+
+                    uip.resetUI = true;
+                    uip.uiMode = UIModes.UNIT;
+                    break;
+                }
+                else if (hit.transform.CompareTag("Resource") && !uip.actionButtonClicked)
+                {
+                    if (gm.resourceClickedInAction)
+                    {
+                        gm.resourceClickedInAction = false;
+                    } else
+                    {
+                        uip.selectedResource = hit.transform.GetComponent<Resource>();
+
+                        HighlightSelection(hit.transform.GetComponent<Outline>(), true);
+
+                        uip.resetUI = true;
+                        uip.uiMode = UIModes.RESOURCE;
+
+                        break;
+                    }
+                }
+                else if (hit.transform.CompareTag("CompletedBuilding"))
+                {
+                    uip.selectedCompletedBuilding = GetCompletedBuilding(hit.transform.gameObject);
+                    HighlightSelection(uip.selectedCompletedBuilding.GetComponent<Outline>(), true);
+
+                    uip.resetUI = true;
+                    uip.uiMode = UIModes.BUILDING;
+
+                    break;
+                }
+                else if (hit.transform.CompareTag("BuildingInProgressChild"))
+                {
+                    uip.selectedBIP = GetBuildInProgress(hit.transform.gameObject);
+                    HighlightSelection(uip.selectedBIP.GetComponent<Outline>(), true);
+
+                    uip.resetUI = true;
+                    uip.uiMode = UIModes.BUILDINGINPROG;
+
+                    break;
+                }
+            }
+        }
+    }
+
+    // handles processing for double click
+    void ProcessDoubleClick(RaycastHit hit)
+    {
+        if (frameCount <= uip.selectedObjectDoubleClickFrameBuffer && isClicked)
+        {
+            doubleClicked = true;
+            nm.FocusSelection(hit.transform.gameObject);
+        }
+
+        if (!isClicked)
+        {
+            isClicked = true;
+            StartCoroutine(CheckForDoubleClick());
+        }
+    }
+
+    // coroutine to confirm if double click has succeeded
     IEnumerator CheckForDoubleClick()
     {
         doubleClicked = false;
 
-        while (frameCount < uip.selectedUnitDoubleClickFrameBuffer && !doubleClicked)
+        while (frameCount <= uip.selectedObjectDoubleClickFrameBuffer && !doubleClicked)
         {
             frameCount++;
             yield return new WaitForEndOfFrame();
@@ -75,224 +253,44 @@ public class SelectionProcessing : MonoBehaviour
         isClicked = false;
     }
 
-    void SetSelection()
+    // handles processing for multi-select
+    void ProcessMultiSelect()
     {
-        if (!IsPointerOverUIElement())
+        if (Input.GetKeyUp(KeyCode.Mouse0))
         {
-            // clear prior selections
-            if ((Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Escape))) 
+            inClick = false;
+
+            if (leftClickDrag)
             {
-                switch (uip.uiMode)
-                {
-                    case UIModes.IDLE:
+                ReleaseSelectionBox();
+                leftClickDrag = false;
+            }
+        }
 
-                        break;
-                    case UIModes.UNIT:
-                        if (!uip.actionButtonClicked)
-                        {
-                            foreach (Unit u in selectedUnits)
-                            {
-                                u.isSelected = false;
-                            }
-                            foreach (Unit unit in selectedUnits)
-                            {
-                                unit.GetComponent<Outline>().OutlineWidth = up.highlightWidth; // in case it wasn't properly set back during multi select
-                                HighlightSelection(unit.GetComponent<Outline>(), false);
-                            }
-
-                            selectedUnits.Clear();
-
-                            uip.resetUI = true;
-                            uip.uiMode = UIModes.IDLE;
-
-                            nm.DisableCamFocus();
-                        }                        
-
-                        break;
-                    case UIModes.RESOURCE:
-
-                        uip.currentResource = null;
-
-                        Resource[] allResources = FindObjectsOfType<Resource>();
-                        foreach (Resource res in allResources)
-                        {
-                            if (res.GetComponent<Outline>() && res.GetComponent<Outline>().enabled == true)
-                            {
-                                HighlightSelection(res.GetComponent<Outline>(), false);
-                            }
-                        }
-
-                        uip.resetUI = true;
-                        uip.uiMode = UIModes.IDLE;
-
-                        nm.DisableCamFocus();
-
-                        break;
-
-                    case UIModes.BUILDING:
-
-                        uip.HighlightResource(uip.currentBuilding.GetComponent<Outline>(), false);
-                        uip.currentBuilding = null;
-
-                        uip.resetUI = true;
-                        uip.uiMode = UIModes.IDLE;
-
-                        nm.DisableCamFocus();
-                        break;
-
-                    case UIModes.BUILDINGINPROG:
-
-                        if (uip.currentBip)
-                        {
-                            uip.HighlightResource(uip.currentBip.GetComponent<Outline>(), false);
-                            uip.currentBip = null;
-                        }                        
-
-                        uip.resetUI = true;
-                        uip.uiMode = UIModes.IDLE;
-
-                        nm.DisableCamFocus();
-                        break;
-                }
-            }  
-            
-            // set new selection
-            if (Input.GetKeyDown(KeyCode.Mouse0))
+        if (Input.GetKey(KeyCode.Mouse0) && inClick)
+        {
+            if (lastMouseX != Input.mousePosition.x && lastMouseY != Input.mousePosition.y)
             {
-                inClick = true;
-
-                lastMouseY = Input.mousePosition.y; // To help determine if mouse is dragging for multi-select
-                lastMouseX = Input.mousePosition.x; // To help determine if mouse is dragging for multi-select
-
-                startPos = Input.mousePosition;
-
-                RaycastHit[] hits;
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                hits = Physics.RaycastAll(ray, 1000);
-
-                foreach (RaycastHit hit in hits)
-                {
-                    if (hit.transform.CompareTag("Unit"))
-                    {
-                        hit.transform.GetComponent<Unit>().isSelected = true;
-
-                        selectedUnits.Add(hit.transform.GetComponent<Unit>());
-
-                        HighlightSelection(hit.transform.GetComponent<Outline>(), true);
-                        uip.SetCurrentUnit(hit.transform.GetComponent<Unit>());
-
-                        uip.resetUI = true;
-                        uip.uiMode = UIModes.UNIT;
-
-                        if (frameCount < uip.selectedUnitDoubleClickFrameBuffer && isClicked)
-                        {
-                            doubleClicked = true;
-                            FocusCameraOnSelection(hit.transform.gameObject);
-                        }
-
-                        if (!isClicked)
-                        {
-                            isClicked = true;
-                            StartCoroutine(CheckForDoubleClick());
-                        }
-
-                    } else if (hit.transform.CompareTag("Resource"))
-                    {
-                        uip.currentResource = hit.transform.GetComponent<Resource>();
-
-                        HighlightSelection(hit.transform.GetComponent<Outline>(), true);
-
-                        uip.resetUI = true;
-                        uip.uiMode = UIModes.RESOURCE;
-
-                        if (frameCount < uip.selectedUnitDoubleClickFrameBuffer && isClicked)
-                        {
-                            doubleClicked = true;
-                            FocusCameraOnSelection(hit.transform.gameObject);
-                        }
-
-                        if (!isClicked)
-                        {
-                            isClicked = true;
-                            StartCoroutine(CheckForDoubleClick());
-                        }
-                    } else if (hit.transform.CompareTag("CompletedBuilding"))
-                    {
-                        uip.currentBuilding = GetCompletedBuilding(hit.transform.gameObject);
-                        HighlightSelection(uip.currentBuilding.GetComponent<Outline>(), true);
-
-                        uip.resetUI = true;
-                        uip.uiMode = UIModes.BUILDING;
-
-                        if (frameCount < uip.selectedUnitDoubleClickFrameBuffer && isClicked)
-                        {
-                            doubleClicked = true;
-                            FocusCameraOnSelection(hit.transform.gameObject);
-                        }
-
-                        if (!isClicked)
-                        {
-                            isClicked = true;
-                            StartCoroutine(CheckForDoubleClick());
-                        }
-                    } else if (hit.transform.CompareTag("BuildingInProgressChild"))
-                    {
-                        uip.currentBip = GetBuildInProgress(hit.transform.gameObject);
-                        HighlightSelection(uip.currentBip.GetComponent<Outline>(), true);
-
-                        uip.resetUI = true;
-                        uip.uiMode = UIModes.BUILDINGINPROG;
-
-                        if (frameCount < uip.selectedUnitDoubleClickFrameBuffer && isClicked)
-                        {
-                            doubleClicked = true;
-                            FocusCameraOnSelection(hit.transform.gameObject);
-                        }
-
-                        if (!isClicked)
-                        {
-                            isClicked = true;
-                            StartCoroutine(CheckForDoubleClick());
-                        }
-                    }
-                }
+                leftClickDrag = true;
             }
 
-            if (Input.GetKeyUp(KeyCode.Mouse0))
-            {
-                inClick = false;
-                
-                if (leftClickDrag)
-                {
-                    ReleaseSelectionBox();
-                    leftClickDrag = false;
-                }
-            }
+            if (leftClickDrag)
+                UpdateSelectionBox(Input.mousePosition);
+        }
+    } 
 
-            if (Input.GetKey(KeyCode.Mouse0) && inClick)
-            {
-                if (lastMouseX != Input.mousePosition.x && lastMouseY != Input.mousePosition.y)
-                {
-                    leftClickDrag = true;
-                }
-
-                if (leftClickDrag)
-                    UpdateSelectionBox(Input.mousePosition);
-            }
-        }        
-    }
-
+    // handles the various tasks of highlighting and selecting units in the selection box
     void UpdateSelectionBox (Vector2 curMousePos)
     {
-        if (!selectionBox.gameObject.activeInHierarchy)        
-            selectionBox.gameObject.SetActive(true);
+        if (!selectionBox.gameObject.activeInHierarchy)
+            uipm.ShowUIObject(selectionBox.gameObject, true);
 
-        float width = curMousePos.x - startPos.x;
-        float height = curMousePos.y - startPos.y;
+        float width = curMousePos.x - selectionOriginPos.x;
+        float height = curMousePos.y - selectionOriginPos.y;
 
         selectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
 
-        selectionBox.anchoredPosition = startPos + new Vector2(width / 2, height / 2);
+        selectionBox.anchoredPosition = selectionOriginPos + new Vector2(width / 2, height / 2);
 
         Vector2 min = selectionBox.anchoredPosition - (selectionBox.sizeDelta / 2);
         Vector2 max = selectionBox.anchoredPosition + (selectionBox.sizeDelta / 2);
@@ -320,29 +318,32 @@ public class SelectionProcessing : MonoBehaviour
         }
     }
 
+    // handles the process of releasing the left mouse click when selection box is opened
     void ReleaseSelectionBox()
     {
-        selectionBox.gameObject.SetActive(false);
+        uipm.ShowUIObject(selectionBox.gameObject, false);
 
         foreach (Unit unit in unitsToSelect)
         {
-            unit.isSelected = true;
             selectedUnits.Add(unit);
         }
 
         if (selectedUnits.Count > 0)
         {
             uip.SetCurrentUnit(selectedUnits[0]);
+            uip.selectedUnit.GetComponent<Outline>().OutlineWidth = uip.hoveredUnitsOutlineWidth;
             uip.resetUI = true;
             uip.uiMode = UIModes.UNIT;
         }    
     }
 
+    // handles the highlighting of an object.  This is done by enabling/disabling the 'outline' script attached to them
     void HighlightSelection(Outline ol, bool highlight)
     {
         ol.enabled = highlight;
     }
 
+    // returns the CompletedBuilding script attached to the parent of an object that is hit with raycast
     CompletedBuilding GetCompletedBuilding(GameObject obj)
     {
         Transform temp = obj.transform;
@@ -364,6 +365,7 @@ public class SelectionProcessing : MonoBehaviour
         }
     }
 
+    // returns the BuildInProgress script attached to the parent of an object that is hit with raycast
     BuildInProgress GetBuildInProgress(GameObject obj)
     {
         Transform temp = obj.transform;

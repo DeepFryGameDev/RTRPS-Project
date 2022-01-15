@@ -42,12 +42,6 @@ GameObject:
   - component: {fileID: 2012325652655846902}
   - component: {fileID: 7019468320757756746}
   - component: {fileID: 7019468320757756744}
-  - component: {fileID: 7019468321455694543}
-  - component: {fileID: 7019468321455694542}
-  - component: {fileID: 7019468320897372963}
-  - component: {fileID: 7019468320897372962}
-  - component: {fileID: 7019468321098618760}
-  - component: {fileID: 7019468321098618767}
   m_Layer: 0
   m_Name: Wood Depot
   m_TagString: Depot
@@ -62,7 +56,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3843373630170873711}
-  m_LocalRotation: {x: -0, y: 0.0830779, z: -0, w: 0.9965431}
+  m_LocalRotation: {x: 0, y: 0.08307784, z: 0, w: 0.9965431}
   m_LocalPosition: {x: -210.25645, y: 100, z: -274.75314}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
@@ -102,150 +96,6 @@ MonoBehaviour:
     level: 0
   buildingID: 0
 --- !u!114 &7019468320757756744
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3843373630170873711}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  outlineMode: 0
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
-  outlineWidth: 5
-  precomputeOutline: 0
-  bakeKeys: []
-  bakeValues: []
---- !u!114 &7019468321455694543
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3843373630170873711}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e6c11dd45201e949a30e17661c0a5ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  building:
-    name: 
-    icon: {fileID: 0}
-    shortcutKey: 0
-    blueprintPrefab: {fileID: 0}
-    inProgressPrefab: {fileID: 0}
-    completePrefab: {fileID: 0}
-    woodRequired: 0
-    oreRequired: 0
-    foodRequired: 0
-    goldRequired: 0
-    maxDurability: 0
-    maxUnitsInteracting: 0
-    depotResource: 0
-    actions: []
-    currentDurability: 0
-    level: 0
-  buildingID: 2
---- !u!114 &7019468321455694542
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3843373630170873711}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  outlineMode: 0
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
-  outlineWidth: 5
-  precomputeOutline: 0
-  bakeKeys: []
-  bakeValues: []
---- !u!114 &7019468320897372963
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3843373630170873711}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e6c11dd45201e949a30e17661c0a5ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  building:
-    name: 
-    icon: {fileID: 0}
-    shortcutKey: 0
-    blueprintPrefab: {fileID: 0}
-    inProgressPrefab: {fileID: 0}
-    completePrefab: {fileID: 0}
-    woodRequired: 0
-    oreRequired: 0
-    foodRequired: 0
-    goldRequired: 0
-    maxDurability: 0
-    maxUnitsInteracting: 0
-    depotResource: 0
-    actions: []
-    currentDurability: 0
-    level: 0
-  buildingID: 1
---- !u!114 &7019468320897372962
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3843373630170873711}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  outlineMode: 0
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
-  outlineWidth: 5
-  precomputeOutline: 0
-  bakeKeys: []
-  bakeValues: []
---- !u!114 &7019468321098618760
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3843373630170873711}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e6c11dd45201e949a30e17661c0a5ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  building:
-    name: 
-    icon: {fileID: 0}
-    shortcutKey: 0
-    blueprintPrefab: {fileID: 0}
-    inProgressPrefab: {fileID: 0}
-    completePrefab: {fileID: 0}
-    woodRequired: 0
-    oreRequired: 0
-    foodRequired: 0
-    goldRequired: 0
-    maxDurability: 0
-    maxUnitsInteracting: 0
-    depotResource: 0
-    actions: []
-    currentDurability: 0
-    level: 0
-  buildingID: 3
---- !u!114 &7019468321098618767
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

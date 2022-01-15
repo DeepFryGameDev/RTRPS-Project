@@ -1,18 +1,17 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+// Used to detect if colliders are overlapping for blueprint 
 public class CollidersOverlappingForBuild : MonoBehaviour
 {
-    [HideInInspector] public bool isOverlapping;
+    [HideInInspector] public bool isOverlapping; // primary bool used to detect overlapping
 
-    bool isTouchingUnit, isTouchingBuilding, isTouchingResource;
-    BuildManager bm;
+    bool isTouchingUnit, isTouchingBuilding, isTouchingResource; // used to detect multiple objects and which type is being overlapped (may need to be updated)
+
+    UIPrefabManager uipm; // used to retrieve the 'can' and 'cannot' build materials for the blueprint.  This will set the blueprint to another color if it is being hovered over another object
 
     private void Start()
     {
-        bm = FindObjectOfType<BuildManager>();
+        uipm = FindObjectOfType<UIPrefabManager>();
     }
 
     private void Update()
@@ -20,7 +19,7 @@ public class CollidersOverlappingForBuild : MonoBehaviour
         UpdateOverlapping();
     }
 
-    private void UpdateOverlapping()
+    private void UpdateOverlapping() // Sets variables upon overlap
     {
         if (isTouchingUnit || isTouchingBuilding || isTouchingResource)
         {
@@ -34,24 +33,24 @@ public class CollidersOverlappingForBuild : MonoBehaviour
         ChangeOverlapMat(isOverlapping);
     }
 
-    private void ChangeOverlapMat(bool overlapping)
+    private void ChangeOverlapMat(bool overlapping) // Changes material of blueprint components upon overlap
     {
-        foreach (GameObject obj in GetBlueprintParent().GetComponent<Blueprint>().listOfChildren)
+        foreach (GameObject obj in GetBlueprintParent().GetComponent<Blueprint>().listOfRecursiveChildren)
         {
             if (obj.GetComponent<MeshRenderer>())
             {
                 if (overlapping)
                 {
-                    obj.GetComponent<MeshRenderer>().material = bm.bluePrintCannotBuildMat;
+                    obj.GetComponent<MeshRenderer>().material = uipm.bluePrintCannotBuildMat;
                 } else
                 {
-                    obj.GetComponent<MeshRenderer>().material = bm.bluePrintCanBuildMat;
+                    obj.GetComponent<MeshRenderer>().material = uipm.bluePrintCanBuildMat;
                 }
             }
         }
     }
 
-    void OnTriggerEnter(Collider other)
+    void OnTriggerEnter(Collider other) // If blueprint colliders are touching any of object type, the corresponding bool is returned true
     {
         if (other.CompareTag("Unit"))
         {
@@ -69,7 +68,7 @@ public class CollidersOverlappingForBuild : MonoBehaviour
         }
     }
 
-    void OnTriggerExit(Collider other)
+    void OnTriggerExit(Collider other) // Sets the corresponding bool to false if they are no longer touching colliders
     {
         if (other.CompareTag("Unit"))
         {
@@ -87,7 +86,7 @@ public class CollidersOverlappingForBuild : MonoBehaviour
         }
     }
 
-    Transform GetBlueprintParent()
+    Transform GetBlueprintParent() // Returns the blueprint at the top level of the object - this will need to be updated as this is currently a hacky workaround
     {
         Transform temp = transform;
 

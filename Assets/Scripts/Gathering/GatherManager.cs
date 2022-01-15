@@ -1,10 +1,9 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// phases of the gather process being used by a villager unit
 public enum GatherPhases
 {
     SEEKINGRESOURCE,
@@ -15,68 +14,103 @@ public enum GatherPhases
 
 public class GatherManager : MonoBehaviour
 {
-    [Tooltip("Set to resource gather UX feedback prefab in UI")]
-    [SerializeField] GameObject resourceGatherUX;
-    [Tooltip("Set to Gather Canvas in UI")]
-    [SerializeField] RectTransform GatherCanvas;
-    [Tooltip("Distance of pixels above unit that UX will appear")]
-    [SerializeField] float resourceGatherUXYDistance;
-    [Tooltip("Default Scale of UX Feedback")]
-    [SerializeField] float resourceGatherUXBaseScale;
-    [Tooltip("Speed of UX feedback on screen moving upwards along y position")]
-    [SerializeField] float resourceGatherUXSpeed;
-    [Tooltip("How quickly the UX Feedback fades")]
-    [SerializeField] float resourceGatherUXFadeFactor;
-
     [Tooltip("Minimum amount of time to gather a resource")]
     public float minGatherTime;
     [Tooltip("Maximum amount of time to gather a resource")]
     public float maxGatherTime;
+    [Tooltip("Decreases gather time of wood by this value * unit's strength (+ Willpower")]
     public float gatherWoodTimeStrengthFactor;
+    [Tooltip("Decreases gather time of wood by this value * unit's willpower (+ Strength")]
     public float gatherWoodTimeWillpowerFactor;
+    [Tooltip("Decreases gather time of ore by this value * unit's strength (+ Stamina")]
     public float gatherOreTimeStrengthFactor;
+    [Tooltip("Decreases gather time of ore by this value * unit's stamina (+ Strength")]
     public float gatherOreTimeStaminaFactor;
+    [Tooltip("Decreases gather time of food by this value * unit's intelligence (+ Willpower")]
     public float gatherFoodTimeIntelligenceFactor;
+    [Tooltip("Decreases gather time of food by this value * unit's willpower (+ Intelligence")]
     public float gatherFoodTimeWillpowerFactor;
 
-    UIProcessing uip;
-    UnitMovement um;
+    UIProcessing uip; // used for highlighting resources at the start of gather process, determining if gather action has been clicked, and returning selected units
+    UIPrefabManager uipm; // used to return resource icons
+    UnitMovement um; // used to call StartGathering method
+
+    [HideInInspector] public bool gatherActionClicked;
+    [HideInInspector] public bool resourceClickedInAction;
 
     private void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
+        uipm = FindObjectOfType<UIPrefabManager>();
         um = FindObjectOfType<UnitMovement>();
     }
 
     private void Update()
     {
-        if (uip.gatherActionClicked)
+        // this processes the gather resources method if player chooses 'gather' action in the action buttons
+        if (gatherActionClicked) // if gather action was clicked by player
         {
-            ProcessActionClicked();
+            ProcessActionClicked(); // starts gathering process if a resource is clicked
         }
 
-        CheckIfActionNoLongerClicked();
+        CheckIfActionNoLongerClicked(); // disables potential for gathering process if a cancel command is input (player hits escape)
     }
 
+    // Displays user feedback when a resource has been gathered/deposited - resource icon will be displayed above the object (unit/depot) and slowly moves upward along y position and fades out
+    public void ShowResourceGatherUX(GameObject source, ResourceTypes resourceType, int gathered, bool plus)
+    {
+        // set icon
+        Sprite icon = null;
+
+        switch (resourceType)
+        {
+            case ResourceTypes.WOOD:
+                icon = uipm.woodResourceIcon;
+                break;
+            case ResourceTypes.ORE:
+                icon = uipm.oreResourceIcon;
+                break;
+            case ResourceTypes.FOOD:
+                icon = uipm.foodResourceIcon;
+                break;
+        }
+
+        string sign;
+        if (plus)
+        {
+            sign = "+";
+        }
+        else
+        {
+            sign = "-";
+        }
+
+
+        // prepare GatherUX
+        GameObject gatherUX = uipm.gatherBuildUX;
+        gatherUX.transform.Find("UXText").GetComponent<TMP_Text>().text = sign + gathered.ToString();
+        gatherUX.transform.Find("UXIcon").GetComponent<Image>().sprite = icon;
+
+        StartCoroutine(uip.DisplayUX(source, gatherUX, false));
+    }
+
+    // processes gather action if gather action has been clicked and a resource is hovered
     void ProcessActionClicked()
     {        
         CheckIfResourceIsHovered();
     }
 
-    private void CheckIfActionNoLongerClicked()
+    // cancels gather action if player presses escape after the action has been clicked
+    void CheckIfActionNoLongerClicked()
     {
-        /*if (uip.gatherActionClicked && (Input.GetKeyDown(KeyCode.Mouse0) || Input.GetKeyDown(KeyCode.Escape)))
+        if (gatherActionClicked && Input.GetKeyDown(KeyCode.Escape))
         {
-            uip.gatherActionClicked = false;
-        }*/
-
-        if (uip.gatherActionClicked && Input.GetKeyDown(KeyCode.Escape))
-        {
-            uip.gatherActionClicked = false;
+            uip.actionButtonClicked = false;
         }
     }
 
-    private void CheckIfResourceIsHovered()
+    // If resource is being hovered by mouse cursor, a further check will take place if the selected unit has the capability to gather the resource chosen
+    void CheckIfResourceIsHovered()
     {
         // loop through all resources and check if they are highlighted.  if yes, remove highlight
         Resource[] allResources = FindObjectsOfType<Resource>();
@@ -84,7 +118,7 @@ public class GatherManager : MonoBehaviour
         {
             if (res.GetComponent<Outline>() && res.GetComponent<Outline>().enabled == true)
             {
-                uip.HighlightResource(res.GetComponent<Outline>(), false);
+                uip.HighlightResourceOrBuilding(res.GetComponent<Outline>(), false);
             }
         }
 
@@ -98,122 +132,63 @@ public class GatherManager : MonoBehaviour
         {
             if (hit.transform.gameObject.CompareTag("Resource"))
             {
-                //check for each resource type/unit type
-                // check if should be able to gather
-                bool canGather = false;
-
-                foreach (Unit unit in uip.selectedUnits)
-                {
-                    if (hit.transform.GetComponent<Resource>().resourceType == ResourceTypes.WOOD &&
-                        (((VillagerUnit)unit).villagerClass == villagerClasses.VILLAGER ||
-                        ((VillagerUnit)unit).villagerClass == villagerClasses.GATHERER ||
-                        ((VillagerUnit)unit).villagerClass == villagerClasses.LUMBERJACK))
-                    {
-                        canGather = true;
-                    }
-
-                    if (hit.transform.GetComponent<Resource>().resourceType == ResourceTypes.ORE &&
-                        (((VillagerUnit)unit).villagerClass == villagerClasses.VILLAGER ||
-                        ((VillagerUnit)unit).villagerClass == villagerClasses.GATHERER ||
-                        ((VillagerUnit)unit).villagerClass == villagerClasses.MINER))
-                    {
-                        canGather = true;
-                    }
-
-                    if (hit.transform.GetComponent<Resource>().resourceType == ResourceTypes.FOOD &&
-                        (((VillagerUnit)unit).villagerClass == villagerClasses.VILLAGER ||
-                        ((VillagerUnit)unit).villagerClass == villagerClasses.GATHERER ||
-                        ((VillagerUnit)unit).villagerClass == villagerClasses.FARMER))
-                    {
-                        canGather = true;
-                    }
-                }
-
-                if (canGather)
-                {
-                    uip.HighlightResource(hit.transform.GetComponent<Outline>(), true);
-
-                    if (Input.GetKeyDown(KeyCode.Mouse0))
-                    {
-                        Debug.Log("Gathering");
-
-                        um.StartGathering(hit.transform.GetComponent<Resource>());
-                    }
-                }
+                CheckIfSelectedUnitCanGather(hit);
             }
         }
     }
 
-    public IEnumerator ShowResourceGatherUX(GameObject source, ResourceTypes resourceType, int gathered, bool plus)
+    // If selected unit has capability to gather the chosen resource, begin gather process is run
+    private void CheckIfSelectedUnitCanGather(RaycastHit hit)
     {
-        bool feedbackHidden = false;
-        Vector3 pos = source.transform.position;
-        pos = new Vector3(pos.x, pos.y + resourceGatherUXYDistance, pos.z);
+        //check for each resource type/unit type
+        // check if should be able to gather
+        bool canGather = false;
 
-        // set icon
-        Sprite icon = null;
-
-        switch (resourceType)
+        foreach (Unit unit in uip.selectedUnits)
         {
-            case ResourceTypes.WOOD:
-                icon = uip.woodResourceIcon;
-                break;
-            case ResourceTypes.ORE:
-                icon = uip.oreResourceIcon;
-                break;
-            case ResourceTypes.FOOD:
-                icon = uip.foodResourceIcon;
-                break;
-        }
-
-        string sign = string.Empty;
-        if (plus)
-        {
-            sign = "+";
-        } else
-        {
-            sign = "-";
-        }
-
-
-        // prepare GatherUX
-        GameObject gatherUX = resourceGatherUX;
-        gatherUX.transform.Find("ResourceGatheredText").GetComponent<TMP_Text>().text = sign + gathered.ToString();
-        gatherUX.transform.Find("ResourceGatheredIcon").GetComponent<Image>().sprite = icon;
-
-        gatherUX = Instantiate(gatherUX, pos, Quaternion.identity, GatherCanvas);
-        SetToCanvasSpace(source.gameObject, gatherUX.GetComponent<RectTransform>());
-
-        gatherUX.transform.localScale = new Vector3(resourceGatherUXBaseScale, resourceGatherUXBaseScale, resourceGatherUXBaseScale);
-        CanvasGroup cg = gatherUX.GetComponent<CanvasGroup>();
-
-        while (!feedbackHidden)
-        {
-            float fade = resourceGatherUXFadeFactor * Time.deltaTime;
-            float floatSpeed = resourceGatherUXSpeed * Time.deltaTime;
-
-            Vector3 newPos = new Vector3(gatherUX.GetComponent<RectTransform>().position.x, gatherUX.GetComponent<RectTransform>().position.y + floatSpeed, gatherUX.GetComponent<RectTransform>().position.z);
-
-            cg.alpha -= fade;
-            gatherUX.GetComponent<RectTransform>().position = newPos;
-
-            if (cg.alpha == 0.0f)
+            if (hit.transform.GetComponent<Resource>().resourceType == ResourceTypes.WOOD &&
+                (((VillagerUnit)unit).villagerClass == VillagerClasses.VILLAGER ||
+                ((VillagerUnit)unit).villagerClass == VillagerClasses.GATHERER ||
+                ((VillagerUnit)unit).villagerClass == VillagerClasses.LUMBERJACK))
             {
-                Destroy(gatherUX);
-                feedbackHidden = true;
+                canGather = true;
             }
 
-            yield return new WaitForEndOfFrame();
+            if (hit.transform.GetComponent<Resource>().resourceType == ResourceTypes.ORE &&
+                (((VillagerUnit)unit).villagerClass == VillagerClasses.VILLAGER ||
+                ((VillagerUnit)unit).villagerClass == VillagerClasses.GATHERER ||
+                ((VillagerUnit)unit).villagerClass == VillagerClasses.MINER))
+            {
+                canGather = true;
+            }
+
+            if (hit.transform.GetComponent<Resource>().resourceType == ResourceTypes.FOOD &&
+                (((VillagerUnit)unit).villagerClass == VillagerClasses.VILLAGER ||
+                ((VillagerUnit)unit).villagerClass == VillagerClasses.GATHERER ||
+                ((VillagerUnit)unit).villagerClass == VillagerClasses.FARMER))
+            {
+                canGather = true;
+            }
+        }
+
+        if (canGather)
+        {
+            BeginGatherProcess(hit);
         }
     }
 
-    void SetToCanvasSpace(GameObject source, RectTransform prefab)
+    // Highlights the resource upon mouseover and begins gather process if it is clicked
+    private void BeginGatherProcess(RaycastHit hit)
     {
-        Vector2 ViewportPosition = Camera.main.WorldToViewportPoint(source.transform.position);
-        Vector2 unitObj_ScreenPosition = new Vector2(
-        ((ViewportPosition.x * GatherCanvas.sizeDelta.x) - (GatherCanvas.sizeDelta.x * 0.5f)),
-        ((ViewportPosition.y * GatherCanvas.sizeDelta.y) - (GatherCanvas.sizeDelta.y * 0.5f) + resourceGatherUXYDistance));
+        uip.HighlightResourceOrBuilding(hit.transform.GetComponent<Outline>(), true);        
 
-        prefab.anchoredPosition = unitObj_ScreenPosition;
+        if (Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            resourceClickedInAction = true;
+            uip.actionButtonClicked = false;
+            um.StartGathering(hit.transform.GetComponent<Resource>());
+        }
     }
+
+
 }

@@ -1,20 +1,8 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class BuilderActions : MonoBehaviour
 {
+    [Tooltip("List of all actions that can be used by the builder class")]
     public List<BaseAction> builderActions = new List<BaseAction>();
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

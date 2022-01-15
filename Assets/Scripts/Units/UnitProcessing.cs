@@ -1,12 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+// Contains calculations and values for unit processing
 public class UnitProcessing : MonoBehaviour
 {
-    [Tooltip("When units level up, their required EXP to next level is calculated by their level * this value")]
-    [Range(1, 10)] public float highlightWidth;
-
     [Tooltip("When units level up, their required EXP to next level is calculated by their level * this value")]
     public float toNextLevelFactor;
 

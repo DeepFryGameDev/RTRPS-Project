@@ -106,15 +106,15 @@ NavMeshSettings:
   m_BuildSettings:
     serializedVersion: 2
     agentTypeID: 0
-    agentRadius: 4
-    agentHeight: 17
-    agentSlope: 35
+    agentRadius: 2
+    agentHeight: 4
+    agentSlope: 32
     agentClimb: 4
     ledgeDropHeight: 0
     maxJumpAcrossDistance: 0
     minRegionArea: 2
     manualCellSize: 0
-    cellSize: 1.3333334
+    cellSize: 0.6666667
     manualTileSize: 0
     tileSize: 256
     accuratePlacement: 0
@@ -657,7 +657,7 @@ GameObject:
   - component: {fileID: 61134461}
   - component: {fileID: 61134460}
   m_Layer: 0
-  m_Name: GatherCanvas
+  m_Name: UXCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2617,16 +2617,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 0
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -2644,7 +2642,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &197979847
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2668,7 +2665,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 197979844}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -2677,7 +2674,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -2866,7 +2863,7 @@ GameObject:
   - component: {fileID: 205833814}
   - component: {fileID: 205833813}
   m_Layer: 5
-  m_Name: UnitGraphic
+  m_Name: UnitGraphicPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3500,10 +3497,19 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'This is chat.  Not even close to being developed yet.
+  m_text: 'Thank you for checking out my work in progress!  This is the chat window,
+    but I will use this space to provide some notes until chat has been implemented!
 
-    I''ll put some
-    notes in here though for the current build!'
+
+    Controls
+    and further information are listed on the website:
+
+    https://www.deepfrygamedevelopment.com/rtsrpg
+
+
+    A
+    menu to change options and quit the game will be coming with the next release. 
+    For now, you can quit using alt+f4.  My apologies for the trouble!'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3530,8 +3536,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 8
-  m_fontSizeBase: 8
+  m_fontSize: 6
+  m_fontSizeBase: 6
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -4271,7 +4277,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7582d556341aed94eb7c5ac909917992, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isAtDest: 0
+  unitsInteracting: []
 --- !u!54 &303772877
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -5764,7 +5770,7 @@ GameObject:
   - component: {fileID: 407356607}
   - component: {fileID: 407356606}
   m_Layer: 5
-  m_Name: Biome Tooltip
+  m_Name: BiomeTooltipPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7026,7 +7032,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 481815892}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -7035,7 +7041,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -7051,16 +7057,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 5
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -7078,7 +7082,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &481815897
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -8463,7 +8466,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraAngle: 45
-  cameraDistance: 25
+  defaultCameraDistance: 20
   terrainHeight: 100
 --- !u!4 &544527490
 Transform:
@@ -8498,13 +8501,15 @@ MonoBehaviour:
   panFactor: 40
   panSpeedOnKeyPress: 30
   panSpeedOnSprintPress: 60
-  scrollSpeed: 70
-  scrollFactor: 15
+  scrollSpeed: 6
+  scrollFactor: 2.5
   dragFactor: 0.5
   dragSpeed: 20
   minScroll: 5
   maxScroll: 35
   rotateSpeed: 5
+  minFOV: 40
+  maxFOV: 80
   focusCam: {fileID: 2127495890}
 --- !u!1 &560105452
 GameObject:
@@ -8727,16 +8732,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 3
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -8754,7 +8757,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &587987820
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -8778,7 +8780,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 587987817}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -8787,7 +8789,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -10515,7 +10517,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7582d556341aed94eb7c5ac909917992, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isAtDest: 0
+  unitsInteracting: []
 --- !u!1 &701182302
 GameObject:
   m_ObjectHideFlags: 0
@@ -10528,7 +10530,7 @@ GameObject:
   - component: {fileID: 701182305}
   - component: {fileID: 701182304}
   m_Layer: 5
-  m_Name: Biome Tooltip
+  m_Name: BiomeTooltipPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12489,16 +12491,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 5
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -12516,7 +12516,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &822501891
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -12555,7 +12554,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 822501889}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -12564,7 +12563,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -12689,7 +12688,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 836238789}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -12698,7 +12697,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -12714,16 +12713,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 5
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -12741,7 +12738,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &836238794
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -13383,7 +13379,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 884045882}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -13392,7 +13388,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -13408,16 +13404,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 0
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -13435,7 +13429,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &884045887
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -13634,7 +13627,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.000022888184}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 9.8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &888189863
@@ -14793,7 +14786,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   m_LocalRotation: {x: 0.38268346, y: -0, z: -0, w: 0.9238795}
-  m_LocalPosition: {x: -231.03, y: 125, z: -283.93}
+  m_LocalPosition: {x: -231.03, y: 120, z: -283.93}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 544527490}
@@ -15631,12 +15624,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8aeaddabc5bcfc4c9947f1db799e37c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resourceGatherUX: {fileID: 4067001597945397905, guid: ef8d0a40a0f3cec4d920b5f659737e19, type: 3}
-  GatherCanvas: {fileID: 61134459}
-  resourceGatherUXYDistance: 30
-  resourceGatherUXBaseScale: 0.5
-  resourceGatherUXSpeed: 7.5
-  resourceGatherUXFadeFactor: 0.75
   minGatherTime: 0
   maxGatherTime: 10
   gatherWoodTimeStrengthFactor: 1.1
@@ -15645,6 +15632,8 @@ MonoBehaviour:
   gatherOreTimeStaminaFactor: 1.4
   gatherFoodTimeIntelligenceFactor: 0.9
   gatherFoodTimeWillpowerFactor: 0.85
+  gatherActionClicked: 0
+  resourceClickedInAction: 0
 --- !u!4 &1017913501
 Transform:
   m_ObjectHideFlags: 0
@@ -16524,7 +16513,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -2.2999973, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 4, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1111584774
@@ -16779,7 +16768,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 1122770975}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -16788,7 +16777,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -16804,16 +16793,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 0
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -16831,7 +16818,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &1122770980
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -17700,7 +17686,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7582d556341aed94eb7c5ac909917992, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isAtDest: 0
+  unitsInteracting: []
 --- !u!1 &1196570003
 GameObject:
   m_ObjectHideFlags: 0
@@ -17763,7 +17749,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 1196570003}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -17772,7 +17758,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -17788,16 +17774,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 5
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -17815,7 +17799,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &1196570008
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -19380,11 +19363,6 @@ MonoBehaviour:
   buildTotProgFactor: 1.75
   buildTotProgWillpowerFactor: 3.25
   buildTotProgStaminaFactor: 2.5
-  buildCanvas: {fileID: 2138082466}
-  buildingButtonPrefab: {fileID: 5600173486865470822, guid: d4a939e942d18af4185df6076881c4d0, type: 3}
-  buildingCanvasButtonAdjustment: 30
-  bluePrintCanBuildMat: {fileID: 2100000, guid: b0d5fade7ec780b48abc5a9733a6a24c, type: 2}
-  bluePrintCannotBuildMat: {fileID: 2100000, guid: 7dda3e3d0893ec247b04bc00023024e5, type: 2}
   buildings:
   - name: Test Depot
     icon: {fileID: 21300000, guid: f4c67eecd0c4c90429b9251e8d120cf9, type: 3}
@@ -19469,6 +19447,8 @@ MonoBehaviour:
     level: 0
   blueprintOpen: 0
   blueprintClosed: 0
+  buildActionClicked: 0
+  buildingActionClicked: 0
 --- !u!4 &1306280037
 Transform:
   m_ObjectHideFlags: 0
@@ -21699,7 +21679,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7582d556341aed94eb7c5ac909917992, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isAtDest: 0
+  unitsInteracting: []
 --- !u!1 &1481923615
 GameObject:
   m_ObjectHideFlags: 0
@@ -21762,7 +21742,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 1481923615}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -21771,7 +21751,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -21787,16 +21767,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 0
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -21814,7 +21792,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &1481923620
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -22039,7 +22016,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 1488489343}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -22048,7 +22025,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -22064,16 +22041,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 5
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -22091,7 +22066,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &1488489348
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -23061,9 +23035,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1567046999}
-  - component: {fileID: 1567047000}
   - component: {fileID: 1567047001}
+  - component: {fileID: 1567047003}
   - component: {fileID: 1567047002}
+  - component: {fileID: 1567047000}
   m_Layer: 0
   m_Name: UI
   m_TagString: Untagged
@@ -23105,7 +23080,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fca6339b7c625a0488e02aab0dce7feb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BiomeTooltip: {fileID: 407356604}
 --- !u!114 &1567047001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23121,43 +23095,30 @@ MonoBehaviour:
   UILayer: 5
   selectedUnitsMax: 20
   selectedUnitsUIEdgeSpace: 10
+  defaultOutlineWidth: 5
   hoveredUnitsOutlineWidth: 8
-  selectedUnitDoubleClickFrameBuffer: 15
-  unitCanvas: {fileID: 1547182176}
-  resourceCanvas: {fileID: 1556080660}
-  buildingCanvas: {fileID: 1719528868}
-  unitGraphicPanel: {fileID: 205833811}
-  unitStatsPanel: {fileID: 392674781}
-  unitActionPanel: {fileID: 201806524}
-  resourceGraphicPanel: {fileID: 292389142}
-  resourceStatsPanel: {fileID: 233030414}
-  buildingGraphicPanel: {fileID: 742130588}
-  buildingStatsPanel: {fileID: 1200435409}
-  buildingActionPanel: {fileID: 107030900}
-  multiUnitsPanel: {fileID: 1536439879}
-  multiUnitsButton: {fileID: 2308543223054156301, guid: bbb23ace0463272479275dfa822b196c, type: 3}
-  actionSpacer: {fileID: 532739681}
-  actionButton: {fileID: 5600173486865470822, guid: d4a939e942d18af4185df6076881c4d0, type: 3}
+  selectedObjectDoubleClickFrameBuffer: 15
   actionButtonFadeSpeed: 2
   actionButtonFadeMin: 75
   taskConfirmationOutlineDuration: 1
   taskConfirmationOutlineWidth: 7.5
-  woodResourceIcon: {fileID: 21300000, guid: 67d58a0f8bd9955458fdea97503ff8f5, type: 3}
-  oreResourceIcon: {fileID: 21300000, guid: 81c070ffa1462bc4a86cd5534b6f3875, type: 3}
-  foodResourceIcon: {fileID: 21300000, guid: 656a5778fcd48fa45aa32f73100aa779, type: 3}
-  allResourceIcon: {fileID: 21300000, guid: 0c0e655700037b7459aabe6378f9756a, type: 3}
-  goldResourceIcon: {fileID: 21300000, guid: 111f96d011e41e14781eb984e8c61986, type: 3}
+  gatherBuildUXYDistance: 30
+  gatherBuildUXBaseScale: 0.5
+  gatherBuildUXSpeed: 7.5
+  gatherBuildUXFadeFactor: 0.75
+  personalBuildUXSpinRate: 1.25
+  totalBuildUXSpinRate: 3
+  buildUXSpinFactor: 1
+  buildingCanvasButtonAdjustment: 30
+  resourcesUnavailableForActionColor: {r: 1, g: 0, b: 0, a: 1}
   uiMode: 0
   actionButtonClicked: 0
-  gatherActionClicked: 0
-  buildActionClicked: 0
-  buildingActionClicked: 0
-  actionButtonFadeBreak: 0
   resetUI: 0
   selectedUnits: []
-  currentBip: {fileID: 0}
-  currentBuilding: {fileID: 0}
-  currentResource: {fileID: 0}
+  selectedBIP: {fileID: 0}
+  selectedCompletedBuilding: {fileID: 0}
+  selectedResource: {fileID: 0}
+  selectedUnit: {fileID: 0}
 --- !u!114 &1567047002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23184,9 +23145,51 @@ MonoBehaviour:
   woodResource: {fileID: 2800000, guid: 28506a013dd3875429608c154c4ba1f2, type: 3}
   oreResource: {fileID: 2800000, guid: 846df48a0e213ef4984cd1e6681e805a, type: 3}
   foodResource: {fileID: 2800000, guid: e3253dd880e3e6d4d9c1582b7af72834, type: 3}
+  buildBuilding: {fileID: 2800000, guid: 059db6f176d006d4d9a2443b9d08b1f0, type: 3}
   taskTargetPrefab: {fileID: 2686833778371306481, guid: 3438217c27d8f4c49906e4824d9bfb0a, type: 3}
   taskAnimFadeFactor: 2
   taskAnimBaseScale: 3
+--- !u!114 &1567047003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1567046998}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0e69ea2e919a3c469c8129d03f909be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitCanvas: {fileID: 1547182176}
+  resourceCanvas: {fileID: 1556080660}
+  resourceUISpacer: {fileID: 989112667}
+  buildingCanvas: {fileID: 1719528868}
+  unitGraphicPanel: {fileID: 205833811}
+  unitStatsPanel: {fileID: 392674781}
+  unitActionPanel: {fileID: 201806524}
+  resourceGraphicPanel: {fileID: 292389142}
+  resourceStatsPanel: {fileID: 233030414}
+  buildingGraphicPanel: {fileID: 742130588}
+  buildingStatsPanel: {fileID: 1200435409}
+  buildingActionPanel: {fileID: 107030900}
+  multiUnitsPanel: {fileID: 1536439879}
+  multiUnitsButton: {fileID: 2308543223054156301, guid: bbb23ace0463272479275dfa822b196c, type: 3}
+  actionSpacer: {fileID: 532739681}
+  actionButton: {fileID: 5600173486865470822, guid: d4a939e942d18af4185df6076881c4d0, type: 3}
+  BiomeTooltipPanel: {fileID: 407356604}
+  UXCanvas: {fileID: 61134459}
+  gatherBuildUX: {fileID: 4067001597945397905, guid: ef8d0a40a0f3cec4d920b5f659737e19, type: 3}
+  buildActionCanvas: {fileID: 2138082466}
+  bluePrintCanBuildMat: {fileID: 2100000, guid: b0d5fade7ec780b48abc5a9733a6a24c, type: 2}
+  bluePrintCannotBuildMat: {fileID: 2100000, guid: 7dda3e3d0893ec247b04bc00023024e5, type: 2}
+  personalProgressIcon: {fileID: 21300000, guid: d5627a78c22fd394491c232872d90736, type: 3}
+  totalProgressIcon: {fileID: 21300000, guid: 5f23aa11f99e86049afdf484ffad3797, type: 3}
+  woodResourceIcon: {fileID: 21300000, guid: 67d58a0f8bd9955458fdea97503ff8f5, type: 3}
+  oreResourceIcon: {fileID: 21300000, guid: 81c070ffa1462bc4a86cd5534b6f3875, type: 3}
+  foodResourceIcon: {fileID: 21300000, guid: 656a5778fcd48fa45aa32f73100aa779, type: 3}
+  allResourceIcon: {fileID: 21300000, guid: 0c0e655700037b7459aabe6378f9756a, type: 3}
+  goldResourceIcon: {fileID: 21300000, guid: 111f96d011e41e14781eb984e8c61986, type: 3}
 --- !u!1 &1574784475
 GameObject:
   m_ObjectHideFlags: 0
@@ -25108,7 +25111,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8690eae82c5ba943aae0a1e84193ab6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  highlightWidth: 5
   toNextLevelFactor: 100
   vilResourceDropoffTime: 1
   vilHPFromStaminaFactor: 2
@@ -25130,11 +25132,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rClickFrameCountFactor: 7.5
+  rClickMaxFrames: 1
   moveSpeedBaseline: 1
   moveSpeedFactor: 2.5
   moveSpeedAgilityFactor: 2
-  moveBumpFactor: 0.5
-  resourceBumpFactor: 0.2
 --- !u!114 &1702638351
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27958,7 +27959,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.000022888184}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 9.8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1963295078
@@ -29652,7 +29653,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 2064474797}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -29661,7 +29662,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -29677,16 +29678,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 4
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -29704,7 +29703,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &2064474803
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -30223,7 +30221,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7346488073879018754, guid: 7ddfa3a1d18174043aab251be6df3a0e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 100.01
+      value: 100.05
       objectReference: {fileID: 0}
     - target: {fileID: 7346488073879018754, guid: 7ddfa3a1d18174043aab251be6df3a0e, type: 3}
       propertyPath: m_LocalPosition.z
@@ -30551,7 +30549,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 2121682713}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -30560,7 +30558,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -30576,16 +30574,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 0
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -30603,7 +30599,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &2121682718
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -30718,7 +30713,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2127495888}
   m_LocalRotation: {x: 0.38268343, y: -0, z: -0, w: 0.92387956}
-  m_LocalPosition: {x: -231.03, y: 125.0651, z: -283.93}
+  m_LocalPosition: {x: -231.03, y: 120, z: -283.93}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1536777386}
@@ -30956,7 +30951,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 2134876133}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 4
+  m_Radius: 2.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -30965,7 +30960,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 11.4
+  m_Height: 4
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -30981,16 +30976,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98ae1dfc8c3e50d4d92749da62ac46a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesEnergy: 0
-  isSelected: 0
   agent: {fileID: 0}
   villagerClass: 1
   gatherTaskIsActive: 0
-  buildTaskIsActive: 0
   resourcesHolding: 0
+  gatherTimeElapsed: 0
+  buildTaskIsActive: 0
   personalBuildProgress: 0
   buildTimeElapsed: 0
-  gatherTimeElapsed: 0
   chosenBuilding:
     name: 
     icon: {fileID: 0}
@@ -31008,7 +31001,6 @@ MonoBehaviour:
     actions: []
     currentDurability: 0
     level: 0
-  isAtDest: 0
 --- !u!136 &2134876138
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -31035,14 +31027,13 @@ GameObject:
   - component: {fileID: 2138082470}
   - component: {fileID: 2138082469}
   - component: {fileID: 2138082468}
-  - component: {fileID: 2138082471}
   m_Layer: 0
   m_Name: BuildCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2138082467
 RectTransform:
   m_ObjectHideFlags: 0
@@ -31124,18 +31115,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!225 &2138082471
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2138082466}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
 --- !u!4 &694357739783999195 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4870028441235476542, guid: cf340b7a8fef495458f1c98ad4a436f3, type: 3}
@@ -31148,6 +31127,22 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1306280037}
     m_Modifications:
+    - target: {fileID: 4112577744873967256, guid: cf340b7a8fef495458f1c98ad4a436f3, type: 3}
+      propertyPath: m_Center.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4112577744873967256, guid: cf340b7a8fef495458f1c98ad4a436f3, type: 3}
+      propertyPath: m_Center.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4112577744873967256, guid: cf340b7a8fef495458f1c98ad4a436f3, type: 3}
+      propertyPath: m_Extents.x
+      value: 2.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4112577744873967256, guid: cf340b7a8fef495458f1c98ad4a436f3, type: 3}
+      propertyPath: m_Extents.z
+      value: 1.525
+      objectReference: {fileID: 0}
     - target: {fileID: 4870028441235476542, guid: cf340b7a8fef495458f1c98ad4a436f3, type: 3}
       propertyPath: m_RootOrder
       value: 0
@@ -31253,6 +31248,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6506942971848716031, guid: 74c8838c3753a6040a7d27ba8f396ea8, type: 3}
+      propertyPath: buildingID
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6506942972161881829, guid: 74c8838c3753a6040a7d27ba8f396ea8, type: 3}
+      propertyPath: m_Center.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6506942972161881829, guid: 74c8838c3753a6040a7d27ba8f396ea8, type: 3}
+      propertyPath: m_Center.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6506942972161881829, guid: 74c8838c3753a6040a7d27ba8f396ea8, type: 3}
+      propertyPath: m_Extents.x
+      value: 2.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6506942972161881829, guid: 74c8838c3753a6040a7d27ba8f396ea8, type: 3}
+      propertyPath: m_Extents.z
+      value: 1.525
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 74c8838c3753a6040a7d27ba8f396ea8, type: 3}
 --- !u!1001 &7019468320219875226
@@ -31310,6 +31325,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: Wood Depot
       objectReference: {fileID: 0}
+    - target: {fileID: 7019468319995800400, guid: ff1caa336707c194e97f3847b350015a, type: 3}
+      propertyPath: m_Center.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7019468319995800400, guid: ff1caa336707c194e97f3847b350015a, type: 3}
+      propertyPath: m_Center.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7019468319995800400, guid: ff1caa336707c194e97f3847b350015a, type: 3}
+      propertyPath: m_Extents.x
+      value: 2.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7019468319995800400, guid: ff1caa336707c194e97f3847b350015a, type: 3}
+      propertyPath: m_Extents.z
+      value: 1.525
+      objectReference: {fileID: 0}
+    - target: {fileID: 7019468320757756746, guid: ff1caa336707c194e97f3847b350015a, type: 3}
+      propertyPath: buildingID
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ff1caa336707c194e97f3847b350015a, type: 3}
 --- !u!1001 &8792852754988014699
@@ -31366,6 +31401,26 @@ PrefabInstance:
     - target: {fileID: 3331030077794450275, guid: e2243545fa2bade4fbc944e89609e0ad, type: 3}
       propertyPath: m_Name
       value: Food Depot
+      objectReference: {fileID: 0}
+    - target: {fileID: 8792852753305136988, guid: e2243545fa2bade4fbc944e89609e0ad, type: 3}
+      propertyPath: m_Center.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8792852753305136988, guid: e2243545fa2bade4fbc944e89609e0ad, type: 3}
+      propertyPath: m_Center.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8792852753305136988, guid: e2243545fa2bade4fbc944e89609e0ad, type: 3}
+      propertyPath: m_Extents.x
+      value: 2.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8792852753305136988, guid: e2243545fa2bade4fbc944e89609e0ad, type: 3}
+      propertyPath: m_Extents.z
+      value: 1.525
+      objectReference: {fileID: 0}
+    - target: {fileID: 8792852753601525574, guid: e2243545fa2bade4fbc944e89609e0ad, type: 3}
+      propertyPath: buildingID
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e2243545fa2bade4fbc944e89609e0ad, type: 3}

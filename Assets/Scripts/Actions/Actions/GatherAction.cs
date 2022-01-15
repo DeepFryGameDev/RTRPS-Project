@@ -1,58 +1,60 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+// This script is added as a component onto generated gather action buttons
+
 public class GatherAction : MonoBehaviour
 {
-    [ReadOnly] public Unit unit;
-    [ReadOnly] public BaseAction action;
+    [HideInInspector] public Unit unit; // unit that is performing the action
+    [HideInInspector] public BaseAction action; // action containing parameters to be used when performing this action
 
-    UIProcessing uip;
+    GatherManager gm; // used to tell UIP when gather action has been clicked
+    UIProcessing uip; // used for updating UI to show when action has been chosen
 
-    // Start is called before the first frame update
     void Start()
     {
-        SetAction();
+        gm = FindObjectOfType<GatherManager>();
         uip = FindObjectOfType<UIProcessing>();
+
+        SetAction(); // sets the button's action on PointerClick to ActionButtonPressed()
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(action.shortcutKey))
+        if (Input.GetKeyDown(action.shortcutKey)) // the same action that is set to PointerClick event in Start() is also performed when pressing the shortcut key
         {
-            Gather();
+            ActionButtonPressed();
         }
     }
 
-    public void SetAction()
-    {
-        EventTrigger trigger = GetComponent<EventTrigger>();
-
-        EventTrigger.Entry entry = new EventTrigger.Entry();
-        entry.eventID = EventTriggerType.PointerClick;   
-
-        if (action.actionScript.Equals("Gather"))
-        {
-            entry.callback.AddListener((data) => { Gather((PointerEventData)data); });
-        }
-
-        trigger.triggers.Add(entry);
-    }
-
-    void Gather(PointerEventData data)
-    {
-        Gather();
-    }
-
-    void Gather()
+    void ActionButtonPressed() // updates UI Processing to know that the gather action has been requested
     {
         //Show glow on cursor and keep action button highlighted
         if (!uip.actionButtonClicked)
         {
             uip.actionButtonClicked = true;
-            uip.gatherActionClicked = true;
+            gm.gatherActionClicked = true;
             uip.ButtonUIProcessing(this.gameObject);
         }            
+    }
+
+    void ActionButtonPressed(PointerEventData data) // used for setting PointerClick event
+    {
+        ActionButtonPressed();
+    }
+
+    void SetAction() // sets PointerClick event system for the button in UI to perform this action when clicked
+    {
+        EventTrigger trigger = GetComponent<EventTrigger>();
+
+        EventTrigger.Entry entry = new EventTrigger.Entry();
+        entry.eventID = EventTriggerType.PointerClick;
+
+        if (action.actionScript.Equals("Gather"))
+        {
+            entry.callback.AddListener((data) => { ActionButtonPressed((PointerEventData)data); });
+        }
+
+        trigger.triggers.Add(entry);
     }
 }

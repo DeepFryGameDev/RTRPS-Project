@@ -1,23 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 public class Depot : CompletedBuilding
 {
-    public int buildingID;
+    public int buildingID; // used to retrieve building's parameters
 
-    // Start is called before the first frame update
     void Start()
     {
-        building = FindObjectOfType<BuildManager>().buildings[buildingID];
+        building = FindObjectOfType<BuildManager>().buildings[buildingID]; // sets building to index of BuildManager.buildings
 
-        building.level = 1;
-        building.currentDurability = building.maxDurability;
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        // I wanted to run the below in Awake() in CompletedBuilding, but for some reason the variables are not being set.  This should be look into later.
+        building.level = 1; // defaults building to level 1
+        building.currentDurability = building.maxDurability; // defaults current durability to max durability
     }
 }
