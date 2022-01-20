@@ -56,6 +56,7 @@ public class BuildManager : MonoBehaviour
 
     UIProcessing uip; // used to get selected units as well as check if build action has been clicked and change actionButtonClicked
     UIPrefabManager uipm; // used to get various UI components to be adjusted
+    AnimationManager am;
     List<BaseBuilding> availableBuildings = new List<BaseBuilding>(); // list of available buildings that can be built
     GameObject actionSpacer; // Grid Layout Group for the action buttons to be placed
 
@@ -65,11 +66,12 @@ public class BuildManager : MonoBehaviour
     private void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
+        am = FindObjectOfType<AnimationManager>();
         uipm = FindObjectOfType<UIPrefabManager>();
 
-        actionSpacer = uipm.buildActionCanvas.transform.Find("BuildActionPanel/BuildSpacer").gameObject; // sets Grid Layout Group for action buttons to be placed
+        actionSpacer = uipm.buildActionPanel.transform.Find("BuildSpacer").gameObject; // sets Grid Layout Group for action buttons to be placed
 
-        defaultCanvasHeight = uipm.buildActionCanvas.transform.Find("BuildActionPanel").GetComponent<RectTransform>().rect.height; // sets default canvas height based on canvas height when game is started
+        defaultCanvasHeight = uipm.buildActionPanel.GetComponent<RectTransform>().rect.height; // sets default canvas height based on canvas height when game is started
 
         ShowBuildPanel(false);
     }
@@ -182,16 +184,21 @@ public class BuildManager : MonoBehaviour
             int canvasHeightFactor = Mathf.FloorToInt(availableBuildings.Count / 3);
             float adjHeight = defaultCanvasHeight + (uip.buildingCanvasButtonAdjustment * (float)canvasHeightFactor);
 
-            RectTransform rt = uipm.buildActionCanvas.transform.Find("BuildActionPanel").GetComponent<RectTransform>();
+            RectTransform rt = uipm.buildActionPanel.GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(rt.rect.width, adjHeight);
+
+            // show the panel
+            am.ProcessOpenAnim(uipm.buildActionPanel, true);
 
             panelShown = true;
         } else
         {
+            am.ProcessOpenAnim(uipm.buildActionPanel, false);
+
             panelShown = false;
         }
 
-        uipm.ShowUIObject(uipm.buildActionCanvas, show); // display/hide the canvas
+        //uipm.ShowUIObject(uipm.buildActionPanel, show); // display/hide the canvas
     }
 
     void SetActionButtons()

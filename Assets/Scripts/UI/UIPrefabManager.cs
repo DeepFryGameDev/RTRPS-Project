@@ -35,6 +35,10 @@ public class UIPrefabManager : MonoBehaviour
     public GameObject buildingActionPanel;
     [Tooltip("Set to multiple units panel in UI")]
     public GameObject multiUnitsPanel;
+    [Tooltip("Set to options in UI")]
+    public GameObject optionsPanel;
+
+
     [Tooltip("Set to multiple units 'button' prefab")]
     public GameObject multiUnitsButton;
     [Tooltip("Set to action action skill spacer")]
@@ -51,7 +55,7 @@ public class UIPrefabManager : MonoBehaviour
     public GameObject gatherBuildUX;
 
     [Tooltip("Set to Canvas that contains build actions")]
-    public GameObject buildActionCanvas;
+    public GameObject buildActionPanel;
     [Tooltip("Material for blueprint if it is able to be built")]
     public Material bluePrintCanBuildMat;
     [Tooltip("Material for blueprint if it is unable to be built")]

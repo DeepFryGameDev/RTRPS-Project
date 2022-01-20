@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -67,6 +68,8 @@ public class UIProcessing : MonoBehaviour
     [HideInInspector] public bool actionButtonClicked; // To know when an action button has been clicked
     bool multipleUnitButtonsGenerated; // To know when to reset multiple unit buttons on panel
 
+    [HideInInspector] public bool optionsMenuOpened;
+
     [HideInInspector] public bool resetUI; // used to determine when new object has been clicked so UI can be refreshed
 
     [HideInInspector] public List<Unit> selectedUnits; // List of units selected by player with multiselect
@@ -77,6 +80,7 @@ public class UIProcessing : MonoBehaviour
 
     BuildManager bm; // used to check if build action has been selected
     GatherManager gm; // used to check if gather action has been selected
+    AnimationManager am; // used to process UI animations
     GathererActions gathererActions; // used to retrieve the full list of potential gatherer actions
     BuilderActions builderActions; // used to retrieve the full list of potential builder actions
     BiomeTile biomeTile; // used to get biome information for selected object
@@ -86,6 +90,7 @@ public class UIProcessing : MonoBehaviour
     {
         bm = FindObjectOfType<BuildManager>();
         gm = FindObjectOfType<GatherManager>();
+        am = FindObjectOfType<AnimationManager>();
         uipm = transform.GetComponent<UIPrefabManager>();
         selectedUnits = FindObjectOfType<SelectionProcessing>().selectedUnits;
         gathererActions = FindObjectOfType<GathererActions>();
@@ -148,11 +153,11 @@ public class UIProcessing : MonoBehaviour
         {
             case UIModes.IDLE:
                 // nothing happens every frame during Idle state
+                
                 break;
 
             case UIModes.UNIT:
                 ProcessUnitDetails(); // Show selected unit details
-
                 break;
 
             case UIModes.BUILDINGINPROG:
@@ -171,14 +176,40 @@ public class UIProcessing : MonoBehaviour
         }
     }
 
+    #region OptionsMenu
+
+    public void ProcessOptionsMenu()
+    {
+        if (!optionsMenuOpened)
+        {
+            OpenOptionsMenu();
+        }
+        else
+        {
+            CloseOptionsMenu();
+        }
+    }
+
+    public void OpenOptionsMenu()
+    {
+        am.ProcessOpenAnim(uipm.optionsPanel, true);
+        optionsMenuOpened = true;
+    }
+
+    public void CloseOptionsMenu()
+    {
+        am.ProcessOpenAnim(uipm.optionsPanel, false);
+        optionsMenuOpened = false;
+    }
+
+    #endregion
+
     #region Units
 
     void ShowUnitUI() // Displays all relevant panels for unit selection
     {
-        // Hide other panels
-        ShowResourcePanels(false);
-        ShowBuildingPanels(false);
-        ShowBuildingActionPanels(false);
+        // hide other panels
+        HideAllUIPanels();
 
         // set graphic panel details
         SetUnitGraphicPanel();
@@ -191,17 +222,17 @@ public class UIProcessing : MonoBehaviour
 
         if (selectedUnits.Count > 1) // if multiple units
         {
-            if (!uipm.multiUnitsPanel.activeInHierarchy) // show multiple units panel
+            if (!multipleUnitButtonsGenerated) // generate multiple unit buttons if they haven't been
+            {
+                GenerateMultipleUnitsPanel();
+            }
+
+            if (!am.GetIsOpen(uipm.multiUnitsPanel)) // show multiple units panel
             {
                 // show panels
                 ShowMultipleUnitsPanel(true);
             }
 
-            if (!multipleUnitButtonsGenerated) // generate multiple unit buttons if they haven't been
-            {
-                GenerateMultipleUnitsPanel();
-            }
-            
         } else
         {
             ShowMultipleUnitsPanel(false);
@@ -510,44 +541,33 @@ public class UIProcessing : MonoBehaviour
 
     public void ShowUnitPanels(bool show) // Shows/hides the unit panels in UI
     {
-        uipm.ShowUIObject(uipm.unitCanvas.gameObject, show);
-        uipm.ShowUIObject(uipm.unitGraphicPanel, show);
-        uipm.ShowUIObject(uipm.unitActionPanel, show);
-        uipm.ShowUIObject(uipm.unitStatsPanel, show);
+        //uipm.ShowUIObject(uipm.unitCanvas.gameObject, show);
+        //uipm.ShowUIObject(uipm.unitGraphicPanel, show);
+        //uipm.ShowUIObject(uipm.unitActionPanel, show);
+        //uipm.ShowUIObject(uipm.unitStatsPanel, show);
+
+        // hide other panels
+        HideAllUIPanels();
+
+        am.ProcessOpenAnim(uipm.unitCanvas, show);
     }
 
     public void ShowMultipleUnitsPanel(bool show) // Shows/hides multiple units panel
     {
-        uipm.ShowUIObject(uipm.multiUnitsPanel, show);
-
-        if (!show)
+        //uipm.ShowUIObject(uipm.multiUnitsPanel, show);
+        if (show)
+        {
+            am.ProcessOpenAnim(uipm.multiUnitsPanel, true);
+        } else
         {
             multipleUnitButtonsGenerated = false;
+            am.ProcessOpenAnim(uipm.multiUnitsPanel, false);
         }
     }
 
     #endregion
 
     #region Buildings
-
-    void ShowBuildingPanels(bool show) // Shows/hides the panels relevant to building parameters
-    {
-        uipm.ShowUIObject(uipm.buildingCanvas, show);
-        uipm.ShowUIObject(uipm.buildingGraphicPanel, show);
-        uipm.ShowUIObject(uipm.buildingStatsPanel, show);
-    }
-
-    void ShowBuildingActionPanels(bool show) // Shows/hides panel which houses the action buttons that the building can perform (ie creating a new unit)
-    {
-        if (show && selectedCompletedBuilding.building.actions.Count > 0)
-        {
-            uipm.ShowUIObject(uipm.buildingActionPanel, true);
-
-        } else
-        {
-            uipm.ShowUIObject(uipm.buildingActionPanel, false);
-        }
-    }
 
     void SetBuildingActionButtons() // Sets the actions that a building can perform - there are none yet.
     {
@@ -682,16 +702,20 @@ public class UIProcessing : MonoBehaviour
     void ShowCompletedBuildingUI() // Displays elements required for the selected completed building
     {
         // Hide other panels
-        ShowUnitPanels(false);
-        ShowMultipleUnitsPanel(false);
-        ShowResourcePanels(false);
-        ShowBuildingActionPanels(true);
+        //ShowUnitPanels(false);
+        //ShowMultipleUnitsPanel(false);
+        //ShowResourcePanels(false);
+        //ShowBuildingActionPanels(true);
+
+        // hide other panels
+        HideAllUIPanels();
 
         // set graphic panel details
         SetBuildingGraphicPanel(false);
 
         // show panel
-        ShowBuildingPanels(true);
+        am.ProcessOpenAnim(uipm.buildingCanvas, true);
+        //ShowBuildingPanels(true);
     }
 
     void ProcessCompletedBuildingDetails() // Displays the elements needed to be updated every frame for the completed building (ie stats in the event of a level up, as well as action buttons)
@@ -717,16 +741,20 @@ public class UIProcessing : MonoBehaviour
         else
         {
             // Hide other panels
-            ShowUnitPanels(false);
-            ShowMultipleUnitsPanel(false);
-            ShowResourcePanels(false);
-            ShowBuildingActionPanels(false);
+            //ShowUnitPanels(false);
+            //ShowMultipleUnitsPanel(false);
+            //ShowResourcePanels(false);
+            //ShowBuildingActionPanels(false);
+
+            // hide other panels
+            HideAllUIPanels();
 
             // set graphic panel details
             SetBuildingGraphicPanel(true);
 
             // show panel
-            ShowBuildingPanels(true);
+            am.ProcessOpenAnim(uipm.buildingCanvas, true);
+            //ShowBuildingPanels(true);
         }
     }
 
@@ -748,17 +776,23 @@ public class UIProcessing : MonoBehaviour
 
     #region Resources
 
-    void ShowResourcePanels(bool show) // Shows/hides resource panels for UI
+    void ShowResourcePanels() // Shows/hides resource panels for UI
     {
-        uipm.ShowUIObject(uipm.resourceCanvas, show);
-        uipm.ShowUIObject(uipm.resourceGraphicPanel, show);
-        uipm.ShowUIObject(uipm.resourceStatsPanel, show);
+        //uipm.ShowUIObject(uipm.resourceCanvas, show);
+        //uipm.ShowUIObject(uipm.resourceGraphicPanel, show);
+        //uipm.ShowUIObject(uipm.resourceStatsPanel, show);
+
+        // hide other panels
+        HideAllUIPanels();
+
+        Debug.Log("Show resource panel");
+        am.ProcessOpenAnim(uipm.resourceCanvas, true);
     }
 
     void SetResourceUI() // Sets required elements for resource panels
     {
-        ShowUnitPanels(false);
-        ShowMultipleUnitsPanel(false);
+        //ShowUnitPanels(false);
+        //ShowMultipleUnitsPanel(false);
 
         // set graphic panel details
         SetResourceGraphicPanel();
@@ -767,7 +801,7 @@ public class UIProcessing : MonoBehaviour
         SetResourceStatsPanel();
 
         // show panel
-        ShowResourcePanels(true);
+        ShowResourcePanels();
     }
 
     void SetResourceGraphicPanel() // Sets name and icon to resource graphic panel
@@ -950,11 +984,16 @@ public class UIProcessing : MonoBehaviour
 
     void HideAllUIPanels() // Simply hides all UI panels if nothing is selected
     {
-        ShowUnitPanels(false);
+        //ShowUnitPanels(false);
+        //ShowMultipleUnitsPanel(false);
+        //ShowResourcePanels(false);
+        //ShowBuildingPanels(false);
+        //ShowBuildingActionPanels(false);
+
+        am.ProcessOpenAnim(uipm.unitCanvas, false);
+        am.ProcessOpenAnim(uipm.resourceCanvas, false);
+        am.ProcessOpenAnim(uipm.buildingCanvas, false);
         ShowMultipleUnitsPanel(false);
-        ShowResourcePanels(false);
-        ShowBuildingPanels(false);
-        ShowBuildingActionPanels(false);
     }
 
     public VillagerUnit GetVillagerUnit(Unit unit) // Returns Villager Unit from given Unit

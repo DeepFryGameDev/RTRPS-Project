@@ -75,7 +75,7 @@ public class NavMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (IsMouseOverGameWindow) // ensures mouse is over the game window when trying to perform actions
+        if (IsMouseOverGameWindow && !uip.optionsMenuOpened) // ensures mouse is over the game window when trying to perform actions
         {
             ZoomCamera(); // Handles zoom functionality with scroll wheel
 

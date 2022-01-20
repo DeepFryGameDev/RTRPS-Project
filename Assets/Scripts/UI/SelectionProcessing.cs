@@ -49,7 +49,7 @@ public class SelectionProcessing : MonoBehaviour
 
     void SetSelection() // clears previous selections and sets new one - UI is updated in UIProcessing using the values here 
     {
-        if (!IsPointerOverUIElement())
+        if (!IsPointerOverUIElement() && !uip.optionsMenuOpened)
         {
             // clear prior selections on left mouse click or if escape key is pressed
             ClearSelection();
