@@ -254,7 +254,7 @@ public class UnitMovement : MonoBehaviour
     void StartBuild(BuildInProgress bip) // Starts build process for each selected unit
     {
         // Turn off action button clicked
-        FindObjectOfType<BuildManager>().buildActionClicked = false;
+        uip.actionMode = ActionModes.IDLE;
 
         // Show UX feedback cursor animation
         StartCoroutine(ShowTaskConfirmationUX(GetScreenPosition()));
@@ -275,7 +275,7 @@ public class UnitMovement : MonoBehaviour
     public void StartGathering(Resource resource) // Ensures selected unit is able to gather the type of requested resource, and begins the gathering process
     {
         // Turn off action button clicked
-        gm.gatherActionClicked = false;
+        uip.actionMode = ActionModes.IDLE;
 
         // Show UX feedback cursor animation
         StartCoroutine(ShowTaskConfirmationUX(GetScreenPosition()));

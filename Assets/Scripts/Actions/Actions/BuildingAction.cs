@@ -44,11 +44,12 @@ public class BuildingAction : MonoBehaviour
         if (resourcesAvailable)
         {
             //Show glow on cursor and keep action button highlighted
-            if (!bm.buildingActionClicked)
+            if (uip.actionMode == ActionModes.BUILD)
             {
                 bm.chosenBuilding = building;
 
-                bm.buildingActionClicked = true;
+                uip.actionMode = ActionModes.BLUEPRINT;
+
                 uip.ButtonUIProcessing(this.gameObject);
             }
         }

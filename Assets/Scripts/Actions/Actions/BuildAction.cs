@@ -33,7 +33,9 @@ public class BuildAction : MonoBehaviour
         if (!uip.actionButtonClicked)
         {
             uip.actionButtonClicked = true;
-            bm.buildActionClicked = true;
+
+            uip.actionMode = ActionModes.BUILD;
+
             uip.ButtonUIProcessing(this.gameObject);
         }            
     }

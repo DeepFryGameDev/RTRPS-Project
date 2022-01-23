@@ -145,7 +145,7 @@ public class NavMovement : MonoBehaviour
 
         float keyPanSpeed;
 
-        if (Input.GetKey(KeyCode.LeftShift) && !bm.buildActionClicked)
+        if (Input.GetKey(KeyCode.LeftShift))
         {
             keyPanSpeed = panSpeedOnSprintPress;
         }
@@ -155,7 +155,7 @@ public class NavMovement : MonoBehaviour
         }
 
         //up
-        if (Input.GetAxis("Vertical") > 0 && !bm.buildActionClicked)
+        if (Input.GetAxis("Vertical") > 0)
         {
             camTransform.Translate(Vector3.forward * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
             
@@ -181,7 +181,7 @@ public class NavMovement : MonoBehaviour
         }
 
         //down
-        if (Input.GetAxis("Vertical") < 0 && !bm.buildActionClicked)
+        if (Input.GetAxis("Vertical") < 0)
         {
             camTransform.Translate(Vector3.back * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
 
@@ -207,7 +207,7 @@ public class NavMovement : MonoBehaviour
         }
 
         //right
-        if (Input.GetAxis("Horizontal") > 0 && !bm.buildActionClicked)
+        if (Input.GetAxis("Horizontal") > 0)
         {
             camTransform.Translate(Vector3.right * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
 
@@ -233,7 +233,7 @@ public class NavMovement : MonoBehaviour
         }
 
         //left
-        if (Input.GetAxis("Horizontal") < 0 && !bm.buildActionClicked)
+        if (Input.GetAxis("Horizontal") < 0)
         {
             camTransform.Translate(Vector3.left * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
 

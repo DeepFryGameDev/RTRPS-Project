@@ -73,7 +73,7 @@ public class SelectionProcessing : MonoBehaviour
                     break;
                 case UIModes.UNIT:
 
-                    if (!uip.actionButtonClicked && !bm.buildActionClicked && !gm.gatherActionClicked && !gm.resourceClickedInAction) // Keeps from clearing the UI entirely if build/gather action is still active
+                    if (!uip.actionButtonClicked && uip.actionMode == ActionModes.IDLE && !gm.resourceClickedInAction) // Keeps from clearing the UI entirely if build/gather action is still active
                     {
                         foreach (Unit unit in selectedUnits)
                         {
@@ -92,14 +92,19 @@ public class SelectionProcessing : MonoBehaviour
                         }
                     }
 
-                    if (!uip.actionButtonClicked && bm.buildActionClicked) // Allows for BuildManager to clear the building action if cancelled, without clearing the rest of the UI
+                    if (!uip.actionButtonClicked && uip.actionMode == ActionModes.BLUEPRINT) // Allows for BuildManager to clear the building action if cancelled, without clearing the rest of the UI
                     {
-                        bm.buildActionClicked = false;
+                        uip.actionMode = ActionModes.BUILD;
                     }
 
-                    if (!uip.actionButtonClicked && gm.gatherActionClicked)
+                    if (!uip.actionButtonClicked && uip.actionMode == ActionModes.BUILD)
                     {
-                        gm.gatherActionClicked = false;
+                        uip.actionMode = ActionModes.IDLE;
+                    }
+
+                    if (!uip.actionButtonClicked && uip.actionMode == ActionModes.GATHER)
+                    {
+                        uip.actionMode = ActionModes.IDLE;
                     }
 
                     break;

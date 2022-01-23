@@ -33,7 +33,9 @@ public class GatherAction : MonoBehaviour
         if (!uip.actionButtonClicked)
         {
             uip.actionButtonClicked = true;
-            gm.gatherActionClicked = true;
+
+            uip.actionMode = ActionModes.GATHER;
+
             uip.ButtonUIProcessing(this.gameObject);
         }            
     }

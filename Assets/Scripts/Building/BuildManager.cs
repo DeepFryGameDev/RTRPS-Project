@@ -51,8 +51,6 @@ public class BuildManager : MonoBehaviour
 
     [HideInInspector] public BaseBuilding chosenBuilding; // used by buildingAction to process action for building chosen by player
     [HideInInspector] public bool blueprintOpen, blueprintClosed; // used when blueprint is still on the field or when it has been cancelled/placed
-    [HideInInspector] public bool buildActionClicked; // used when 'build' action has been chosen (before building action)
-    [HideInInspector] public bool buildingActionClicked; // used when 'building' action has been chosen (after 'build' action)
 
     UIProcessing uip; // used to get selected units as well as check if build action has been clicked and change actionButtonClicked
     UIPrefabManager uipm; // used to get various UI components to be adjusted
@@ -78,9 +76,14 @@ public class BuildManager : MonoBehaviour
 
     private void Update()
     {      
-        if (buildActionClicked)
+        if (uip.actionMode == ActionModes.BUILD && !panelShown)
         {
-            ProcessActionClicked(); // process actions if a build action has been chosen
+            ShowBuildPanel(true); // shows build panel with available buildings to select
+        }
+
+        if (uip.actionMode == ActionModes.BLUEPRINT)
+        {
+            HandleBlueprint();
         }
 
         CheckIfActionNoLongerClicked(); // process cancel actions if player cancels them
@@ -130,26 +133,21 @@ public class BuildManager : MonoBehaviour
         }
     }
 
-    void ProcessActionClicked()
+    void HandleBlueprint()
     {
-        if (!panelShown)
-        {
-            ShowBuildPanel(true); // shows build panel with available buildings to select
-        }
-
-        if (buildingActionClicked && blueprintClosed) // if a building action has been selected and blueprint has been closed or cancelled
+        if (uip.actionMode == ActionModes.BLUEPRINT && blueprintClosed) // if a building action has been selected and blueprint has been closed or cancelled
         {
             blueprintClosed = false;
             blueprintOpen = false;
-            buildingActionClicked = false;
-            buildActionClicked = false;
 
             uip.actionButtonClicked = false;
+
+            uip.actionMode = ActionModes.IDLE;
 
             ShowBuildPanel(false);
         }
 
-        if (buildingActionClicked && !blueprintOpen) // if a building action has been selected and blueprint is not yet on the field
+        if (uip.actionMode == ActionModes.BLUEPRINT && !blueprintOpen) // if a building action has been selected and blueprint is not yet on the field
         {
             blueprintOpen = true;
             GameObject blueprint = Instantiate(chosenBuilding.blueprintPrefab, transform);
@@ -159,11 +157,11 @@ public class BuildManager : MonoBehaviour
 
     void CheckIfActionNoLongerClicked()
     {
-        if (buildingActionClicked && Input.GetKeyDown(KeyCode.Escape)) // cancels from placing a building (in blueprint mode)
+        if (uip.actionMode == ActionModes.BLUEPRINT && Input.GetKeyDown(KeyCode.Escape)) // cancels from placing a building (in blueprint mode)
         {
-            buildingActionClicked = false;
+            uip.actionMode = ActionModes.BUILD;
 
-        } else if (buildActionClicked && Input.GetKeyDown(KeyCode.Escape)) // cancels building action selection
+        } else if (uip.actionMode == ActionModes.BUILD && Input.GetKeyDown(KeyCode.Escape)) // cancels building action selection
         {
             uip.actionButtonClicked = false;
             //buildActionClicked = false;

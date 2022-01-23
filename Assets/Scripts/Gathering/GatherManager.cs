@@ -35,7 +35,6 @@ public class GatherManager : MonoBehaviour
     UIPrefabManager uipm; // used to return resource icons
     UnitMovement um; // used to call StartGathering method
 
-    [HideInInspector] public bool gatherActionClicked;
     [HideInInspector] public bool resourceClickedInAction;
 
     private void Start()
@@ -48,7 +47,7 @@ public class GatherManager : MonoBehaviour
     private void Update()
     {
         // this processes the gather resources method if player chooses 'gather' action in the action buttons
-        if (gatherActionClicked) // if gather action was clicked by player
+        if (uip.actionMode == ActionModes.GATHER) // if gather action was clicked by player
         {
             ProcessActionClicked(); // starts gathering process if a resource is clicked
         }
@@ -103,7 +102,7 @@ public class GatherManager : MonoBehaviour
     // cancels gather action if player presses escape after the action has been clicked
     void CheckIfActionNoLongerClicked()
     {
-        if (gatherActionClicked && Input.GetKeyDown(KeyCode.Escape))
+        if (uip.actionMode == ActionModes.GATHER && Input.GetKeyDown(KeyCode.Escape))
         {
             uip.actionButtonClicked = false;
         }

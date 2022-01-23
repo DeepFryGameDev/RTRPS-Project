@@ -16223,7 +16223,6 @@ MonoBehaviour:
   gatherOreTimeStaminaFactor: 1.4
   gatherFoodTimeIntelligenceFactor: 0.9
   gatherFoodTimeWillpowerFactor: 0.85
-  gatherActionClicked: 0
   resourceClickedInAction: 0
 --- !u!4 &1017913501
 Transform:
@@ -20139,7 +20138,7 @@ MonoBehaviour:
   buildings:
   - name: Test Depot
     icon: {fileID: 21300000, guid: f4c67eecd0c4c90429b9251e8d120cf9, type: 3}
-    shortcutKey: 100
+    shortcutKey: 113
     blueprintPrefab: {fileID: 6940977642929595331, guid: f286a7d30ae80e24e925347220d30e35, type: 3}
     inProgressPrefab: {fileID: 6940977642929595331, guid: 5a741295f3adce74986197e4879ef4a0, type: 3}
     completePrefab: {fileID: 6940977642929595331, guid: 57fedb6b1b45a1740ae042213f67032c, type: 3}
@@ -20171,7 +20170,7 @@ MonoBehaviour:
     level: 0
   - name: Ore Depot
     icon: {fileID: 21300000, guid: f4c67eecd0c4c90429b9251e8d120cf9, type: 3}
-    shortcutKey: 106
+    shortcutKey: 114
     blueprintPrefab: {fileID: 6940977642929595331, guid: f286a7d30ae80e24e925347220d30e35, type: 3}
     inProgressPrefab: {fileID: 6940977642929595331, guid: 5a741295f3adce74986197e4879ef4a0, type: 3}
     completePrefab: {fileID: 6940977642929595331, guid: 57fedb6b1b45a1740ae042213f67032c, type: 3}
@@ -20187,7 +20186,7 @@ MonoBehaviour:
     level: 0
   - name: Food Depot
     icon: {fileID: 21300000, guid: f4c67eecd0c4c90429b9251e8d120cf9, type: 3}
-    shortcutKey: 118
+    shortcutKey: 116
     blueprintPrefab: {fileID: 6940977642929595331, guid: f286a7d30ae80e24e925347220d30e35, type: 3}
     inProgressPrefab: {fileID: 6940977642929595331, guid: 5a741295f3adce74986197e4879ef4a0, type: 3}
     completePrefab: {fileID: 6940977642929595331, guid: 57fedb6b1b45a1740ae042213f67032c, type: 3}
@@ -20220,8 +20219,6 @@ MonoBehaviour:
     level: 0
   blueprintOpen: 0
   blueprintClosed: 0
-  buildActionClicked: 0
-  buildingActionClicked: 0
 --- !u!4 &1306280037
 Transform:
   m_ObjectHideFlags: 0
@@ -24227,7 +24224,6 @@ MonoBehaviour:
   buildUXSpinFactor: 1
   buildingCanvasButtonAdjustment: 30
   resourcesUnavailableForActionColor: {r: 1, g: 0, b: 0, a: 1}
-  uiMode: 0
   actionButtonClicked: 0
   optionsMenuOpened: 0
   resetUI: 0
@@ -24236,6 +24232,8 @@ MonoBehaviour:
   selectedCompletedBuilding: {fileID: 0}
   selectedResource: {fileID: 0}
   selectedUnit: {fileID: 0}
+  uiMode: 0
+  actionMode: 0
 --- !u!114 &1567047002
 MonoBehaviour:
   m_ObjectHideFlags: 0

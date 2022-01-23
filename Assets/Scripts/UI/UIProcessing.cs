@@ -18,7 +18,7 @@ public enum ActionModes
 {
     IDLE,
     BUILD,
-    BUILDING,
+    BLUEPRINT,
     GATHER
 }
 
@@ -71,8 +71,6 @@ public class UIProcessing : MonoBehaviour
     [Tooltip("Color for action icons when player does not have available resources to perform it")]
     public Color resourcesUnavailableForActionColor;
 
-    [HideInInspector] public UIModes uiMode; // current state of UI
-
     [HideInInspector] public bool actionButtonClicked; // To know when an action button has been clicked
     bool multipleUnitButtonsGenerated; // To know when to reset multiple unit buttons on panel
 
@@ -85,6 +83,9 @@ public class UIProcessing : MonoBehaviour
     [HideInInspector] public CompletedBuilding selectedCompletedBuilding; // Completed Building selected by player
     [HideInInspector] public Resource selectedResource; // Resource selected by player
     [HideInInspector] public Unit selectedUnit; // Current unit to be displayed in the UI
+
+    [HideInInspector] public UIModes uiMode; // current state of UI
+    [HideInInspector] public ActionModes actionMode;
 
     BuildManager bm; // used to check if build action has been selected
     GatherManager gm; // used to check if gather action has been selected
@@ -113,6 +114,7 @@ public class UIProcessing : MonoBehaviour
         transform.Find("MainCanvas/TopBar/ResourceSpacer/Gold/Icon").GetComponent<Image>().sprite = uipm.goldResourceIcon;
 
         uiMode = UIModes.IDLE;
+        actionMode = ActionModes.IDLE;
     }
 
     private void Update()
@@ -861,7 +863,7 @@ public class UIProcessing : MonoBehaviour
 
         if (actionButton.GetComponent<BuildAction>())
         {
-            while (bm.buildActionClicked)
+            while (actionMode == ActionModes.BUILD)
             {
                 ProcessFade(icon);
 
@@ -870,7 +872,7 @@ public class UIProcessing : MonoBehaviour
         }
         else if (actionButton.GetComponent<BuildingAction>())
         {
-            while (bm.buildingActionClicked)
+            while (actionMode == ActionModes.BLUEPRINT)
             {
                 ProcessFade(icon);
 
@@ -879,7 +881,7 @@ public class UIProcessing : MonoBehaviour
         }
         else if (actionButton.GetComponent<GatherAction>())
         {
-            while (gm.gatherActionClicked)
+            while (actionMode == ActionModes.GATHER)
             {
                 ProcessFade(icon);
 
