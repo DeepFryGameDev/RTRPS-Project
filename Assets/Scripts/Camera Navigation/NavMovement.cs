@@ -36,9 +36,9 @@ public class NavMovement : MonoBehaviour
     [SerializeField] [Range(50f, 100f)] float maxFOV;
 
     // for focusing on selection - focus will center the camera to that object and follow it
-    public CinemachineVirtualCamera focusCam; // Camera to be used for focusing on object
+    public CinemachineFreeLook focusCam; // Camera to be used for focusing on object
     GameObject objToFocus; // the object to focus
-    bool focusObj; // if object should be focused
+    [HideInInspector] public bool focusObj; // if object should be focused
 
     CursorManager cm; // used to update cursor mode depending on action being taken
     BuildManager bm; // for checking if build action has been clicked.  This allows for WASD keys to be used as building shortcut keys and will not move the camera when build action is clicked
@@ -51,6 +51,9 @@ public class NavMovement : MonoBehaviour
     bool rightClickDrag; // used to check if the mouse cursor has moved while being right clicked
     bool overUI; // returns true if the mouse cursor is over any UI objects
     float lastMouseX, lastMouseY; // sets mouse position upon right click down
+
+    // for rotation
+    bool inRotate;
 
     // To keep camera above terrain
     float terrainDist;
@@ -87,16 +90,14 @@ public class NavMovement : MonoBehaviour
             DragCamera(); // Handles moving camera based on the direct mouse position if right mouse button is being held
 
             RotateCamera(); // Handles rotating camera around point where mouse scroll wheel is clicked
+        }
 
-            KeepCameraAtTerrainHeight(); // Keeps camera at consistant distance above terrain
+        KeepCameraAtTerrainHeight(); // Keeps camera at consistant distance above terrain
 
+        if (!focusObj)
+        {
             KeepCameraInBounds(); // Keeps camera from being able to leave the terrain view
-
-            if (focusObj) // If camera should be focusing an object
-            {
-                FocusCameraOnSelection(); // Handles focusing camera on object
-            }
-        }      
+        }        
     }
 
     #region Camera Zoom
@@ -104,15 +105,27 @@ public class NavMovement : MonoBehaviour
     void ZoomCamera() // Moves camera up and down Y axis based on scroll value (scrollDist)
     {
         if (Input.GetAxis("Mouse ScrollWheel") != 0)
-        {       
+        {
             float scroll = Input.GetAxis("Mouse ScrollWheel");
-            float newFOV = camTransform.GetComponent<Camera>().fieldOfView;
-            float adjFOV = scroll * (scrollSpeed * scrollFactor);                       
 
-            newFOV -= adjFOV;
+            if (!focusObj) // if not focusing any object
+            {
+                float newFOV = camTransform.GetComponent<Camera>().fieldOfView;
+                float adjFOV = scroll * (scrollSpeed * scrollFactor);
 
-            camTransform.GetComponent<Camera>().fieldOfView = Mathf.Clamp(newFOV, minFOV, maxFOV);
+                newFOV -= adjFOV;
 
+                camTransform.GetComponent<Camera>().fieldOfView = Mathf.Clamp(newFOV, minFOV, maxFOV);
+            }
+            else // if focusing an object
+            {
+                float newFOV = focusCam.m_Lens.FieldOfView;
+                float adjFOV = scroll * (scrollSpeed * scrollFactor);
+
+                newFOV -= adjFOV;
+
+                focusCam.m_Lens.FieldOfView = Mathf.Clamp(newFOV, minFOV, maxFOV);
+            }   
         }
     }
 
@@ -146,9 +159,12 @@ public class NavMovement : MonoBehaviour
         {
             camTransform.Translate(Vector3.forward * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
             
-            DisableCamFocus();
+            if (focusObj)
+            {
+                DisableCamFocus();
+            }            
         }
-        else if (Input.mousePosition.y >= Screen.height - panBorderSize && Input.mousePosition.y <= Screen.height)
+        else if (Input.mousePosition.y >= Screen.height - panBorderSize && Input.mousePosition.y <= Screen.height && !inRotate)
         {
             movingZU = true;
             cm.cursorMode = cursorModes.PANUP;
@@ -158,7 +174,10 @@ public class NavMovement : MonoBehaviour
 
             camTransform.Translate(Vector3.forward * (speed * Time.deltaTime));
 
-            DisableCamFocus();
+            if (focusObj)
+            {
+                DisableCamFocus();
+            }
         }
 
         //down
@@ -166,9 +185,12 @@ public class NavMovement : MonoBehaviour
         {
             camTransform.Translate(Vector3.back * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Vertical")) * Time.deltaTime));
 
-            DisableCamFocus();
+            if (focusObj)
+            {
+                DisableCamFocus();
+            }
         }
-        else if (Input.mousePosition.y <= panBorderSize && (Input.mousePosition.y - panBorderSize) >= -panBorderSize)
+        else if (Input.mousePosition.y <= panBorderSize && (Input.mousePosition.y - panBorderSize) >= -panBorderSize && !inRotate)
         {
             movingZD = true;
             cm.cursorMode = cursorModes.PANDOWN;
@@ -178,7 +200,10 @@ public class NavMovement : MonoBehaviour
 
             camTransform.Translate(Vector3.back * (speed * Time.deltaTime));
 
-            DisableCamFocus();
+            if (focusObj)
+            {
+                DisableCamFocus();
+            }
         }
 
         //right
@@ -186,9 +211,12 @@ public class NavMovement : MonoBehaviour
         {
             camTransform.Translate(Vector3.right * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
 
-            DisableCamFocus();
+            if (focusObj)
+            {
+                DisableCamFocus();
+            }
         }
-        else if (Input.mousePosition.x >= Screen.width - panBorderSize && Input.mousePosition.x <= Screen.width)
+        else if (Input.mousePosition.x >= Screen.width - panBorderSize && Input.mousePosition.x <= Screen.width && !inRotate)
         {
             movingXR = true;
             cm.cursorMode = cursorModes.PANRIGHT;
@@ -198,7 +226,10 @@ public class NavMovement : MonoBehaviour
 
             camTransform.Translate(Vector3.right * (speed * Time.deltaTime));
 
-            DisableCamFocus();
+            if (focusObj)
+            {
+                DisableCamFocus();
+            }
         }
 
         //left
@@ -206,9 +237,12 @@ public class NavMovement : MonoBehaviour
         {
             camTransform.Translate(Vector3.left * (keyPanSpeed * Mathf.Abs(Input.GetAxis("Horizontal")) * Time.deltaTime));
 
-            DisableCamFocus();
+            if (focusObj)
+            {
+                DisableCamFocus();
+            }
         }
-        else if (Input.mousePosition.x <= panBorderSize && (Input.mousePosition.x - panBorderSize) >= -panBorderSize)
+        else if (Input.mousePosition.x <= panBorderSize && (Input.mousePosition.x - panBorderSize) >= -panBorderSize && !inRotate)
         {
             movingXL = true;
             cm.cursorMode = cursorModes.PANLEFT;
@@ -218,7 +252,10 @@ public class NavMovement : MonoBehaviour
 
             camTransform.Translate(Vector3.left * (speed * Time.deltaTime));
 
-            DisableCamFocus();
+            if (focusObj)
+            {
+                DisableCamFocus();
+            }
         }
 
         if (movingZU && movingXR)
@@ -261,7 +298,10 @@ public class NavMovement : MonoBehaviour
                 cm.cursorDrag = true;
                 cm.cursorMode = cursorModes.DRAG;
 
-                DisableCamFocus();
+                if (focusObj)
+                {
+                    DisableCamFocus();
+                }
             }
 
             float xDiff = (Mathf.Abs(lastMouseX - Input.mousePosition.x) * dragFactor);
@@ -305,18 +345,26 @@ public class NavMovement : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Mouse2))
         {
+            inRotate = true;
             cm.cursorRotate = true;
         }
 
         if (Input.GetKey(KeyCode.Mouse2))
         {
-            Vector3 rotatePoint = new Vector3(camTransform.position.x, Terrain.activeTerrain.SampleHeight(camTransform.position), camTransform.position.z);
+            if (!focusObj)
+            {
+                Vector3 rotatePoint = new Vector3(camTransform.position.x, Terrain.activeTerrain.SampleHeight(camTransform.position), camTransform.position.z);
 
-            camTransform.RotateAround(rotatePoint, transform.up, -Input.GetAxis("Mouse X") * rotateSpeed);
+                camTransform.RotateAround(rotatePoint, transform.up, -Input.GetAxis("Mouse X") * rotateSpeed);
+            } else
+            {
+                focusCam.m_XAxis.Value -= (Input.GetAxis("Mouse X") * rotateSpeed);
+            }
         }
 
         if (Input.GetKeyUp(KeyCode.Mouse2))
         {
+            inRotate = false;
             cm.cursorRotate = false;
         }
     }
@@ -373,22 +421,23 @@ public class NavMovement : MonoBehaviour
             focusObj = false;
 
             focusCam.Follow = null;
-            focusCam.enabled = false;
+            focusCam.LookAt = null;
+
+            focusCam.gameObject.SetActive(false);
         }
     }
 
     public void FocusSelection(GameObject obj) // Turns camera focus on
     {
         objToFocus = obj;
-        focusObj = true;
-    }
 
-    void FocusCameraOnSelection() // Sets camera to follow object
-    {
         focusCam.m_Lens.FieldOfView = camTransform.GetComponent<Camera>().fieldOfView;
 
         focusCam.Follow = objToFocus.transform;
-        focusCam.enabled = true;
+        focusCam.LookAt = objToFocus.transform;
+        focusCam.gameObject.SetActive(true);
+
+        focusObj = true;
     }
 
     #endregion

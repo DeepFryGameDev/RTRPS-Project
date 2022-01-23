@@ -86,7 +86,10 @@ public class SelectionProcessing : MonoBehaviour
                         uip.resetUI = true;
                         uip.uiMode = UIModes.IDLE;
 
-                        nm.DisableCamFocus();
+                        if (nm.focusObj)
+                        {
+                            nm.DisableCamFocus();
+                        }
                     }
 
                     if (!uip.actionButtonClicked && bm.buildActionClicked) // Allows for BuildManager to clear the building action if cancelled, without clearing the rest of the UI
@@ -116,7 +119,10 @@ public class SelectionProcessing : MonoBehaviour
                     uip.resetUI = true;
                     uip.uiMode = UIModes.IDLE;
 
-                    nm.DisableCamFocus();
+                    if (nm.focusObj)
+                    {
+                        nm.DisableCamFocus();
+                    }
 
                     break;
 
@@ -128,7 +134,11 @@ public class SelectionProcessing : MonoBehaviour
                     uip.resetUI = true;
                     uip.uiMode = UIModes.IDLE;
 
-                    nm.DisableCamFocus();
+                    if (nm.focusObj)
+                    {
+                        nm.DisableCamFocus();
+                    }
+
                     break;
 
                 case UIModes.BUILDINGINPROG:
@@ -142,7 +152,11 @@ public class SelectionProcessing : MonoBehaviour
                     uip.resetUI = true;
                     uip.uiMode = UIModes.IDLE;
 
-                    nm.DisableCamFocus();
+                    if (nm.focusObj)
+                    {
+                        nm.DisableCamFocus();
+                    }
+
                     break;
             }
         }

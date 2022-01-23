@@ -1,3 +1,4 @@
+using Cinemachine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,6 +30,7 @@ public class UnitMovement : MonoBehaviour
     // For moving
     Vector3 agentDestination; // set to the target destination depending on which type of object has been clicked
     UIProcessing uip; // used to obtain the selected unit(s) as well as determine if the unit is of type Villager
+    NavMovement nm;
 
     // For right click frame measuring
     float rClickFrameCount; // used to determine if a single right mouse click has been registered, instead of holding the click down.
@@ -37,6 +39,7 @@ public class UnitMovement : MonoBehaviour
     {
         uip = FindObjectOfType<UIProcessing>();
         gm = FindObjectOfType<GatherManager>();
+        nm = FindObjectOfType<NavMovement>();
     }
 
     void Update()
@@ -385,8 +388,8 @@ public class UnitMovement : MonoBehaviour
         {
             if (Input.GetKeyUp(KeyCode.Mouse1) && rClickFrameCount >= 0 && rClickFrameCount <= rClickMaxFrames)
             {
-                Ray terrainRay = Camera.main.ScreenPointToRay(Input.mousePosition);
                 RaycastHit hitData;
+                Ray terrainRay = Camera.main.ScreenPointToRay(Input.mousePosition); ;
 
                 if (tcol.Raycast(terrainRay, out hitData, 1000))
                 {

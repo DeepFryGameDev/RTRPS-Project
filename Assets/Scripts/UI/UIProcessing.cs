@@ -14,6 +14,14 @@ public enum UIModes {
     RESOURCE
 }
 
+public enum ActionModes
+{
+    IDLE,
+    BUILD,
+    BUILDING,
+    GATHER
+}
+
 // This script handles all interface processing when clicking on an object in the world
 public class UIProcessing : MonoBehaviour
 {
@@ -785,7 +793,6 @@ public class UIProcessing : MonoBehaviour
         // hide other panels
         HideAllUIPanels();
 
-        Debug.Log("Show resource panel");
         am.ProcessOpenAnim(uipm.resourceCanvas, true);
     }
 
@@ -993,7 +1000,11 @@ public class UIProcessing : MonoBehaviour
         am.ProcessOpenAnim(uipm.unitCanvas, false);
         am.ProcessOpenAnim(uipm.resourceCanvas, false);
         am.ProcessOpenAnim(uipm.buildingCanvas, false);
-        ShowMultipleUnitsPanel(false);
+
+        if (uiMode != UIModes.UNIT)
+        {
+            ShowMultipleUnitsPanel(false);
+        }       
     }
 
     public VillagerUnit GetVillagerUnit(Unit unit) // Returns Villager Unit from given Unit
