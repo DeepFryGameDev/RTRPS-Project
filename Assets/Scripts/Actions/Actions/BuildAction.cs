@@ -9,12 +9,10 @@ public class BuildAction : MonoBehaviour
     [HideInInspector] public BaseAction action; // action containing parameters to be used when performing this action
 
     UIProcessing uip; // used for updating UI to show when action has been chosen
-    BuildManager bm; // used for updating buildActionClicked
 
     void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
-        bm = FindObjectOfType<BuildManager>();
         
         SetAction(); // sets the button's action on PointerClick to ActionButtonPressed()
     }
@@ -34,10 +32,10 @@ public class BuildAction : MonoBehaviour
         {
             uip.actionButtonClicked = true;
 
-            uip.actionMode = ActionModes.BUILD;
-
             uip.ButtonUIProcessing(this.gameObject);
-        }            
+
+            Invoke(action.actionScript, 0);
+        }        
     }
 
     void ActionButtonPressed(PointerEventData data) // used for setting PointerClick event
@@ -51,13 +49,18 @@ public class BuildAction : MonoBehaviour
 
         EventTrigger.Entry entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.PointerClick;
-
-        if (action.actionScript.Equals("Build"))
-        {
-            entry.callback.AddListener((data) => { ActionButtonPressed((PointerEventData)data); });
-        }
+        entry.callback.AddListener((data) => { ActionButtonPressed((PointerEventData)data); });
 
         trigger.triggers.Add(entry);
     }
+
+    #region ActionScripts
+
+    void Build()
+    {
+        uip.actionMode = ActionModes.BUILD;
+    }
+
+    #endregion
 
 }

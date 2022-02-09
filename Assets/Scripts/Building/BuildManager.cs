@@ -13,10 +13,11 @@ public enum BuildPhases
 
 public class BuildManager : MonoBehaviour
 {
-    [Tooltip("Minimum amount of time (in seconds) that a unit will spend increasing their personal progress to the build.")]
-    public float minBuildTime;
-    [Tooltip("Maximum amount of time (in seconds) that a unit will spend increasing their personal progress to the build.")]
-    public float maxBuildTime;
+    [Tooltip("Minimum amount of time (in seconds) that a unit will spend increasing their personal progress to the build, before difficulty.")]
+    public float minBaseBuildTime;
+    [Tooltip("Maximum amount of time (in seconds) that a unit will spend increasing their personal progress to the build, before difficulty.")]
+    public float maxBaseBuildTime;
+
     [Tooltip("Personal progress build time is impacted by the unit's agility * this value (+ Intelligence and Willpower factors)")]
     public float buildTimeAgilityFactor;
     [Tooltip("Personal progress build time is impacted by the unit's intelligence * this value (+ Agility and Willpower factors)")]
@@ -55,6 +56,7 @@ public class BuildManager : MonoBehaviour
     UIProcessing uip; // used to get selected units as well as check if build action has been clicked and change actionButtonClicked
     UIPrefabManager uipm; // used to get various UI components to be adjusted
     AnimationManager am;
+    IconManager im;
     List<BaseBuilding> availableBuildings = new List<BaseBuilding>(); // list of available buildings that can be built
     GameObject actionSpacer; // Grid Layout Group for the action buttons to be placed
 
@@ -65,6 +67,7 @@ public class BuildManager : MonoBehaviour
     {
         uip = FindObjectOfType<UIProcessing>();
         am = FindObjectOfType<AnimationManager>();
+        im = FindObjectOfType<IconManager>();
         uipm = FindObjectOfType<UIPrefabManager>();
 
         actionSpacer = uipm.buildActionPanel.transform.Find("BuildSpacer").gameObject; // sets Grid Layout Group for action buttons to be placed
@@ -174,6 +177,7 @@ public class BuildManager : MonoBehaviour
     {
        if (show)
         {
+            Debug.Log("Showing build panel");
             SetAvailableBuildings(); // generate list of available buildings to place
 
             SetActionButtons(); // set the action buttons for each available building
@@ -223,7 +227,7 @@ public class BuildManager : MonoBehaviour
             buildActionGO.transform.Find("ShortcutKeyFrame/ShortcutKey").GetComponent<TMP_Text>().text = building.shortcutKey.ToString();
 
             // Set Action
-            BuildingAction ba = buildActionGO.AddComponent(typeof(BuildingAction)) as BuildingAction;
+            BlueprintAction ba = buildActionGO.AddComponent(typeof(BlueprintAction)) as BlueprintAction;
             ba.building = building;
 
             // Set Unit
@@ -236,11 +240,12 @@ public class BuildManager : MonoBehaviour
     {
         availableBuildings.Clear();
 
-        //for now, just add the test building
+        //for now, just add the test buildings
         availableBuildings.Add(buildings[0]);
         //availableBuildings.Add(buildings[1]);
         //availableBuildings.Add(buildings[2]);
         //availableBuildings.Add(buildings[3]);
+        availableBuildings.Add(buildings[4]);
     }
 
     // Displays user feedback when personal or total progress to the building has been made - progress icon will be displayed above the object (unit/building) and slowly moves upward along y position and fades out
@@ -251,15 +256,20 @@ public class BuildManager : MonoBehaviour
 
         if (personalProgress)
         {
-            buildUX.transform.Find("UXIcon").GetComponent<Image>().sprite = uipm.personalProgressIcon;
+            buildUX.transform.Find("UXIcon").GetComponent<Image>().sprite = im.personalProgressIcon;
         } else
         {
             progress = Mathf.RoundToInt(progress);
-            buildUX.transform.Find("UXIcon").GetComponent<Image>().sprite = uipm.totalProgressIcon;
+            buildUX.transform.Find("UXIcon").GetComponent<Image>().sprite = im.totalProgressIcon;
         }
 
         buildUX.transform.Find("UXText").GetComponent<TMP_Text>().text = progress.ToString() + "%";
 
         StartCoroutine(uip.DisplayUX(source, buildUX, true));
+    }
+
+    public BaseBuildingAction GetBuildingAction(int ID)
+    {
+        return GameObject.Find("ActionDB").GetComponent<BuildingActions>().buildingActions[ID];
     }
 }

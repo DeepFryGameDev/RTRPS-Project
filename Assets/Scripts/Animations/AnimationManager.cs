@@ -9,6 +9,7 @@ public class AnimationManager : MonoBehaviour
     [SerializeField] Animator resourceCanvasAnim;
     [SerializeField] Animator buildActionPanelAnim;
     [SerializeField] Animator multiUnitPanelAnim;
+    [SerializeField] Animator buildingTrainQueuePanelAnim;
     [SerializeField] Animator optionsPanelAnim;
 
     public void ProcessOpenAnim(GameObject obj, bool show)
@@ -50,9 +51,13 @@ public class AnimationManager : MonoBehaviour
         GetCanvasGroup(multiUnitPanelAnim).interactable = false;
         GetCanvasGroup(multiUnitPanelAnim).blocksRaycasts = false;
 
+        GetCanvasGroup(buildingTrainQueuePanelAnim).alpha = 0;
+        GetCanvasGroup(buildingTrainQueuePanelAnim).interactable = false;
+        GetCanvasGroup(buildingTrainQueuePanelAnim).blocksRaycasts = false;
+
         GetCanvasGroup(optionsPanelAnim).alpha = 0;
         GetCanvasGroup(optionsPanelAnim).interactable = false;
-        GetCanvasGroup(optionsPanelAnim).blocksRaycasts = false;        
+        GetCanvasGroup(optionsPanelAnim).blocksRaycasts = false;
     }
 
     public void ShowUnitCanvas()

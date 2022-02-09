@@ -1,13 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
-/* icon attribution 
- * Rock icon: Icons made by "https://www.flaticon.com/authors/icongeek26" - Icongeek26 from "https://www.flaticon.com/" 
- * Tree icon: Icons made by "https://www.freepik.com" - Freepik from "https://www.flaticon.com/"
- * Farm icon: Icons made by "https://www.flaticon.com/authors/photo3idea-studio" - photo3idea_studio from "https://www.flaticon.com/"
- */
-
 // resource type that can be set to a resource object
 public enum ResourceTypes
 {

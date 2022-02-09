@@ -26,6 +26,8 @@ public class BuildInProgress : MonoBehaviour
             Color blankColor = new Color(mr.material.color.r, mr.material.color.g, mr.material.color.b, 0.0f);
             mr.material.color = blankColor;
         }
+
+        building.level = 1; // defaults building to level 1
     }
 
     // increases progress of the build based on 'prog' input.  This is generated from stat calculations in the VillagerUnit script

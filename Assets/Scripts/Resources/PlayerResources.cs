@@ -28,4 +28,12 @@ public class PlayerResources : MonoBehaviour
         uipm.resourceUISpacer.transform.Find("Food/Count").GetComponent<TMP_Text>().text = food.ToString();
         uipm.resourceUISpacer.transform.Find("Gold/Count").GetComponent<TMP_Text>().text = gold.ToString();
     }
+
+    public void RemoveResources(int wood, int ore, int food, int gold)
+    {
+        this.wood -= wood;
+        this.ore -= ore;
+        this.food -= food;
+        this.gold -= gold;
+    }
 }

@@ -32,7 +32,8 @@ public class GatherManager : MonoBehaviour
     public float gatherFoodTimeWillpowerFactor;
 
     UIProcessing uip; // used for highlighting resources at the start of gather process, determining if gather action has been clicked, and returning selected units
-    UIPrefabManager uipm; // used to return resource icons
+    IconManager im; // used to return resource icons
+    UIPrefabManager uipm;
     UnitMovement um; // used to call StartGathering method
 
     [HideInInspector] public bool resourceClickedInAction;
@@ -40,6 +41,7 @@ public class GatherManager : MonoBehaviour
     private void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
+        im = FindObjectOfType<IconManager>();
         uipm = FindObjectOfType<UIPrefabManager>();
         um = FindObjectOfType<UnitMovement>();
     }
@@ -64,13 +66,13 @@ public class GatherManager : MonoBehaviour
         switch (resourceType)
         {
             case ResourceTypes.WOOD:
-                icon = uipm.woodResourceIcon;
+                icon = im.woodResourceIcon;
                 break;
             case ResourceTypes.ORE:
-                icon = uipm.oreResourceIcon;
+                icon = im.oreResourceIcon;
                 break;
             case ResourceTypes.FOOD:
-                icon = uipm.foodResourceIcon;
+                icon = im.foodResourceIcon;
                 break;
         }
 

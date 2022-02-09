@@ -42,6 +42,8 @@ public class VillagerUnit : Unit
     GatherPhases gatherPhase; // Used to keep track of the current phase of gathering task
     BuildPhases buildPhase;   // Used to keep track of the current phase of build task
 
+    BuildInProgress currentBIP;
+
     bool isMoving; // Used to track if unit is moving so destination is only set once
 
     List<GameObject> listOfRecursiveChildren = new List<GameObject>(); // Used to check child gameObjects recursively to the interaction collision
@@ -504,8 +506,10 @@ public class VillagerUnit : Unit
         buildTaskIsActive = true;
         buildPhase = BuildPhases.MOVETOBUILDING;
 
+        currentBIP = building.GetComponent<BuildInProgress>();
+
         // Start building
-        buildTaskCoroutine = StartCoroutine(BuildBuilding(building.GetComponent<BuildInProgress>()));
+        buildTaskCoroutine = StartCoroutine(BuildBuilding(currentBIP));
     }
 
     IEnumerator BuildBuilding(BuildInProgress bip) // The states to be run while build task is active - this holds the actual process of moving to a building in progress and contributing to it
@@ -650,10 +654,12 @@ public class VillagerUnit : Unit
     {
         float tempRate;
 
-        tempRate = bm.maxBuildTime - ((baseUnit.GetAgility() * bm.buildTimeAgilityFactor) + (baseUnit.GetIntelligence() * bm.buildTimeIntelligenceFactor) + (baseUnit.GetWillpower() * bm.buildTimeWillpowerFactor));
+        tempRate = bm.maxBaseBuildTime - ((baseUnit.GetAgility() * bm.buildTimeAgilityFactor) + (baseUnit.GetIntelligence() * bm.buildTimeIntelligenceFactor) + (baseUnit.GetWillpower() * bm.buildTimeWillpowerFactor));
 
-        if (tempRate < bm.minBuildTime)
-            return bm.minBuildTime;
+        tempRate *= currentBIP.building.buildDifficulty;
+
+        if (tempRate < bm.minBaseBuildTime)
+            return bm.minBaseBuildTime;
 
         return tempRate;
     }

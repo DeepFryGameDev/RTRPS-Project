@@ -33,6 +33,11 @@ public class UIProcessing : MonoBehaviour
     [Tooltip("Space between each selected unit in multiselect UI")]
     public float selectedUnitsUIEdgeSpace = 10;
 
+    [Tooltip("Space between each action queued in queue panel")]
+    public float actionQueueSpace = 10;
+    [Tooltip("Minimum number of queued actions to display in queue panel")]
+    public int minActionsInQueueToDisplay = 1;
+
     [Tooltip("Default outline width for highlighting objects")]
     [Range(1, 10)] public float defaultOutlineWidth = 5;
     [Tooltip("Width of outline for hovered units in multiselect UI")]
@@ -77,6 +82,8 @@ public class UIProcessing : MonoBehaviour
     [HideInInspector] public bool optionsMenuOpened;
 
     [HideInInspector] public bool resetUI; // used to determine when new object has been clicked so UI can be refreshed
+    bool buildingActionsGenerated;
+    int buildingActionQueueCountTemp;
 
     [HideInInspector] public List<Unit> selectedUnits; // List of units selected by player with multiselect
     [HideInInspector] public BuildInProgress selectedBIP; // BuildInProgress selected by player
@@ -88,8 +95,8 @@ public class UIProcessing : MonoBehaviour
     [HideInInspector] public ActionModes actionMode;
 
     BuildManager bm; // used to check if build action has been selected
-    GatherManager gm; // used to check if gather action has been selected
     AnimationManager am; // used to process UI animations
+    IconManager im;
     GathererActions gathererActions; // used to retrieve the full list of potential gatherer actions
     BuilderActions builderActions; // used to retrieve the full list of potential builder actions
     BiomeTile biomeTile; // used to get biome information for selected object
@@ -98,8 +105,8 @@ public class UIProcessing : MonoBehaviour
     void Start()
     {
         bm = FindObjectOfType<BuildManager>();
-        gm = FindObjectOfType<GatherManager>();
         am = FindObjectOfType<AnimationManager>();
+        im = FindObjectOfType<IconManager>();
         uipm = transform.GetComponent<UIPrefabManager>();
         selectedUnits = FindObjectOfType<SelectionProcessing>().selectedUnits;
         gathererActions = FindObjectOfType<GathererActions>();
@@ -108,10 +115,10 @@ public class UIProcessing : MonoBehaviour
         biomeTile = new BiomeTile();
 
         //initialize top bar UI icons
-        transform.Find("MainCanvas/TopBar/ResourceSpacer/Lumber/Icon").GetComponent<Image>().sprite = uipm.woodResourceIcon;
-        transform.Find("MainCanvas/TopBar/ResourceSpacer/Ore/Icon").GetComponent<Image>().sprite = uipm.oreResourceIcon;
-        transform.Find("MainCanvas/TopBar/ResourceSpacer/Food/Icon").GetComponent<Image>().sprite = uipm.foodResourceIcon;
-        transform.Find("MainCanvas/TopBar/ResourceSpacer/Gold/Icon").GetComponent<Image>().sprite = uipm.goldResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Lumber/Icon").GetComponent<Image>().sprite = im.woodResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Ore/Icon").GetComponent<Image>().sprite = im.oreResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Food/Icon").GetComponent<Image>().sprite = im.foodResourceIcon;
+        transform.Find("MainCanvas/TopBar/ResourceSpacer/Gold/Icon").GetComponent<Image>().sprite = im.goldResourceIcon;
 
         uiMode = UIModes.IDLE;
         actionMode = ActionModes.IDLE;
@@ -246,6 +253,7 @@ public class UIProcessing : MonoBehaviour
         } else
         {
             ShowMultipleUnitsPanel(false);
+            DestroyChildrenInSpacer(uipm.multiUnitsSpacer);
         }
     }
 
@@ -260,10 +268,10 @@ public class UIProcessing : MonoBehaviour
 
     void GenerateMultipleUnitsPanel() // Generates the buttons for multiple units when selected
     {
+        DestroyChildrenInSpacer(uipm.multiUnitsSpacer);
+
         int selectedUnitsCount = selectedUnits.Count;
         float prefabWidth = uipm.multiUnitsButton.GetComponent<RectTransform>().rect.width;
-
-        Transform spacer = uipm.multiUnitsPanel.transform.Find("MultiUnitsSpacer");
 
         // set width of rect transform of multiUnitsPanel
         // edge space + (units spacing * unit count) + (count * prefab width)
@@ -273,16 +281,10 @@ public class UIProcessing : MonoBehaviour
         RectTransform rt = uipm.multiUnitsPanel.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(newWidth, rt.rect.height);
 
-        // clear old units in spacer
-        foreach (Transform child in spacer)
-        {
-            Destroy(child.gameObject);
-        }
-
         // generate buttons and set them as children of spacer
         for (int i = 0; i < selectedUnits.Count; i++)
         {
-            GameObject newButton = Instantiate(uipm.multiUnitsButton, spacer);
+            GameObject newButton = Instantiate(uipm.multiUnitsButton, uipm.multiUnitsSpacer);
             newButton.name = i + ") UnitMultiSelectButton";
             newButton.GetComponent<Image>().sprite = selectedUnits[i].baseUnit.GetFaceGraphic();
             newButton.GetComponent<MultiUnitsSelectionButton>().unit = selectedUnits[i];
@@ -465,10 +467,6 @@ public class UIProcessing : MonoBehaviour
 
     void SetUnitActionButtons() // Generates actions in the form of buttons that unit can perform to the UI
     {
-        foreach (Transform child in uipm.actionSpacer.transform)
-        {
-            Destroy(child.gameObject);
-        }
         if (GetVillagerUnit(selectedUnit))
         {
             if (GetVillagerUnit(selectedUnit).villagerClass == VillagerClasses.BUILDER ||
@@ -484,7 +482,7 @@ public class UIProcessing : MonoBehaviour
 
                         // prepare action button
                         GameObject buildActionGO = GameObject.Instantiate(uipm.actionButton) as GameObject;
-                        buildActionGO.transform.SetParent(uipm.actionSpacer.transform, false);
+                        buildActionGO.transform.SetParent(uipm.unitActionSpacer, false);
 
                         // Set Icon
                         buildActionGO.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>().sprite = action.icon;
@@ -520,7 +518,7 @@ public class UIProcessing : MonoBehaviour
 
                         // prepare action button
                         GameObject gatherActionGO = GameObject.Instantiate(uipm.actionButton) as GameObject;
-                        gatherActionGO.transform.SetParent(uipm.actionSpacer.transform, false);
+                        gatherActionGO.transform.SetParent(uipm.unitActionSpacer, false);
 
                         // Set Icon
                         gatherActionGO.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>().sprite = action.icon;
@@ -557,7 +555,7 @@ public class UIProcessing : MonoBehaviour
         //uipm.ShowUIObject(uipm.unitStatsPanel, show);
 
         // hide other panels
-        HideAllUIPanels();
+        //HideAllUIPanels();
 
         am.ProcessOpenAnim(uipm.unitCanvas, show);
     }
@@ -578,17 +576,6 @@ public class UIProcessing : MonoBehaviour
     #endregion
 
     #region Buildings
-
-    void SetBuildingActionButtons() // Sets the actions that a building can perform - there are none yet.
-    {
-        if (selectedCompletedBuilding.building.actions.Count > 0)
-        {
-            foreach (BaseAction action in selectedCompletedBuilding.building.actions)
-            {
-                // set action buttons in panel
-            }
-        }
-    }
 
     void SetBuildingStatsPanel(bool isBiP) // Shows the selected buildings stat and attribute parameters
     {
@@ -620,21 +607,28 @@ public class UIProcessing : MonoBehaviour
         // depot icon
         if (selectedCompletedBuilding.building.depotResource != depotResources.NA)
         {
+            Color vis = new Color(255, 255, 255, 255);
+            uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().color = vis;
+
             switch (selectedCompletedBuilding.building.depotResource)
             {
                 case depotResources.FOOD:
-                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.foodResourceIcon;
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = im.foodResourceIcon;
                     break;
                 case depotResources.ORE:
-                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.oreResourceIcon;
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = im.oreResourceIcon;
                     break;
                 case depotResources.WOOD:
-                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.woodResourceIcon;
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = im.woodResourceIcon;
                     break;
                 case depotResources.ALL:
-                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.allResourceIcon;
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = im.allResourceIcon;
                     break;
             }
+        } else
+        {
+            Color blank = new Color(0, 0, 0, 0);
+            uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().color = blank;
         }
 
         // biome
@@ -661,21 +655,28 @@ public class UIProcessing : MonoBehaviour
         // depot icon
         if (selectedBIP.building.depotResource != depotResources.NA)
         {
-            switch (selectedBIP.building.depotResource)
+            Color vis = new Color(255, 255, 255, 255);
+            uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().color = vis;
+
+            switch (selectedCompletedBuilding.building.depotResource)
             {
                 case depotResources.FOOD:
-                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.foodResourceIcon;
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = im.foodResourceIcon;
                     break;
                 case depotResources.ORE:
-                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.oreResourceIcon;
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = im.oreResourceIcon;
                     break;
                 case depotResources.WOOD:
-                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.woodResourceIcon;
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = im.woodResourceIcon;
                     break;
                 case depotResources.ALL:
-                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = uipm.allResourceIcon;
+                    uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().sprite = im.allResourceIcon;
                     break;
             }
+        } else
+        {
+            Color blank = new Color(0, 0, 0, 0);
+            uipm.buildingStatsPanel.transform.Find("DepotResourceIcon").GetComponent<Image>().color = blank;
         }
 
         // biome
@@ -717,24 +718,134 @@ public class UIProcessing : MonoBehaviour
         //ShowResourcePanels(false);
         //ShowBuildingActionPanels(true);
 
+        buildingActionsGenerated = false;
+
         // hide other panels
         HideAllUIPanels();
 
         // set graphic panel details
         SetBuildingGraphicPanel(false);
 
+        // If training is occurring, show progress. else, hide it
+        if (selectedCompletedBuilding.isTraining)
+        {
+            UpdateBuildingActionSliderAndShowPanel(true);
+        } else
+        {
+            UpdateBuildingActionSliderAndShowPanel(false);
+        }
+
         // show panel
         am.ProcessOpenAnim(uipm.buildingCanvas, true);
         //ShowBuildingPanels(true);
     }
 
+    void UpdateBuildingActionSliderAndShowPanel(bool show)
+    {
+        uipm.ShowUIObject(uipm.buildingActionPanel.transform.Find("ActionSlider").gameObject, show);
+        uipm.ShowUIObject(uipm.buildingActionPanel.transform.Find("ActionText").gameObject, show);
+
+        if (show)
+        {
+            GetTextComp(uipm.buildingActionPanel.transform.Find("ActionText")).text = Mathf.RoundToInt(selectedCompletedBuilding.currentTrainAction.GetProgress() * 100).ToString() + "%";
+            GetSlider(uipm.buildingActionPanel.transform.Find("ActionSlider")).fillAmount = selectedCompletedBuilding.currentTrainAction.GetProgress();            
+        }
+
+        if (am.GetIsOpen(uipm.buildingActionQueuePanel) != show)
+        {
+            am.ProcessOpenAnim(uipm.buildingActionQueuePanel, show);
+        }        
+    }
+
+    void UpdateBuildingActionQueuePanel()
+    {
+        if (selectedCompletedBuilding.queuedTrainActions.Count >= minActionsInQueueToDisplay) // show queue for count
+        {
+            if (selectedCompletedBuilding.queuedTrainActions.Count != buildingActionQueueCountTemp)
+            {
+                GenerateBuildingActionQueuePanel();
+            }
+        }    
+    }
+
+    void GenerateBuildingActionQueuePanel() // Generates the buttons for when there are more than 1 queued training action by building  
+    {
+        DestroyChildrenInSpacer(uipm.buildingActionQueueSpacer); // clears previous children
+         
+        int queuedActionsCount = selectedCompletedBuilding.queuedTrainActions.Count;
+        float prefabWidth = uipm.actionQueueButton.GetComponent<RectTransform>().rect.width;
+
+        // set width of rect transform of multiUnitsPanel
+        // edge space + (units spacing * unit count) + (count * prefab width)
+        float actionSpacing = uipm.buildingActionQueueSpacer.GetComponent<HorizontalLayoutGroup>().spacing;
+        float newWidth = (actionQueueSpace + (actionSpacing * queuedActionsCount) + (prefabWidth * queuedActionsCount));
+
+        RectTransform rt = uipm.buildingActionQueuePanel.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(newWidth, rt.rect.height);
+
+        // generate buttons and set them as children of spacer
+        for (int i = 0; i < queuedActionsCount; i++)
+        {
+            GameObject newButton = Instantiate(uipm.actionQueueButton, uipm.buildingActionQueueSpacer);
+            newButton.name = i + ") QueuedBuildingAction";
+        }
+
+        multipleUnitButtonsGenerated = true;        
+    }
+
     void ProcessCompletedBuildingDetails() // Displays the elements needed to be updated every frame for the completed building (ie stats in the event of a level up, as well as action buttons)
     {
-        // set action buttons
-        SetBuildingActionButtons();
+        if (!buildingActionsGenerated)
+        {
+            // set action buttons
+            SetBuildingActionButtons();
+        }        
 
         // set stat panel details
         SetBuildingStatsPanel(false);
+
+        if (selectedCompletedBuilding.isTraining)
+        {
+            UpdateBuildingActionSliderAndShowPanel(true);
+            UpdateBuildingActionQueuePanel();
+        } else
+        {
+            UpdateBuildingActionSliderAndShowPanel(false);
+        }
+    }
+
+    void SetBuildingActionButtons() // Sets the actions that a building can perform.
+    {
+        if (selectedCompletedBuilding.building.buildingActions.Count > 0)
+        {
+            foreach (int actionID in selectedCompletedBuilding.building.buildingActions)
+            {
+                BaseBuildingAction action = bm.GetBuildingAction(actionID);
+
+                // set action buttons in panel
+                if (selectedCompletedBuilding.building.level >= action.levelRequired)
+                {
+                    // prepare action button
+                    GameObject buildingActionGO = GameObject.Instantiate(uipm.actionButton) as GameObject;
+                    buildingActionGO.transform.SetParent(uipm.buildingActionSpacer, false);
+
+                    // Set Icon
+                    buildingActionGO.transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>().sprite = action.icon;
+
+                    // Set Name
+                    GetTextComp(buildingActionGO.transform.Find("SkillName")).text = action.name;
+
+                    // Set Shortcut
+                    GetTextComp(buildingActionGO.transform.Find("ShortcutKeyFrame/ShortcutKey")).text = action.shortcutKey.ToString();
+
+                    // Set Action
+                    BuildingAction ba = buildingActionGO.AddComponent(typeof(BuildingAction)) as BuildingAction;
+                    ba.action = action;
+                }
+            }
+        }
+
+        buildingActionsGenerated = true;
     }
 
     #endregion
@@ -825,13 +936,13 @@ public class UIProcessing : MonoBehaviour
         switch (selectedResource.resourceType)
         {
             case ResourceTypes.WOOD:
-                uipm.resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = uipm.woodResourceIcon;
+                uipm.resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = im.woodResourceIcon;
                 break;
             case ResourceTypes.ORE:
-                uipm.resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = uipm.oreResourceIcon;
+                uipm.resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = im.oreResourceIcon;
                 break;
             case ResourceTypes.FOOD:
-                uipm.resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = uipm.foodResourceIcon;
+                uipm.resourceStatsPanel.transform.Find("Graphic").GetComponent<Image>().sprite = im.foodResourceIcon;
                 break;
         }
 
@@ -870,7 +981,7 @@ public class UIProcessing : MonoBehaviour
                 yield return null;
             }
         }
-        else if (actionButton.GetComponent<BuildingAction>())
+        else if (actionButton.GetComponent<BlueprintAction>())
         {
             while (actionMode == ActionModes.BLUEPRINT)
             {
@@ -1006,7 +1117,23 @@ public class UIProcessing : MonoBehaviour
         if (uiMode != UIModes.UNIT)
         {
             ShowMultipleUnitsPanel(false);
-        }       
+        }
+
+        DestroyChildrenInSpacer(uipm.unitActionSpacer);
+
+        
+
+        DestroyChildrenInSpacer(uipm.buildingActionSpacer);
+
+        DestroyChildrenInSpacer(uipm.buildingActionQueueSpacer);
+    }
+
+    public void DestroyChildrenInSpacer(Transform spacer)
+    {
+        foreach (Transform child in spacer)
+        {
+            Destroy(child.gameObject);
+        }
     }
 
     public VillagerUnit GetVillagerUnit(Unit unit) // Returns Villager Unit from given Unit

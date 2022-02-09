@@ -10,7 +10,6 @@ public class SelectionProcessing : MonoBehaviour
 
     UIProcessing uip;
     UIPrefabManager uipm;
-    UnitProcessing up;
     NavMovement nm;
     BuildManager bm;
     GatherManager gm;
@@ -32,7 +31,6 @@ public class SelectionProcessing : MonoBehaviour
     {
         uip = FindObjectOfType<UIProcessing>();
         uipm = FindObjectOfType<UIPrefabManager>();
-        up = FindObjectOfType<UnitProcessing>();
         nm = FindObjectOfType<NavMovement>();
         bm = FindObjectOfType<BuildManager>();
         gm = FindObjectOfType<GatherManager>();
@@ -56,7 +54,10 @@ public class SelectionProcessing : MonoBehaviour
 
             // set new selection on left mouse click
             SetNewSelection();
+        }
 
+        if (inClick)
+        {
             // check for multi-select
             ProcessMultiSelect();
         }
@@ -323,15 +324,24 @@ public class SelectionProcessing : MonoBehaviour
             {              
                 if (!unitsToSelect.Contains(unit) && unitsToSelect.Count < uip.selectedUnitsMax)
                 {
-                    HighlightSelection(unit.GetComponent<Outline>(), true);
                     unitsToSelect.Add(unit);
                 }                
             } else
             {
-                HighlightSelection(unit.GetComponent<Outline>(), false);
                 if (unitsToSelect.Contains(unit))
                 {
                     unitsToSelect.Remove(unit);
+                }
+            }
+
+            if (unitsToSelect.Contains(unit))
+            {
+                HighlightSelection(unit.GetComponent<Outline>(), true);
+            } else
+            {
+                if (!selectedUnits.Contains(unit))
+                {
+                    HighlightSelection(unit.GetComponent<Outline>(), false);
                 }
             }
         }
@@ -344,7 +354,8 @@ public class SelectionProcessing : MonoBehaviour
 
         foreach (Unit unit in unitsToSelect)
         {
-            selectedUnits.Add(unit);
+            if (!selectedUnits.Contains(unit))
+                selectedUnits.Add(unit);
         }
 
         if (selectedUnits.Count > 0)

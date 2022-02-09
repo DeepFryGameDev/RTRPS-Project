@@ -36,14 +36,16 @@ public class BaseBuilding
     public int goldRequired;
     [Tooltip("Max durability (health) of the completed building")]
     public int maxDurability;
+    [Tooltip("This value impacts the amount of time units will take to contribute to personal progress.  Build time is directly multiplied by this value.")]
+    [Range(.1f ,10)] public float buildDifficulty;
     [Tooltip("Max number of units that can simultaneously help to build the building in progress")]
     public int maxUnitsInteracting;
 
     [Tooltip("If it's a depot, the type of resource that the depot will accept. Set to NA if the building is not a depot")]
     public depotResources depotResource;
 
-    [Tooltip("List of actions the building can perform")]
-    public List<BaseAction> actions;
+    [Tooltip("List of actions by ID the building can perform")]
+    public List<int> buildingActions;
 
     [HideInInspector] public int currentDurability; // used to determine health of the building.  When this is 0, the building should be destroyed
 

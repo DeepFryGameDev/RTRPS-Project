@@ -1,11 +1,5 @@
 using UnityEngine;
 
-/* icon attribution 
- * 
- * Personal build progress icon: Icons made by "https://www.flaticon.com/free-icons/work" - Freepik from "https://www.flaticon.com/"
- * Total build progress icon: Icons made by "https://www.flaticon.com/free-icons/gear" - Freepik from "https://www.flaticon.com/"
- */
-
 // This script contains public variables to store all UI elements to be used/manipulated by other scripts, as well as methods for making small changes to UI objects
 public class UIPrefabManager : MonoBehaviour
 {
@@ -33,18 +27,25 @@ public class UIPrefabManager : MonoBehaviour
     public GameObject buildingStatsPanel;
     [Tooltip("Set to building action panel in UI")]
     public GameObject buildingActionPanel;
+    [Tooltip("Set to building action queue panel in UI")]
+    public GameObject buildingActionQueuePanel;
     [Tooltip("Set to multiple units panel in UI")]
     public GameObject multiUnitsPanel;
     [Tooltip("Set to options in UI")]
     public GameObject optionsPanel;
 
-
     [Tooltip("Set to multiple units 'button' prefab")]
     public GameObject multiUnitsButton;
-    [Tooltip("Set to action action skill spacer")]
-    public GameObject actionSpacer;
-    [Tooltip("Set to action button prefab")]
-    public GameObject actionButton;
+    [Tooltip("Set to multi units spacer")]
+    public Transform multiUnitsSpacer;
+
+    [Tooltip("Set to unit action skill spacer")]
+    public Transform unitActionSpacer;
+    [Tooltip("Set to building action skill spacer")]
+    public Transform buildingActionSpacer;
+    [Tooltip("Set to building action queue spacer")]
+    public Transform buildingActionQueueSpacer;
+
 
     [Tooltip("Set to Biome Tooltip to use in UI")]
     public GameObject BiomeTooltipPanel;
@@ -61,21 +62,10 @@ public class UIPrefabManager : MonoBehaviour
     [Tooltip("Material for blueprint if it is unable to be built")]
     public Material bluePrintCannotBuildMat;
 
-    [Tooltip("Set to icon used for personal build progress in UI")]
-    public Sprite personalProgressIcon;
-    [Tooltip("Set to icon used for total build progress in UI")]
-    public Sprite totalProgressIcon;
-
-    [Tooltip("Set to icon used for wood resource in UI")]
-    public Sprite woodResourceIcon;
-    [Tooltip("Set to icon used for ore resource in UI")]
-    public Sprite oreResourceIcon;
-    [Tooltip("Set to icon used for food resource in UI")]
-    public Sprite foodResourceIcon;
-    [Tooltip("Set to icon used for all resources in UI")]
-    public Sprite allResourceIcon;
-    [Tooltip("Set to icon used for gold resource in UI")]
-    public Sprite goldResourceIcon;
+    [Tooltip("Set to action button prefab")]
+    public GameObject actionButton;
+    [Tooltip("Set to action queue button prefab")]
+    public GameObject actionQueueButton;
 
     /// <summary>
     /// Displays/Hides the given object by changing the "Active" value in the hierarchy

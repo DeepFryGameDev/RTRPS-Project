@@ -2,81 +2,72 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// This script is added as a component onto generated building action buttons
+// This script is added as a component onto generated build action buttons
 
 public class BuildingAction : MonoBehaviour
-{    
-    [HideInInspector] public Unit unit; // unit that is performing the action
-    [HideInInspector] public BaseBuilding building; // building that is related to the action being performed
+{
+    [HideInInspector] public BaseAction action; // action containing parameters to be used when performing this action
+
+    BaseBuildingAction baseBuildingAction;
+
+    Color baseColor;
+    Image icon;
+    bool actionAvailable;
 
     UIProcessing uip; // used for updating UI to show when action has been chosen
-    BuildManager bm; // used to set the appropriate building to the buildManager
-    PlayerResources pr; // used to check if player has enough resources to process the build action
+    TrainingManager tm;
+    DeepFryUtilities dfu;
+    PlayerResources pr;
 
-    bool resourcesAvailable; // set to true when player has enough resources available to process the building action, otherwise it is false
-    Color resourcesAvailableColor; // set on Awake() to the icon's default color to be used if player has enough resources available to process the build action
-    Image icon; // set on Start() to the action's icon so that color can be modified upon resource availability
-
-    private void Start()
+    void Start()
     {
         uip = FindObjectOfType<UIProcessing>();
-        bm = FindObjectOfType<BuildManager>();
+        tm = FindObjectOfType<TrainingManager>();
+        dfu = FindObjectOfType<DeepFryUtilities>();
         pr = FindObjectOfType<PlayerResources>();
+        
+        SetAction(); // sets the button's action on PointerClick to ActionButtonPressed()
+
+        baseBuildingAction = GetBaseBuildingAction();
 
         icon = transform.Find("SkillIconFrame/SkillIcon").GetComponent<Image>();
-        resourcesAvailableColor = icon.color;
-
-        SetAction(); // sets the button's action on PointerClick to ActionButtonPressed()
+        baseColor = icon.color;
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(building.shortcutKey)) // the same action that is set to PointerClick event in Start() is also performed when pressing the shortcut key
+        if (Input.GetKeyDown(action.shortcutKey) && actionAvailable) // the same action that is set to PointerClick event in Start() is also performed when pressing the shortcut key
         {
             ActionButtonPressed();
         }
 
-        CheckResources(); // verifies the player has enough resources to perform the action
+        SetIconColorAndAvailability();
     }
 
-    void ActionButtonPressed() // sets BuildManager's chosenBuilding to this building, and updates UI Processing to know that the building action has been requested
-    {
-        if (resourcesAvailable)
+    void SetIconColorAndAvailability()
+    {        
+        if (dfu.IfPlayerHasAvailableResources(baseBuildingAction.woodRequired, baseBuildingAction.oreRequired, baseBuildingAction.foodRequired, baseBuildingAction.goldRequired) &&
+            (uip.selectedCompletedBuilding != null && !uip.selectedCompletedBuilding.ReachedMaxNumberInTrainingQueue())) // color normal and set available
         {
-            //Show glow on cursor and keep action button highlighted
-            if (uip.actionMode == ActionModes.BUILD)
-            {
-                bm.chosenBuilding = building;
-
-                uip.actionMode = ActionModes.BLUEPRINT;
-
-                uip.ButtonUIProcessing(this.gameObject);
-            }
-        }
-    }
-
-    void CheckResources() // changes icon color and sets resourcesAvailable if player has enough resources for the action's requirements
-    {
-        if (pr.gold >= building.goldRequired &&
-            pr.food >= building.foodRequired &&
-            pr.ore >= building.oreRequired &&
-            pr.wood >= building.woodRequired)
+            actionAvailable = true;
+            icon.color = baseColor;
+        } else // color red and set unavailable
         {
-            // able to use
-            icon.color = resourcesAvailableColor;
-            resourcesAvailable = true;
-        }
-        else
-        {
-            // unable to use
+            actionAvailable = false;
             icon.color = uip.resourcesUnavailableForActionColor;
-            resourcesAvailable = false;
         }
+    }
+
+    void ActionButtonPressed() // updates UI Processing to know that the build action has been requested
+    {
+        // possibly show some UX feedback to show button was clicked
+        Invoke(action.actionScript, 0);
     }
 
     void ActionButtonPressed(PointerEventData data) // used for setting PointerClick event
     {
-        ActionButtonPressed();
+        if (actionAvailable)
+            ActionButtonPressed();      
     }
 
     void SetAction() // sets PointerClick event system for the button in UI to perform this action when clicked
@@ -90,4 +81,26 @@ public class BuildingAction : MonoBehaviour
 
         trigger.triggers.Add(entry);
     }
+
+    BaseBuildingAction GetBaseBuildingAction()
+    {
+        BaseBuildingAction tryAction = action as BaseBuildingAction;
+
+        return tryAction;
+    }
+
+    #region ActionScripts
+
+    private void TrainVillager()
+    {
+        BaseTrainAction newBTA = tm.GetTrainActionFromBuildingAction(baseBuildingAction);
+
+        //Debug.Log("Adding BTA - " + newBTA.name);
+        uip.selectedCompletedBuilding.queuedTrainActions.Add(newBTA);
+
+        pr.RemoveResources(baseBuildingAction.woodRequired, baseBuildingAction.oreRequired, baseBuildingAction.foodRequired, baseBuildingAction.goldRequired);
+    }
+
+    #endregion
+
 }

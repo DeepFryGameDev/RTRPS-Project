@@ -34,9 +34,9 @@ public class GatherAction : MonoBehaviour
         {
             uip.actionButtonClicked = true;
 
-            uip.actionMode = ActionModes.GATHER;
-
             uip.ButtonUIProcessing(this.gameObject);
+
+            Invoke(action.actionScript, 0);
         }            
     }
 
@@ -52,11 +52,17 @@ public class GatherAction : MonoBehaviour
         EventTrigger.Entry entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.PointerClick;
 
-        if (action.actionScript.Equals("Gather"))
-        {
-            entry.callback.AddListener((data) => { ActionButtonPressed((PointerEventData)data); });
-        }
-
+        entry.callback.AddListener((data) => { ActionButtonPressed((PointerEventData)data); });
+        
         trigger.triggers.Add(entry);
     }
+
+    #region ActionScripts
+
+    void Gather()
+    {
+        uip.actionMode = ActionModes.GATHER;
+    }
+
+    #endregion
 }
