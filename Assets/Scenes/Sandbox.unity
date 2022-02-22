@@ -9179,8 +9179,10 @@ MonoBehaviour:
   panSpeedOnSprintPress: 60
   scrollSpeed: 6
   scrollFactor: 2.5
-  dragFactor: 0.5
-  dragSpeed: 20
+  dragFactor: 0.75
+  xAxisDragFactor: 1
+  yAxisDragFactor: 2.25
+  dragSpeed: 25
   minScroll: 5
   maxScroll: 35
   rotateSpeed: 5

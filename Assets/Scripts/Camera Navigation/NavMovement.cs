@@ -21,7 +21,11 @@ public class NavMovement : MonoBehaviour
     [Tooltip("Multiplied by the scrollSpeed to determine how quickly to zoom using scroll wheel on mouse.")]
     [SerializeField] [Range(1f, 5f)] float scrollFactor;
     [Tooltip("A larger value represents a larger jump to world position from where the right mouse button was originally clicked.")]
-    [SerializeField] [Range(0.1f, 1.0f)] float dragFactor;
+    [SerializeField] [Range(0.1f, 5.0f)] float dragFactor;
+    [Tooltip("A larger value represents a larger jump to world position along x axis from where the right mouse button was originally clicked.")]
+    [SerializeField] [Range(0.1f, 5.0f)] float xAxisDragFactor;
+    [Tooltip("A larger value represents a larger jump to world position along y axis from where the right mouse button was originally clicked.")]
+    [SerializeField] [Range(0.1f, 5.0f)] float yAxisDragFactor;
     [Tooltip("How fast to move the camera when dragging after holding right mouse button.")]
     [SerializeField] [Range(1f, 50f)] float dragSpeed;
     [Tooltip("Closest y position the camera is able to zoom into.")]
@@ -309,20 +313,20 @@ public class NavMovement : MonoBehaviour
 
             if (lastMouseY < Input.mousePosition.y)
             {
-                camTransform.Translate(Vector3.back * dragSpeed * yDiff * Time.deltaTime);
+                camTransform.Translate(Vector3.back * (dragSpeed * yAxisDragFactor) * yDiff * Time.deltaTime);
             }
             if (lastMouseY > Input.mousePosition.y)
             {
-                camTransform.Translate(Vector3.forward * dragSpeed * yDiff * Time.deltaTime);
+                camTransform.Translate(Vector3.forward * (dragSpeed * yAxisDragFactor) * yDiff * Time.deltaTime);
             }
 
             if (lastMouseX < Input.mousePosition.x)
             {
-                camTransform.Translate(Vector3.left * dragSpeed * xDiff * Time.deltaTime);
+                camTransform.Translate(Vector3.left * (dragSpeed * xAxisDragFactor) * xDiff * Time.deltaTime);
             }
             if (lastMouseX > Input.mousePosition.x)
             {
-                camTransform.Translate(Vector3.right * dragSpeed * xDiff * Time.deltaTime);
+                camTransform.Translate(Vector3.right * (dragSpeed * xAxisDragFactor) * xDiff * Time.deltaTime);
             }
 
             lastMouseY = Input.mousePosition.y;
